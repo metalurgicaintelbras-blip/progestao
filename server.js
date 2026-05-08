@@ -22,13 +22,14 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000, secure: false }
 }));
 
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// Servir arquivos estáticos SEM prefixo /public
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ======================== IMPORTAR MIDDLEWARE AUTH ========================
+// ======================== MIDDLEWARE AUTH ========================
 
 const { requireAuth } = require('./middleware/auth');
 
-// ======================== IMPORTAR ROTAS ========================
+// ======================== IMPORTAR ROTAS API ========================
 
 const authRoutes = require('./routes/auth');
 const colaboradoresRoutes = require('./routes/colaboradores');
@@ -40,7 +41,7 @@ const diarioRoutes = require('./routes/diario');
 const checklistRoutes = require('./routes/checklist');
 const exportRoutes = require('./routes/export');
 
-// ======================== REGISTRAR ROTAS ========================
+// ======================== REGISTRAR ROTAS API ========================
 
 app.use('/api', authRoutes);
 app.use('/api/colaboradores', colaboradoresRoutes);
@@ -58,10 +59,24 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
-// ======================== ROTA PRINCIPAL ========================
+// ======================== ROTAS DAS PAGINAS ========================
 
+const paginas = [
+  'ferramentas', 'epis', 'banco-horas',
+  'treinamentos', 'diario-bordo', 'checklist'
+];
+
+// Página principal
 app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Cada módulo serve sua própria página HTML
+paginas.forEach(p => {
+  app.get('/' + p, requireAuth, (req, res) => {
+    const arquivo = path.join(__dirname, 'public', p + '.html');
+    res.sendFile(arquivo);
+  });
 });
 
 // ======================== FALLBACK ========================
@@ -82,7 +97,6 @@ async function start() {
   try {
     await initDB();
 
-    // Criar usuario admin se nao existir
     const adminUser = process.env.ADMIN_USER || 'admin';
     const adminPass = process.env.ADMIN_PASS || 'ProGestao2026!';
     const existing = await pool.query('SELECT id FROM users WHERE username=$1', [adminUser]);
@@ -99,7 +113,6 @@ async function start() {
     app.listen(PORT, () => {
       console.log('========================================');
       console.log('  ProGestao rodando na porta ' + PORT);
-      console.log('  Login: ' + adminUser + ' / ' + adminPass);
       console.log('========================================');
     });
   } catch (err) {
