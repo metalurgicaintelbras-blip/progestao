@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ProGestão — Montagem</title>
+<link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🏭</div>
+    <div class="brand-text">
+      <div class="brand-name">ProGestão</div>
+      <div class="brand-sub">Montagem</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Principal</div>
+    <button class="nav-item active" data-mod="home" onclick="goModule('home',this)"><span class="nav-ico">🏠</span><span>Painel</span></button>
+
+    <div class="nav-section">Módulos</div>
+    <button class="nav-item" data-mod="ferramentas" onclick="goModule('ferramentas',this)"><span class="nav-ico">🔧</span><span>Ferramentas</span></button>
+    <button class="nav-item" data-mod="epis" onclick="goModule('epis',this)"><span class="nav-ico">🦺</span><span>EPIs</span></button>
+    <button class="nav-item" data-mod="banco-horas" onclick="goModule('banco-horas',this)"><span class="nav-ico">⏱️</span><span>Banco de Horas</span></button>
+    <button class="nav-item" data-mod="treinamentos" onclick="goModule('treinamentos',this)"><span class="nav-ico">📚</span><span>Treinamentos</span></button>
+    <button class="nav-item" data-mod="diario" onclick="goModule('diario',this)"><span class="nav-ico">📓</span><span>Diário de Bordo</span></button>
+    <button class="nav-item" data-mod="checklist" onclick="goModule('checklist',this)"><span class="nav-ico">☑️</span><span>Checklist</span></button>
+
+    <div class="nav-section">Pessoas</div>
+    <button class="nav-item" data-mod="colaboradores" onclick="goModule('colaboradores',this)"><span class="nav-ico">👷</span><span>Colaboradores</span></button>
+
+    <div class="nav-section">Dados</div>
+    <button class="nav-item" data-mod="exportar" onclick="goModule('exportar',this)"><span class="nav-ico">📊</span><span>Exportar Excel</span></button>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="padding:8px 12px;font-size:11px;color:var(--text-3)">
+      Logado como: <strong id="user-name" style="color:var(--purple-light)">—</strong>
+    </div>
+    <button class="btn-voltar" onclick="doLogout()">🚪 <span>Sair</span></button>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div>
+      <div class="page-title" id="page-title">ProGestão</div>
+      <div class="page-crumb"><span>Montagem</span> <span>›</span> <span id="page-crumb">Painel</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="clock-badge" id="clock">—</div>
+    </div>
+  </header>
+
+  <div class="content" id="app-content">
+    <div style="text-align:center;padding:60px 20px">
+      <div style="font-size:48px;margin-bottom:16px">🏭</div>
+      <h2 style="font-size:24px;font-weight:800;margin-bottom:8px">Carregando...</h2>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px"></div>
+
+<!-- JS: Núcleo primeiro, depois módulos -->
+<script src="/public/js/app.js"></script>
+<script src="/public/js/ferramentas.js"></script>
+<script src="/public/js/epis.js"></script>
+<script src="/public/js/banco-horas.js"></script>
+<script src="/public/js/treinamentos.js"></script>
+<script src="/public/js/diario.js"></script>
+<script src="/public/js/checklist.js"></script>
+</body>
+</html>
