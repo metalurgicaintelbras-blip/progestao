@@ -51,8 +51,6 @@ body{font-family:var(--font);background:var(--bg-base);color:var(--text-1);font-
 .mc-info{flex:1;min-width:0}
 .mc-title{font-size:18px;font-weight:800;color:var(--text-1);letter-spacing:-.4px;margin-bottom:4px}
 .mc-desc{font-size:12px;color:var(--text-3);line-height:1.6}
-.mc-stats{padding:0 24px 20px;display:flex;gap:8px;flex-wrap:wrap}
-.mc-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid transparent}
 .mc-footer{padding:14px 24px;border-top:1px solid var(--border);background:var(--bg-card-2);display:flex;align-items:center;justify-content:space-between}
 .mc-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--purple-light);transition:var(--trans)}
 .module-card:hover .mc-btn{gap:10px;color:#fff}
@@ -63,6 +61,7 @@ body{font-family:var(--font);background:var(--bg-base);color:var(--text-1);font-
 .mod-treino .mc-icon{background:linear-gradient(135deg,#f59e0b,#f97316)}.mod-treino .mc-glow{background:#f59e0b}
 .mod-diario .mc-icon{background:linear-gradient(135deg,#8b5cf6,#a78bfa)}.mod-diario .mc-glow{background:#8b5cf6}
 .mod-checklist .mc-icon{background:linear-gradient(135deg,#10b981,#6ee7b7)}.mod-checklist .mc-glow{background:#10b981}
+.mod-producao .mc-icon{background:linear-gradient(135deg,#f43f5e,#fb7185)}.mod-producao .mc-glow{background:#f43f5e}
 .colab-section{padding:0 40px 40px;max-width:1200px;margin:0 auto;width:100%}
 .colab-card-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
 .colab-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
@@ -119,7 +118,18 @@ select.form-control{cursor:pointer}
 .user-name{font-size:12px;color:var(--purple-light);font-weight:600}
 .btn-logout{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-bdr);padding:6px 14px;border-radius:var(--radius-xs);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--trans)}
 .btn-logout:hover{background:var(--danger);color:#fff}
-@media(max-width:768px){.hero{padding:40px 20px 30px}.hero-title{font-size:26px}.modules-section{padding:24px 16px}.modules-grid{grid-template-columns:1fr}.top-bar{padding:10px 16px;flex-wrap:wrap;gap:8px}.main-footer{padding:16px}.colab-section{padding:0 16px 24px}.colab-form{grid-template-columns:1fr}}
+.aniv-section{padding:0 40px 20px;max-width:1200px;margin:0 auto;width:100%}
+.aniv-card{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(124,58,237,.08));border:1px solid var(--warning-bdr);border-radius:16px;padding:20px 24px}
+.aniv-title{font-size:16px;font-weight:800;color:var(--warning);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.aniv-list{display:flex;flex-wrap:wrap;gap:10px}
+.aniv-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:260px}
+.aniv-av{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--warning),#f97316);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.aniv-nome{font-size:13px;font-weight:700;color:var(--text-1)}
+.aniv-info{font-size:11px;color:var(--text-2)}
+.aniv-dias{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px}
+.aniv-hoje{background:var(--success-bg);color:var(--success);border:1px solid var(--success-bdr)}
+.aniv-breve{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-bdr)}
+@media(max-width:768px){.hero{padding:40px 20px 30px}.hero-title{font-size:26px}.modules-section{padding:24px 16px}.modules-grid{grid-template-columns:1fr}.top-bar{padding:10px 16px;flex-wrap:wrap;gap:8px}.main-footer{padding:16px}.colab-section{padding:0 16px 24px}.colab-form{grid-template-columns:1fr}.aniv-section{padding:0 16px 16px}}
 </style>
 </head>
 <body>
@@ -127,9 +137,9 @@ select.form-control{cursor:pointer}
 <div class="top-bar">
   <div class="user-info">
     <span class="user-name" id="user-display">Carregando...</span>
-    <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
+    <button class="btn-logout" onclick="doLogout()">Sair</button>
   </div>
-  <div class="clock-badge"><span>🕐</span><span id="clock">—</span></div>
+  <div class="clock-badge"><span id="clock">—</span></div>
 </div>
 
 <div class="hero">
@@ -142,7 +152,7 @@ select.form-control{cursor:pointer}
     <h1 class="hero-title">ProGestão — Montagem</h1>
     <p class="hero-sub">Sistema centralizado de gestão do setor de montagem.</p>
     <div class="hero-stats">
-      <div class="hero-stat hs-purple"><div class="hero-stat-val">6</div><div class="hero-stat-lab">Módulos Ativos</div></div>
+      <div class="hero-stat hs-purple"><div class="hero-stat-val">7</div><div class="hero-stat-lab">Módulos Ativos</div></div>
       <div class="hero-stat hs-green"><div class="hero-stat-val" id="hs-colabs">0</div><div class="hero-stat-lab">Colaboradores</div></div>
       <div class="hero-stat hs-blue"><div class="hero-stat-val" id="hs-ferramentas">0</div><div class="hero-stat-lab">Ferramentas</div></div>
       <div class="hero-stat hs-yellow"><div class="hero-stat-val" id="hs-epis">0</div><div class="hero-stat-lab">EPIs</div></div>
@@ -162,6 +172,15 @@ select.form-control{cursor:pointer}
     <a href="/treinamentos" class="module-card mod-treino"><div class="mc-glow"></div><div class="mc-header"><div class="mc-icon">📚</div><div class="mc-info"><div class="mc-title">Treinamentos</div><div class="mc-desc">Treinamentos, registros, lista de presença, vencimentos e certificações.</div></div></div><div class="mc-footer"><span class="mc-btn">Acessar módulo →</span><span class="mc-badge" style="background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-bdr)">Ativo</span></div></a>
     <a href="/diario-bordo" class="module-card mod-diario"><div class="mc-glow"></div><div class="mc-header"><div class="mc-icon">📓</div><div class="mc-info"><div class="mc-title">Diário de Bordo</div><div class="mc-desc">Registro de acontecimentos diários, pendências e resumo de turno.</div></div></div><div class="mc-footer"><span class="mc-btn">Acessar módulo →</span><span class="mc-badge" style="background:var(--purple-bg);color:var(--purple-light);border:1px solid var(--purple-glow)">Ativo</span></div></a>
     <a href="/checklist" class="module-card mod-checklist"><div class="mc-glow"></div><div class="mc-header"><div class="mc-icon">☑️</div><div class="mc-info"><div class="mc-title">Checklist</div><div class="mc-desc">Controle de atividades periódicas com frequências configuráveis.</div></div></div><div class="mc-footer"><span class="mc-btn">Acessar módulo →</span><span class="mc-badge" style="background:var(--success-bg);color:var(--success);border:1px solid var(--success-bdr)">Ativo</span></div></a>
+    <a href="/producao" class="module-card mod-producao"><div class="mc-glow"></div><div class="mc-header"><div class="mc-icon">📊</div><div class="mc-info"><div class="mc-title">Produção</div><div class="mc-desc">Plano mensal de produção, apontamento diário, metas e dashboard de acompanhamento.</div></div></div><div class="mc-footer"><span class="mc-btn">Acessar módulo →</span><span class="mc-badge" style="background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-bdr)">Ativo</span></div></a>
+  </div>
+</div>
+
+<!-- Alertas de Aniversário de Empresa -->
+<div class="aniv-section" id="aniv-section" style="display:none">
+  <div class="aniv-card">
+    <div class="aniv-title">🎂 Aniversários de Empresa (próximos 7 dias)</div>
+    <div class="aniv-list" id="aniv-list"></div>
   </div>
 </div>
 
@@ -171,7 +190,7 @@ select.form-control{cursor:pointer}
       <div class="colab-header-title"><span>👷</span> Colaboradores</div>
       <div class="colab-header-right">
         <div class="search-wrap" style="max-width:240px"><span class="search-ico">🔍</span><input class="form-control" id="colab-busca" placeholder="Buscar..." oninput="renderColabs()"></div>
-        <button class="btn btn-purple btn-sm" onclick="toggleForm()">＋ Novo Colaborador</button>
+        <button class="btn btn-purple btn-sm" onclick="toggleForm()">+ Novo Colaborador</button>
       </div>
     </div>
     <div id="colab-form-area" style="display:none;padding:20px 24px;border-bottom:1px solid var(--border);background:var(--bg-card-2)">
@@ -183,8 +202,9 @@ select.form-control{cursor:pointer}
         <div class="form-group"><label class="form-label">Setor</label><input type="text" class="form-control" id="c-setor" placeholder="Setor" value="Montagem"></div>
         <div class="form-group"><label class="form-label">Turno</label><select class="form-control" id="c-turno"><option value="1º Turno">1º Turno</option><option value="2º Turno">2º Turno</option></select></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-control" id="c-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Férias">Férias</option><option value="Afastado">Afastado</option></select></div>
+        <div class="form-group"><label class="form-label">Data Admissão</label><input type="date" class="form-control" id="c-admissao"></div>
       </div>
-      <div class="btn-actions"><button class="btn btn-purple" onclick="salvarColab()">💾 Salvar</button><button class="btn btn-ghost" onclick="cancelarForm()">Cancelar</button></div>
+      <div class="btn-actions"><button class="btn btn-purple" onclick="salvarColab()">Salvar</button><button class="btn btn-ghost" onclick="cancelarForm()">Cancelar</button></div>
     </div>
     <div class="colab-body"><div class="colab-grid" id="colab-grid"></div></div>
   </div>
@@ -194,7 +214,7 @@ select.form-control{cursor:pointer}
   <div class="footer-text">© 2026 <strong>ProGestão</strong> — Sistema de Gestão do Setor de Montagem</div>
 </footer>
 
-<div class="overlay" id="m-del-colab"><div class="modal modal-sm"><div class="modal-title">⚠️ Excluir Colaborador</div><p style="color:var(--text-2);font-size:13px;margin-bottom:18px">Tem certeza que deseja excluir este colaborador?</p><input type="hidden" id="del-colab-id"><div class="btn-actions" style="justify-content:flex-end"><button class="btn btn-ghost" onclick="closeM('m-del-colab')">Cancelar</button><button class="btn btn-danger" onclick="confirmarDelColab()">Excluir</button></div></div></div>
+<div class="overlay" id="m-del-colab"><div class="modal modal-sm"><div class="modal-title">Excluir Colaborador</div><p style="color:var(--text-2);font-size:13px;margin-bottom:18px">Tem certeza que deseja excluir este colaborador?</p><input type="hidden" id="del-colab-id"><div class="btn-actions" style="justify-content:flex-end"><button class="btn btn-ghost" onclick="closeM('m-del-colab')">Cancelar</button><button class="btn btn-danger" onclick="confirmarDelColab()">Excluir</button></div></div></div>
 
 <div id="toast"></div>
 
@@ -213,10 +233,11 @@ let colaboradores = [];
 
 /* ══ Helpers ══ */
 function inic(n){if(!n)return'?';const p=n.trim().split(/\s+/);return(p[0][0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();}
-function stBadge(s){const m={'Ativo':['badge-success','🟢'],'Inativo':['badge-danger','🔴'],'Férias':['badge-warning','🌴'],'Afastado':['badge-info','🏥']};const d=m[s]||['badge-ghost','⚪'];return`<span class="badge ${d[0]}">${d[1]} ${s||'Ativo'}</span>`;}
-function toast(msg,type='success'){const d=document.getElementById('toast');const t=document.createElement('div');t.className='toast-item toast-'+type;t.textContent=msg;d.appendChild(t);setTimeout(()=>t.remove(),3500);}
+function stBadge(s){const m={'Ativo':['badge-success','🟢'],'Inativo':['badge-danger','🔴'],'Férias':['badge-warning','🌴'],'Afastado':['badge-info','🏥']};const d=m[s]||['badge-ghost','⚪'];return'<span class="badge '+d[0]+'">'+d[1]+' '+(s||'Ativo')+'</span>';}
+function toast(msg,type){type=type||'success';var d=document.getElementById('toast');var t=document.createElement('div');t.className='toast-item toast-'+type;t.textContent=msg;d.appendChild(t);setTimeout(function(){t.remove()},3500);}
 function openM(id){document.getElementById(id).classList.add('show');}
 function closeM(id){document.getElementById(id).classList.remove('show');}
+function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('pt-BR');}
 
 /* ══ Logout ══ */
 async function doLogout(){
@@ -233,30 +254,41 @@ setInterval(updateClock,1000);
 /* ══ Colaboradores CRUD via API ══ */
 function toggleForm(){document.getElementById('colab-form-area').style.display='block';document.getElementById('c-nome').focus();}
 function cancelarForm(){document.getElementById('colab-form-area').style.display='none';resetForm();}
-function resetForm(){document.getElementById('colab-edit-id').value='';document.getElementById('c-nome').value='';document.getElementById('c-mat').value='';document.getElementById('c-cargo').value='';document.getElementById('c-setor').value='Montagem';document.getElementById('c-turno').value='1º Turno';document.getElementById('c-status').value='Ativo';}
+function resetForm(){
+  document.getElementById('colab-edit-id').value='';
+  document.getElementById('c-nome').value='';
+  document.getElementById('c-mat').value='';
+  document.getElementById('c-cargo').value='';
+  document.getElementById('c-setor').value='Montagem';
+  document.getElementById('c-turno').value='1º Turno';
+  document.getElementById('c-status').value='Ativo';
+  document.getElementById('c-admissao').value='';
+}
 
 async function salvarColab(){
-  const editId=document.getElementById('colab-edit-id').value;
-  const nome=document.getElementById('c-nome').value.trim();
-  const mat=document.getElementById('c-mat').value.trim();
-  const cargo=document.getElementById('c-cargo').value.trim();
-  const setor=document.getElementById('c-setor').value.trim();
-  const turno=document.getElementById('c-turno').value;
-  const status=document.getElementById('c-status').value;
+  var editId=document.getElementById('colab-edit-id').value;
+  var nome=document.getElementById('c-nome').value.trim();
+  var mat=document.getElementById('c-mat').value.trim();
+  var cargo=document.getElementById('c-cargo').value.trim();
+  var setor=document.getElementById('c-setor').value.trim();
+  var turno=document.getElementById('c-turno').value;
+  var status=document.getElementById('c-status').value;
+  var dt_admissao=document.getElementById('c-admissao').value||null;
   if(!nome){toast('Informe o nome do colaborador.','danger');return;}
   if(editId){
-    await api('/api/colaboradores/'+editId,'PUT',{nome,mat,cargo,setor,turno,status});
+    await api('/api/colaboradores/'+editId,'PUT',{nome:nome,mat:mat,cargo:cargo,setor:setor,turno:turno,status:status,dt_admissao:dt_admissao});
     toast('Colaborador atualizado!');
   }else{
-    await api('/api/colaboradores','POST',{nome,mat,cargo,setor,turno,status});
+    await api('/api/colaboradores','POST',{nome:nome,mat:mat,cargo:cargo,setor:setor,turno:turno,status:status,dt_admissao:dt_admissao});
     toast('Colaborador cadastrado!');
   }
   cancelarForm();
   await carregarColabs();
+  await carregarAniversarios();
 }
 
 function editarColab(id){
-  const c=colaboradores.find(x=>x.id==id);if(!c)return;
+  var c=colaboradores.find(function(x){return x.id==id;});if(!c)return;
   document.getElementById('colab-edit-id').value=c.id;
   document.getElementById('c-nome').value=c.nome;
   document.getElementById('c-mat').value=c.mat||'';
@@ -264,15 +296,17 @@ function editarColab(id){
   document.getElementById('c-setor').value=c.setor||'Montagem';
   document.getElementById('c-turno').value=c.turno||'1º Turno';
   document.getElementById('c-status').value=c.status||'Ativo';
+  document.getElementById('c-admissao').value=c.dt_admissao?c.dt_admissao.slice(0,10):'';
   toggleForm();
 }
 
-let delColabId='';
+var delColabId='';
 function pedirDelColab(id){delColabId=id;openM('m-del-colab');}
 async function confirmarDelColab(){
   await api('/api/colaboradores/'+delColabId,'DELETE');
   closeM('m-del-colab');toast('Colaborador excluído.','info');
   await carregarColabs();
+  await carregarAniversarios();
 }
 
 async function carregarColabs(){
@@ -282,31 +316,49 @@ async function carregarColabs(){
 }
 
 function renderColabs(){
-  const busca=(document.getElementById('colab-busca').value||'').toLowerCase();
-  let cs=colaboradores;
-  if(busca)cs=cs.filter(c=>c.nome.toLowerCase().includes(busca)||(c.mat||'').includes(busca)||(c.cargo||'').toLowerCase().includes(busca));
-  const grid=document.getElementById('colab-grid');
+  var busca=(document.getElementById('colab-busca').value||'').toLowerCase();
+  var cs=colaboradores;
+  if(busca)cs=cs.filter(function(c){return c.nome.toLowerCase().indexOf(busca)>=0||(c.mat||'').indexOf(busca)>=0||(c.cargo||'').toLowerCase().indexOf(busca)>=0;});
+  var grid=document.getElementById('colab-grid');
   if(!cs.length){grid.innerHTML='<div style="color:var(--text-3);font-style:italic;grid-column:1/-1;text-align:center;padding:30px">Nenhum colaborador cadastrado.</div>';return;}
-  grid.innerHTML=cs.map(c=>`<div class="colab-item"><div class="colab-av">${inic(c.nome)}</div><div style="flex:1;min-width:0"><div class="colab-nome">${c.nome}</div><div class="colab-mat">Mat: ${c.mat||'—'}</div><div class="colab-cargo">${c.cargo||'Sem cargo'}${c.turno?' · '+c.turno:''}${c.setor?' · '+c.setor:''}</div><div class="colab-st">${stBadge(c.status)}</div></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editarColab(${c.id})">✏️</button><button class="btn btn-ghost btn-xs" onclick="pedirDelColab(${c.id})">🗑️</button></div></div>`).join('');
+  grid.innerHTML=cs.map(function(c){
+    var admTxt=c.dt_admissao?'Adm: '+fmtDate(c.dt_admissao):'';
+    return '<div class="colab-item"><div class="colab-av">'+inic(c.nome)+'</div><div style="flex:1;min-width:0"><div class="colab-nome">'+c.nome+'</div><div class="colab-mat">Mat: '+(c.mat||'—')+(admTxt?' | '+admTxt:'')+'</div><div class="colab-cargo">'+(c.cargo||'Sem cargo')+(c.turno?' · '+c.turno:'')+(c.setor?' · '+c.setor:'')+'</div><div class="colab-st">'+stBadge(c.status)+'</div></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editarColab('+c.id+')">✏️</button><button class="btn btn-ghost btn-xs" onclick="pedirDelColab('+c.id+')">🗑️</button></div></div>';
+  }).join('');
+}
+
+/* ══ Aniversários de Empresa ══ */
+async function carregarAniversarios(){
+  try{
+    var anivs=await api('/api/colaboradores/aniversarios-empresa')||[];
+    var sec=document.getElementById('aniv-section');
+    var list=document.getElementById('aniv-list');
+    if(!anivs.length){sec.style.display='none';return;}
+    sec.style.display='block';
+    list.innerHTML=anivs.map(function(a){
+      var dias=parseInt(a.dias_faltam);
+      var anos=parseInt(a.anos_empresa);
+      var diasClass=dias===0?'aniv-hoje':'aniv-breve';
+      var diasTxt=dias===0?'HOJE!':'em '+dias+' dia'+(dias>1?'s':'');
+      return '<div class="aniv-item"><div class="aniv-av">🎉</div><div style="flex:1"><div class="aniv-nome">'+a.nome+'</div><div class="aniv-info">'+anos+' ano'+(anos>1?'s':'')+' de empresa'+(a.cargo?' · '+a.cargo:'')+'</div></div><span class="aniv-dias '+diasClass+'">'+diasTxt+'</span></div>';
+    }).join('');
+  }catch(e){console.error('Erro aniversarios:',e);}
 }
 
 /* ══ Carregar Stats ══ */
 async function loadStats(){
   try{
-    const [ferrs,epis]=await Promise.all([
-      api('/api/ferramentas'),
-      api('/api/epis')
-    ]);
-    document.getElementById('hs-ferramentas').textContent=(ferrs||[]).length;
-    document.getElementById('hs-epis').textContent=(epis||[]).length;
+    var results=await Promise.all([api('/api/ferramentas'),api('/api/epis')]);
+    document.getElementById('hs-ferramentas').textContent=(results[0]||[]).length;
+    document.getElementById('hs-epis').textContent=(results[1]||[]).length;
   }catch(e){console.error(e);}
 }
 
 /* ══ User Info ══ */
 async function loadUser(){
   try{
-    const u=await api('/api/me');
-    if(u&&u.nome)document.getElementById('user-display').textContent='👤 '+u.nome;
+    var u=await api('/api/me');
+    if(u&&u.nome)document.getElementById('user-display').textContent=u.nome;
   }catch(e){}
 }
 
@@ -316,6 +368,7 @@ async function init(){
   await loadUser();
   await carregarColabs();
   await loadStats();
+  await carregarAniversarios();
 }
 window.onload=init;
 </script>
