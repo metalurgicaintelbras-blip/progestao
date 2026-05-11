@@ -186,12 +186,10 @@ select.form-control{cursor:pointer}
 
 <!-- Alertas de Aniversário -->
 <div class="aniv-section" id="aniv-section" style="display:none">
-  <!-- Aniversários de Empresa -->
   <div class="aniv-card aniv-card-empresa" id="aniv-empresa-card" style="display:none">
     <div class="aniv-title aniv-title-empresa">🏭 Aniversários de Empresa (próximos 7 dias)</div>
     <div class="aniv-list" id="aniv-empresa-list"></div>
   </div>
-  <!-- Aniversários Pessoais -->
   <div class="aniv-card aniv-card-pessoal" id="aniv-pessoal-card" style="display:none">
     <div class="aniv-title aniv-title-pessoal">🎂 Aniversários (próximos 7 dias)</div>
     <div class="aniv-list" id="aniv-pessoal-list"></div>
@@ -253,7 +251,16 @@ function stBadge(s){var m={'Ativo':['badge-success','🟢'],'Inativo':['badge-da
 function toast(msg,type){type=type||'success';var d=document.getElementById('toast');var t=document.createElement('div');t.className='toast-item toast-'+type;t.textContent=msg;d.appendChild(t);setTimeout(function(){t.remove();},3500);}
 function openM(id){document.getElementById(id).classList.add('show');}
 function closeM(id){document.getElementById(id).classList.remove('show');}
-function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('pt-BR');}
+
+/* ══ CORREÇÃO DE FUSO — formata data SEM converter timezone ══ */
+function fmtDate(d){
+  if(!d) return '—';
+  // Pega só a parte YYYY-MM-DD da string (ignora hora/timezone)
+  var s = String(d).slice(0,10);
+  var partes = s.split('-');
+  if(partes.length !== 3) return '—';
+  return partes[2] + '/' + partes[1] + '/' + partes[0];
+}
 
 /* ══ Logout ══ */
 async function doLogout(){
@@ -315,8 +322,8 @@ function editarColab(id){
   document.getElementById('c-setor').value=c.setor||'Montagem';
   document.getElementById('c-turno').value=c.turno||'1º Turno';
   document.getElementById('c-status').value=c.status||'Ativo';
-  document.getElementById('c-admissao').value=c.dt_admissao?c.dt_admissao.slice(0,10):'';
-  document.getElementById('c-nascimento').value=c.dt_nascimento?c.dt_nascimento.slice(0,10):'';
+  document.getElementById('c-admissao').value=c.dt_admissao?String(c.dt_admissao).slice(0,10):'';
+  document.getElementById('c-nascimento').value=c.dt_nascimento?String(c.dt_nascimento).slice(0,10):'';
   toggleForm();
 }
 
