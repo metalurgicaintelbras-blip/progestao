@@ -28,9 +28,12 @@ async function initDB() {
         setor VARCHAR(100) DEFAULT 'Montagem',
         turno VARCHAR(50),
         status VARCHAR(30) DEFAULT 'Ativo',
+        dt_admissao DATE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS dt_admissao DATE;
 
       CREATE TABLE IF NOT EXISTS ferramentas (
         id SERIAL PRIMARY KEY,
@@ -244,6 +247,28 @@ async function initDB() {
         data DATE NOT NULL,
         hora TIME,
         created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS prod_planos (
+        id SERIAL PRIMARY KEY,
+        mes VARCHAR(7) NOT NULL,
+        codigo VARCHAR(100) NOT NULL,
+        descricao VARCHAR(300) NOT NULL,
+        meta_mensal INTEGER NOT NULL DEFAULT 0,
+        obs TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS prod_apontamentos (
+        id SERIAL PRIMARY KEY,
+        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE CASCADE,
+        data DATE NOT NULL,
+        qtd_realizada INTEGER NOT NULL DEFAULT 0,
+        atingiu_meta BOOLEAN DEFAULT TRUE,
+        justificativa TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(plano_id, data)
       );
 
       CREATE TABLE IF NOT EXISTS "session" (
