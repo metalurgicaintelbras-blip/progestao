@@ -9,78 +9,71 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a{color:var(--accent);text-decoration:none}
-/* TOP BAR */
 .topbar{background:var(--card);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .topbar .logo{font-size:1.2rem;font-weight:700;color:var(--accent)}
 .topbar .right{display:flex;align-items:center;gap:16px}
 .topbar .clock{background:var(--card2);padding:4px 12px;border-radius:20px;font-size:.85rem;color:var(--text2)}
 .topbar .user{font-size:.9rem;color:var(--text2)}
 .btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}
-.btn-danger{background:var(--red);color:#fff}
-.btn-danger:hover{opacity:.85}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:#2563eb}
-.btn-green{background:var(--green);color:#fff}
-.btn-green:hover{background:#16a34a}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
-.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-/* LAYOUT */
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.85}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#2563eb}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#16a34a}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .layout{display:flex;min-height:calc(100vh - 57px)}
 .sidebar{width:220px;background:var(--card);padding:16px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
 .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);color:var(--text2);font-size:.9rem;transition:.2s}
 .sidebar a:hover,.sidebar a.active{background:var(--accent);color:#fff}
 .main{flex:1;padding:24px;overflow-y:auto}
-/* KPIs */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
 .kpi{background:var(--card);padding:20px;border-radius:var(--radius);text-align:center}
-.kpi .num{font-size:2rem;font-weight:700}
-.kpi .lbl{font-size:.8rem;color:var(--text2);margin-top:4px}
-/* TABS */
+.kpi .num{font-size:2rem;font-weight:700}.kpi .lbl{font-size:.8rem;color:var(--text2);margin-top:4px}
 .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
 .tab{padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.2s}
 .tab:hover,.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-/* TABLE */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.88rem}
 th{background:var(--card2);color:var(--text2);font-weight:600;position:sticky;top:0}
 tr:hover{background:rgba(59,130,246,.08)}
-/* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px}
 .form-grid.full{grid-template-columns:1fr}
 .form-group{display:flex;flex-direction:column;gap:4px}
 .form-group label{font-size:.8rem;color:var(--text2)}
 .form-group input,.form-group select,.form-group textarea{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem}
 .form-group textarea{min-height:80px;resize:vertical}
-/* BADGE */
 .badge{padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}
 .badge-green{background:rgba(34,197,94,.15);color:var(--green)}
 .badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow)}
 .badge-red{background:rgba(239,68,68,.15);color:var(--red)}
 .badge-blue{background:rgba(59,130,246,.15);color:var(--accent)}
-/* TOAST */
 .toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:var(--radius);color:#fff;font-weight:600;z-index:9999;animation:slideIn .3s}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal{background:var(--card);border-radius:var(--radius);padding:28px;max-width:440px;width:90%}
+.modal{background:var(--card);border-radius:var(--radius);padding:28px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto}
 .modal h3{margin-bottom:12px}
 .modal .btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
-/* SEARCH */
 .search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 .search-bar input,.search-bar select{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem}
 .search-bar input{flex:1;min-width:200px}
-/* SECTION */
-.section{display:none}
-.section.active{display:block}
-/* RESPONSIVE */
+.section{display:none}.section.active{display:block}
+/* FOTO UPLOAD */
+.foto-upload{display:flex;flex-direction:column;gap:8px}
+.foto-upload label{font-size:.8rem;color:var(--text2)}
+.foto-drop{width:100%;min-height:120px;border:2px dashed var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative;overflow:hidden;background:var(--card2)}
+.foto-drop:hover{border-color:var(--accent)}
+.foto-drop.has-img{border-style:solid;border-color:var(--green)}
+.foto-drop img{max-width:100%;max-height:200px;object-fit:contain;border-radius:8px}
+.foto-drop .placeholder{text-align:center;color:var(--text2);font-size:.85rem;padding:12px}
+.foto-drop .placeholder span{font-size:2rem;display:block;margin-bottom:6px}
+.foto-actions{display:flex;gap:8px}
+.foto-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+.foto-modal-img{max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--radius)}
 @media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="topbar">
   <div class="logo"><a href="/">⚙ ProGestão</a> / EPIs</div>
   <div class="right">
@@ -91,7 +84,6 @@ tr:hover{background:rgba(59,130,246,.08)}
 </div>
 
 <div class="layout">
-<!-- SIDEBAR -->
 <nav class="sidebar">
   <a href="/">🏠 Início</a>
   <a href="/ferramentas">🔧 Ferramentas</a>
@@ -100,13 +92,12 @@ tr:hover{background:rgba(59,130,246,.08)}
   <a href="/treinamentos">📚 Treinamentos</a>
   <a href="/diario-bordo">📋 Diário Bordo</a>
   <a href="/checklist">✅ Checklist</a>
+  <a href="/producao">📊 Produção</a>
 </nav>
 
-<!-- MAIN -->
 <div class="main">
   <h2 style="margin-bottom:20px">🦺 Gestão de EPIs</h2>
 
-  <!-- KPIs -->
   <div class="kpis">
     <div class="kpi"><div class="num" id="k-total" style="color:var(--accent)">0</div><div class="lbl">Total EPIs</div></div>
     <div class="kpi"><div class="num" id="k-entregas" style="color:var(--green)">0</div><div class="lbl">Entregas</div></div>
@@ -114,7 +105,6 @@ tr:hover{background:rgba(59,130,246,.08)}
     <div class="kpi"><div class="num" id="k-vencidos" style="color:var(--red)">0</div><div class="lbl">Vencidos</div></div>
   </div>
 
-  <!-- TABS -->
   <div class="tabs">
     <div class="tab active" onclick="showTab('lista')">📋 Lista</div>
     <div class="tab" onclick="showTab('cadastro')">➕ Cadastro</div>
@@ -130,7 +120,7 @@ tr:hover{background:rgba(59,130,246,.08)}
       <button class="btn-sm btn-primary" onclick="showTab('cadastro')">+ Novo EPI</button>
     </div>
     <div class="tbl-wrap">
-      <table><thead><tr><th>Nome</th><th>Validade</th><th>Descrição</th><th>Entregas</th><th>Ações</th></tr></thead>
+      <table><thead><tr><th>Foto</th><th>Nome</th><th>Validade</th><th>Descrição</th><th>Entregas</th><th>Ações</th></tr></thead>
       <tbody id="tb-lista"></tbody></table>
     </div>
   </div>
@@ -145,6 +135,18 @@ tr:hover{background:rgba(59,130,246,.08)}
         <select id="f-dur-tipo"><option value="meses">Meses</option><option value="dias">Dias</option><option value="anos">Anos</option></select>
       </div>
       <div class="form-group"><label>Descrição</label><textarea id="f-desc"></textarea></div>
+    </div>
+    <!-- UPLOAD DE FOTO -->
+    <div class="foto-upload" style="margin-top:14px;max-width:700px">
+      <label>Foto do EPI (clique ou arraste)</label>
+      <div class="foto-drop" id="foto-drop" onclick="document.getElementById('foto-input').click()">
+        <div class="placeholder" id="foto-placeholder"><span>📷</span>Clique para selecionar ou arraste uma imagem</div>
+        <img id="foto-preview" style="display:none">
+      </div>
+      <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="handleFotoSelect(event)">
+      <div class="foto-actions">
+        <button class="btn-sm btn-ghost" onclick="limparFoto()" id="btn-limpar-foto" style="display:none">Remover foto</button>
+      </div>
     </div>
     <div style="margin-top:16px;display:flex;gap:10px">
       <button class="btn-sm btn-green" onclick="salvarEPI()">Salvar</button>
@@ -197,8 +199,8 @@ tr:hover{background:rgba(59,130,246,.08)}
     </div>
   </div>
 
-</div><!-- /main -->
-</div><!-- /layout -->
+</div>
+</div>
 
 <!-- MODAL DELETE -->
 <div class="modal-overlay" id="modal-del">
@@ -206,40 +208,112 @@ tr:hover{background:rgba(59,130,246,.08)}
     <h3>Confirmar Exclusão</h3>
     <p id="modal-del-msg">Tem certeza?</p>
     <div class="btns">
-      <button class="btn-sm btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-sm btn-ghost" onclick="fecharModal('modal-del')">Cancelar</button>
       <button class="btn-sm btn-danger" id="modal-del-btn">Excluir</button>
     </div>
   </div>
 </div>
 
+<!-- MODAL VER FOTO -->
+<div class="modal-overlay" id="modal-foto">
+  <div class="modal" style="text-align:center">
+    <h3 id="modal-foto-title">Foto do EPI</h3>
+    <img id="modal-foto-img" class="foto-modal-img" src="">
+    <div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModal('modal-foto')">Fechar</button></div>
+  </div>
+</div>
+
 <script>
 /* ============ GLOBALS ============ */
-let epis=[], entregas=[], colabs=[];
-let editId=null;
+var epis=[], entregas=[], colabs=[];
+var editId=null;
+var fotoBase64=null; // armazena a foto em base64
 
 /* ============ API HELPER ============ */
-const api={
-  async get(u){const r=await fetch(u);if(r.status===401)return location.href='/login';return r.json()},
-  async post(u,d){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401)return location.href='/login';return r.json()},
-  async put(u,d){const r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401)return location.href='/login';return r.json()},
-  async del(u){const r=await fetch(u,{method:'DELETE'});if(r.status===401)return location.href='/login';return r.json()}
+var api={
+  get:async function(u){var r=await fetch(u);if(r.status===401){location.href='/login';return null;}return r.json()},
+  post:async function(u,d){var r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null;}return r.json()},
+  put:async function(u,d){var r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null;}return r.json()},
+  del:async function(u){var r=await fetch(u,{method:'DELETE'});if(r.status===401){location.href='/login';return null;}return r.json()}
 };
 
 /* ============ UTILS ============ */
-function toast(msg,type='success'){const t=document.createElement('div');t.className='toast';t.style.background=type==='error'?'var(--red)':'var(--green)';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
-function fmt(d){if(!d)return'-';return new Date(d).toLocaleDateString('pt-BR')}
-function diffDays(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/(1000*60*60*24))}
+function toast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast';t.style.background=type==='error'?'var(--red)':'var(--green)';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000)}
+function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10);var p=s.split('-');if(p.length!==3)return'-';return p[2]+'/'+p[1]+'/'+p[0]}
+function diffDays(d){if(!d)return null;var s=String(d).slice(0,10);var parts=s.split('-');var target=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));var today=new Date();today.setHours(0,0,0,0);return Math.ceil((target-today)/(1000*60*60*24))}
 function calcValidade(dtEntrega,durQtd,durTipo){
   if(!dtEntrega||!durQtd||durQtd<=0)return null;
-  const d=new Date(dtEntrega);
+  var s=String(dtEntrega).slice(0,10);var parts=s.split('-');
+  var d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
   if(durTipo==='meses')d.setMonth(d.getMonth()+durQtd);
   else if(durTipo==='anos')d.setFullYear(d.getFullYear()+durQtd);
   else d.setDate(d.getDate()+durQtd);
-  return d.toISOString().split('T')[0];
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ============ FOTO — Upload, drag & drop, preview ============ */
+function handleFotoSelect(e){
+  var file=e.target.files[0];
+  if(file)processarFoto(file);
+}
+
+function processarFoto(file){
+  if(!file.type.startsWith('image/')){toast('Selecione uma imagem válida','error');return}
+  if(file.size>5*1024*1024){toast('Imagem muito grande (máx 5MB)','error');return}
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    fotoBase64=ev.target.result;
+    mostrarPreview(fotoBase64);
+  };
+  reader.readAsDataURL(file);
+}
+
+function mostrarPreview(src){
+  var img=document.getElementById('foto-preview');
+  var ph=document.getElementById('foto-placeholder');
+  var drop=document.getElementById('foto-drop');
+  var btnLimpar=document.getElementById('btn-limpar-foto');
+  img.src=src;
+  img.style.display='block';
+  ph.style.display='none';
+  drop.classList.add('has-img');
+  btnLimpar.style.display='inline-flex';
+}
+
+function limparFoto(){
+  fotoBase64=null;
+  var img=document.getElementById('foto-preview');
+  var ph=document.getElementById('foto-placeholder');
+  var drop=document.getElementById('foto-drop');
+  var btnLimpar=document.getElementById('btn-limpar-foto');
+  var input=document.getElementById('foto-input');
+  img.src='';
+  img.style.display='none';
+  ph.style.display='block';
+  drop.classList.remove('has-img');
+  btnLimpar.style.display='none';
+  input.value='';
+}
+
+// Drag & drop
+(function(){
+  var drop=document.getElementById('foto-drop');
+  if(!drop)return;
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.style.borderColor='var(--accent)';});
+  drop.addEventListener('dragleave',function(e){e.preventDefault();drop.style.borderColor='';});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.style.borderColor='';if(e.dataTransfer.files.length)processarFoto(e.dataTransfer.files[0]);});
+})();
+
+function verFoto(id){
+  var e=epis.find(function(x){return x.id===id});
+  if(!e||!e.foto)return;
+  document.getElementById('modal-foto-title').textContent=e.nome;
+  document.getElementById('modal-foto-img').src=e.foto;
+  document.getElementById('modal-foto').classList.add('show');
 }
 
 /* ============ CLOCK ============ */
-function updateClock(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
+function updateClock(){var n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
 setInterval(updateClock,1000);updateClock();
 
 /* ============ LOGOUT ============ */
@@ -247,22 +321,25 @@ async function doLogout(){await fetch('/api/logout',{method:'POST'});location.hr
 
 /* ============ TABS ============ */
 function showTab(t){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
+  document.querySelectorAll('.tab').forEach(function(s){s.classList.remove('active')});
   document.getElementById('sec-'+t).classList.add('active');
-  event.target.classList.add('active');
-  if(t==='entregas'){populateSelects()}
-  if(t==='alertas'){renderAlertas()}
-  if(t==='relatorios'){renderResumo()}
+  if(event&&event.target)event.target.classList.add('active');
+  if(t==='entregas')populateSelects();
+  if(t==='alertas')renderAlertas();
+  if(t==='relatorios')renderResumo();
 }
 
 /* ============ LOAD DATA ============ */
 async function loadAll(){
-  [epis,entregas,colabs]=await Promise.all([
+  var results=await Promise.all([
     api.get('/api/epis'),
     api.get('/api/epis/entregas/todos'),
     api.get('/api/colaboradores')
   ]);
+  epis=results[0]||[];
+  entregas=results[1]||[];
+  colabs=results[2]||[];
   updateKPIs();
   renderLista();
   renderEntregas();
@@ -272,12 +349,12 @@ async function loadAll(){
 function updateKPIs(){
   document.getElementById('k-total').textContent=epis.length;
   document.getElementById('k-entregas').textContent=entregas.length;
-  let vencer=0,vencidos=0;
-  entregas.forEach(e=>{
-    const epi=epis.find(x=>x.id===e.epi_id);
+  var vencer=0,vencidos=0;
+  entregas.forEach(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
     if(epi&&epi.dur_qtd>0){
-      const val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
-      const dd=diffDays(val);
+      var val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
+      var dd=diffDays(val);
       if(dd!==null){if(dd<0)vencidos++;else if(dd<=30)vencer++}
     }
   });
@@ -287,36 +364,46 @@ function updateKPIs(){
 
 /* ============ LISTA ============ */
 function renderLista(){
-  const q=(document.getElementById('search-epi').value||'').toLowerCase();
-  const filtered=epis.filter(e=>e.nome.toLowerCase().includes(q));
-  const tb=document.getElementById('tb-lista');
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Nenhum EPI cadastrado</td></tr>';return}
-  tb.innerHTML=filtered.map(e=>{
-    const cnt=entregas.filter(x=>x.epi_id===e.id).length;
-    const valTxt=e.dur_qtd>0?e.dur_qtd+' '+(e.dur_tipo||'meses'):'Sem validade';
-    return `<tr>
-      <td><strong>${e.nome}</strong></td>
-      <td>${valTxt}</td>
-      <td>${e.descricao||'-'}</td>
-      <td><span class="badge badge-blue">${cnt}</span></td>
-      <td>
-        <button class="btn-sm btn-ghost" onclick="editarEPI(${e.id})">✏</button>
-        <button class="btn-sm btn-danger" onclick="confirmarDel('epi',${e.id},'${e.nome}')">🗑</button>
-      </td></tr>`;
+  var q=(document.getElementById('search-epi').value||'').toLowerCase();
+  var filtered=epis.filter(function(e){return e.nome.toLowerCase().indexOf(q)>=0});
+  var tb=document.getElementById('tb-lista');
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum EPI cadastrado</td></tr>';return}
+  tb.innerHTML=filtered.map(function(e){
+    var cnt=entregas.filter(function(x){return x.epi_id===e.id}).length;
+    var valTxt=e.dur_qtd>0?e.dur_qtd+' '+(e.dur_tipo||'meses'):'Sem validade';
+    var fotoHtml=e.foto?'<img src="'+e.foto+'" class="foto-thumb" onclick="verFoto('+e.id+')" title="Clique para ampliar">':'<span style="color:var(--text2);font-size:11px">Sem foto</span>';
+    return '<tr>'+
+      '<td>'+fotoHtml+'</td>'+
+      '<td><strong>'+e.nome+'</strong></td>'+
+      '<td>'+valTxt+'</td>'+
+      '<td>'+(e.descricao||'-')+'</td>'+
+      '<td><span class="badge badge-blue">'+cnt+'</span></td>'+
+      '<td>'+
+        '<button class="btn-sm btn-ghost" onclick="editarEPI('+e.id+')">✏</button> '+
+        '<button class="btn-sm btn-danger" onclick="confirmarDel(\'epi\','+e.id+',\''+e.nome.replace(/'/g,"\\'")+'\')">🗑</button>'+
+      '</td></tr>';
   }).join('');
 }
 
 /* ============ FORM EPI ============ */
 function editarEPI(id){
-  const e=epis.find(x=>x.id===id);if(!e)return;
+  var e=epis.find(function(x){return x.id===id});if(!e)return;
   editId=id;
   document.getElementById('form-title').textContent='Editar EPI';
   document.getElementById('f-nome').value=e.nome;
   document.getElementById('f-dur-qtd').value=e.dur_qtd||0;
   document.getElementById('f-dur-tipo').value=e.dur_tipo||'meses';
   document.getElementById('f-desc').value=e.descricao||'';
+  // Carregar foto existente
+  if(e.foto){
+    fotoBase64=e.foto;
+    mostrarPreview(e.foto);
+  }else{
+    limparFoto();
+  }
   showTab('cadastro');
 }
+
 function cancelarForm(){
   editId=null;
   document.getElementById('form-title').textContent='Novo EPI';
@@ -324,12 +411,20 @@ function cancelarForm(){
   document.getElementById('f-dur-qtd').value=0;
   document.getElementById('f-dur-tipo').value='meses';
   document.getElementById('f-desc').value='';
+  limparFoto();
   showTab('lista');
 }
+
 async function salvarEPI(){
-  const nome=document.getElementById('f-nome').value.trim();
+  var nome=document.getElementById('f-nome').value.trim();
   if(!nome)return toast('Nome obrigatório','error');
-  const body={nome,dur_qtd:parseInt(document.getElementById('f-dur-qtd').value)||0,dur_tipo:document.getElementById('f-dur-tipo').value,descricao:document.getElementById('f-desc').value.trim()||null};
+  var body={
+    nome:nome,
+    dur_qtd:parseInt(document.getElementById('f-dur-qtd').value)||0,
+    dur_tipo:document.getElementById('f-dur-tipo').value,
+    descricao:document.getElementById('f-desc').value.trim()||null,
+    foto:fotoBase64||null
+  };
   if(editId){await api.put('/api/epis/'+editId,body);toast('EPI atualizado!')}
   else{await api.post('/api/epis',body);toast('EPI cadastrado!')}
   cancelarForm();await loadAll();
@@ -337,124 +432,127 @@ async function salvarEPI(){
 
 /* ============ ENTREGAS ============ */
 function populateSelects(){
-  const se=document.getElementById('e-epi');
-  se.innerHTML='<option value="">Selecione...</option>'+epis.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
-  const sc=document.getElementById('e-colab');
-  sc.innerHTML='<option value="">Selecione...</option>'+colabs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  document.getElementById('e-data').value=new Date().toISOString().split('T')[0];
+  var se=document.getElementById('e-epi');
+  se.innerHTML='<option value="">Selecione...</option>'+epis.map(function(e){return'<option value="'+e.id+'">'+e.nome+'</option>'}).join('');
+  var sc=document.getElementById('e-colab');
+  sc.innerHTML='<option value="">Selecione...</option>'+colabs.map(function(c){return'<option value="'+c.id+'">'+c.nome+'</option>'}).join('');
+  var hoje=new Date();
+  document.getElementById('e-data').value=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0');
 }
+
 async function salvarEntrega(){
-  const epi_id=document.getElementById('e-epi').value;
-  const colaborador_id=document.getElementById('e-colab').value;
-  const dt=document.getElementById('e-data').value;
+  var epi_id=document.getElementById('e-epi').value;
+  var colaborador_id=document.getElementById('e-colab').value;
+  var dt=document.getElementById('e-data').value;
   if(!epi_id||!colaborador_id||!dt)return toast('Preencha todos os campos','error');
-  await api.post('/api/epis/entregas',{epi_id:parseInt(epi_id),colaborador_id:parseInt(colaborador_id),dt});
+  await api.post('/api/epis/entregas',{epi_id:parseInt(epi_id),colaborador_id:parseInt(colaborador_id),dt:dt});
   toast('Entrega registrada!');await loadAll();
 }
+
 function renderEntregas(){
-  const q=(document.getElementById('search-entrega').value||'').toLowerCase();
-  const list=entregas.filter(e=>{
-    const epi=epis.find(x=>x.id===e.epi_id);
-    const name=(epi?epi.nome:'')+(e.colab_nome||'');
-    return name.toLowerCase().includes(q);
+  var q=(document.getElementById('search-entrega').value||'').toLowerCase();
+  var list=entregas.filter(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
+    var name=(epi?epi.nome:'')+(e.colab_nome||'');
+    return name.toLowerCase().indexOf(q)>=0;
   });
-  const tb=document.getElementById('tb-entregas');
+  var tb=document.getElementById('tb-entregas');
   if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhuma entrega</td></tr>';return}
-  tb.innerHTML=list.map(e=>{
-    const epi=epis.find(x=>x.id===e.epi_id);
-    const epiNome=epi?epi.nome:'?';
-    let valDate=null,statusBadge='<span class="badge badge-blue">Sem validade</span>';
+  tb.innerHTML=list.map(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
+    var epiNome=epi?epi.nome:'?';
+    var valDate=null,statusBadge='<span class="badge badge-blue">Sem validade</span>';
     if(epi&&epi.dur_qtd>0){
       valDate=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
-      const dd=diffDays(valDate);
+      var dd=diffDays(valDate);
       if(dd<0)statusBadge='<span class="badge badge-red">Vencido</span>';
       else if(dd<=30)statusBadge='<span class="badge badge-yellow">A vencer</span>';
       else statusBadge='<span class="badge badge-green">Válido</span>';
     }
-    return `<tr>
-      <td>${epiNome}</td>
-      <td>${e.colab_nome||'-'}</td>
-      <td>${fmt(e.dt)}</td>
-      <td>${valDate?fmt(valDate):'-'}</td>
-      <td>${statusBadge}</td>
-      <td><button class="btn-sm btn-danger" onclick="confirmarDel('entrega',${e.id},'entrega de ${epiNome}')">🗑</button></td>
-    </tr>`;
+    return '<tr>'+
+      '<td>'+epiNome+'</td>'+
+      '<td>'+(e.colab_nome||'-')+'</td>'+
+      '<td>'+fmtDate(e.dt)+'</td>'+
+      '<td>'+(valDate?fmtDate(valDate):'-')+'</td>'+
+      '<td>'+statusBadge+'</td>'+
+      '<td><button class="btn-sm btn-danger" onclick="confirmarDel(\'entrega\','+e.id+',\'entrega de '+epiNome.replace(/'/g,"\\'")+'\')">🗑</button></td>'+
+    '</tr>';
   }).join('');
 }
 
 /* ============ ALERTAS ============ */
 function renderAlertas(){
-  const rows=[];
-  entregas.forEach(e=>{
-    const epi=epis.find(x=>x.id===e.epi_id);
+  var rows=[];
+  entregas.forEach(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
     if(!epi||!epi.dur_qtd||epi.dur_qtd<=0)return;
-    const val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
-    const dd=diffDays(val);
+    var val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
+    var dd=diffDays(val);
     if(dd===null)return;
-    if(dd<=30)rows.push({epiNome:epi.nome,colab:e.colab_nome||'-',dt:e.dt,val,dd});
+    if(dd<=30)rows.push({epiNome:epi.nome,colab:e.colab_nome||'-',dt:e.dt,val:val,dd:dd});
   });
-  rows.sort((a,b)=>a.dd-b.dd);
-  const tb=document.getElementById('tb-alertas');
+  rows.sort(function(a,b){return a.dd-b.dd});
+  var tb=document.getElementById('tb-alertas');
   if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum alerta</td></tr>';return}
-  tb.innerHTML=rows.map(r=>{
-    const badge=r.dd<0?'<span class="badge badge-red">Vencido</span>':'<span class="badge badge-yellow">A vencer</span>';
-    return `<tr><td>${r.epiNome}</td><td>${r.colab}</td><td>${fmt(r.dt)}</td><td>${fmt(r.val)}</td><td>${r.dd} dias</td><td>${badge}</td></tr>`;
+  tb.innerHTML=rows.map(function(r){
+    var badge=r.dd<0?'<span class="badge badge-red">Vencido</span>':'<span class="badge badge-yellow">A vencer</span>';
+    return '<tr><td>'+r.epiNome+'</td><td>'+r.colab+'</td><td>'+fmtDate(r.dt)+'</td><td>'+fmtDate(r.val)+'</td><td>'+r.dd+' dias</td><td>'+badge+'</td></tr>';
   }).join('');
 }
 
 /* ============ RELATORIOS ============ */
 function renderResumo(){
-  const tb=document.getElementById('tb-resumo');
+  var tb=document.getElementById('tb-resumo');
   if(!epis.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
-  tb.innerHTML=epis.map(e=>{
-    const ents=entregas.filter(x=>x.epi_id===e.id);
-    let ativos=0,vencidos=0;
-    ents.forEach(en=>{
+  tb.innerHTML=epis.map(function(e){
+    var ents=entregas.filter(function(x){return x.epi_id===e.id});
+    var ativos=0,vencidos=0;
+    ents.forEach(function(en){
       if(e.dur_qtd>0){
-        const val=calcValidade(en.dt,e.dur_qtd,e.dur_tipo||'meses');
-        const dd=diffDays(val);
+        var val=calcValidade(en.dt,e.dur_qtd,e.dur_tipo||'meses');
+        var dd=diffDays(val);
         if(dd!==null&&dd<0)vencidos++;else ativos++;
       }else ativos++;
     });
-    return `<tr><td>${e.nome}</td><td>${ents.length}</td><td><span class="badge badge-green">${ativos}</span></td><td><span class="badge badge-red">${vencidos}</span></td></tr>`;
+    return '<tr><td>'+e.nome+'</td><td>'+ents.length+'</td><td><span class="badge badge-green">'+ativos+'</span></td><td><span class="badge badge-red">'+vencidos+'</span></td></tr>';
   }).join('');
 }
+
 function exportCSV(){
-  let csv='EPI;Colaborador;Data Entrega;Validade;Status\n';
-  entregas.forEach(e=>{
-    const epi=epis.find(x=>x.id===e.epi_id);
-    const nome=epi?epi.nome:'?';
-    let val='-',st='Sem validade';
+  var csv='EPI;Colaborador;Data Entrega;Validade;Status\n';
+  entregas.forEach(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
+    var nome=epi?epi.nome:'?';
+    var val='-',st='Sem validade';
     if(epi&&epi.dur_qtd>0){
       val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');
-      const dd=diffDays(val);
+      var dd=diffDays(val);
       st=dd<0?'Vencido':dd<=30?'A vencer':'Válido';
-      val=fmt(val);
+      val=fmtDate(val);
     }
-    csv+=`${nome};${e.colab_nome||'-'};${fmt(e.dt)};${val};${st}\n`;
+    csv+=nome+';'+(e.colab_nome||'-')+';'+fmtDate(e.dt)+';'+val+';'+st+'\n';
   });
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='epis_relatorio.csv';a.click();
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='epis_relatorio.csv';a.click();
 }
 
 /* ============ DELETE ============ */
-let delType='',delId=0;
+var delType='',delId=0;
 function confirmarDel(type,id,nome){
   delType=type;delId=id;
   document.getElementById('modal-del-msg').textContent='Excluir "'+nome+'"?';
   document.getElementById('modal-del').classList.add('show');
-  document.getElementById('modal-del-btn').onclick=async()=>{
+  document.getElementById('modal-del-btn').onclick=async function(){
     if(delType==='epi')await api.del('/api/epis/'+delId);
     else await api.del('/api/epis/entregas/'+delId);
-    toast('Excluído!');fecharModal();await loadAll();
+    toast('Excluído!');fecharModal('modal-del');await loadAll();
   };
 }
-function fecharModal(){document.getElementById('modal-del').classList.remove('show')}
+function fecharModal(id){document.getElementById(id).classList.remove('show')}
 
 /* ============ USER ============ */
 async function loadUser(){
-  try{const u=await api.get('/api/me');document.getElementById('user-display').textContent=u.nome||u.username}
-  catch(e){}
+  try{var u=await api.get('/api/me');if(u)document.getElementById('user-display').textContent=u.nome||u.username}catch(e){}
 }
 
 /* ============ INIT ============ */
