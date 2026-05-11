@@ -14,6 +14,7 @@
   --warning:#f59e0b;--warning-bg:rgba(245,158,11,.12);--warning-bdr:rgba(245,158,11,.3);
   --danger:#ef4444;--danger-bg:rgba(239,68,68,.12);--danger-bdr:rgba(239,68,68,.3);
   --info:#38bdf8;--info-bg:rgba(56,189,248,.12);--info-bdr:rgba(56,189,248,.3);
+  --pink:#f43f5e;--pink-bg:rgba(244,63,94,.12);--pink-bdr:rgba(244,63,94,.3);
   --text-1:#f0ecff;--text-2:#b8b0d8;--text-3:#7a708f;
   --radius:12px;--radius-sm:8px;--radius-xs:6px;
   --shadow:0 4px 24px rgba(0,0,0,.4);--shadow-lg:0 12px 48px rgba(0,0,0,.6);
@@ -119,16 +120,23 @@ select.form-control{cursor:pointer}
 .btn-logout{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-bdr);padding:6px 14px;border-radius:var(--radius-xs);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--trans)}
 .btn-logout:hover{background:var(--danger);color:#fff}
 .aniv-section{padding:0 40px 20px;max-width:1200px;margin:0 auto;width:100%}
-.aniv-card{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(124,58,237,.08));border:1px solid var(--warning-bdr);border-radius:16px;padding:20px 24px}
-.aniv-title{font-size:16px;font-weight:800;color:var(--warning);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.aniv-card{border-radius:16px;padding:20px 24px;margin-bottom:14px}
+.aniv-card-empresa{background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(124,58,237,.08));border:1px solid var(--warning-bdr)}
+.aniv-card-pessoal{background:linear-gradient(135deg,rgba(244,63,94,.08),rgba(124,58,237,.08));border:1px solid var(--pink-bdr)}
+.aniv-title{font-size:16px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.aniv-title-empresa{color:var(--warning)}
+.aniv-title-pessoal{color:var(--pink)}
 .aniv-list{display:flex;flex-wrap:wrap;gap:10px}
 .aniv-item{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:260px}
-.aniv-av{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--warning),#f97316);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.aniv-av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.aniv-av-empresa{background:linear-gradient(135deg,var(--warning),#f97316)}
+.aniv-av-pessoal{background:linear-gradient(135deg,var(--pink),#fb7185)}
 .aniv-nome{font-size:13px;font-weight:700;color:var(--text-1)}
 .aniv-info{font-size:11px;color:var(--text-2)}
 .aniv-dias{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px}
 .aniv-hoje{background:var(--success-bg);color:var(--success);border:1px solid var(--success-bdr)}
 .aniv-breve{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-bdr)}
+.aniv-breve-pink{background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-bdr)}
 @media(max-width:768px){.hero{padding:40px 20px 30px}.hero-title{font-size:26px}.modules-section{padding:24px 16px}.modules-grid{grid-template-columns:1fr}.top-bar{padding:10px 16px;flex-wrap:wrap;gap:8px}.main-footer{padding:16px}.colab-section{padding:0 16px 24px}.colab-form{grid-template-columns:1fr}.aniv-section{padding:0 16px 16px}}
 </style>
 </head>
@@ -176,11 +184,17 @@ select.form-control{cursor:pointer}
   </div>
 </div>
 
-<!-- Alertas de Aniversário de Empresa -->
+<!-- Alertas de Aniversário -->
 <div class="aniv-section" id="aniv-section" style="display:none">
-  <div class="aniv-card">
-    <div class="aniv-title">🎂 Aniversários de Empresa (próximos 7 dias)</div>
-    <div class="aniv-list" id="aniv-list"></div>
+  <!-- Aniversários de Empresa -->
+  <div class="aniv-card aniv-card-empresa" id="aniv-empresa-card" style="display:none">
+    <div class="aniv-title aniv-title-empresa">🏭 Aniversários de Empresa (próximos 7 dias)</div>
+    <div class="aniv-list" id="aniv-empresa-list"></div>
+  </div>
+  <!-- Aniversários Pessoais -->
+  <div class="aniv-card aniv-card-pessoal" id="aniv-pessoal-card" style="display:none">
+    <div class="aniv-title aniv-title-pessoal">🎂 Aniversários (próximos 7 dias)</div>
+    <div class="aniv-list" id="aniv-pessoal-list"></div>
   </div>
 </div>
 
@@ -203,6 +217,7 @@ select.form-control{cursor:pointer}
         <div class="form-group"><label class="form-label">Turno</label><select class="form-control" id="c-turno"><option value="1º Turno">1º Turno</option><option value="2º Turno">2º Turno</option></select></div>
         <div class="form-group"><label class="form-label">Status</label><select class="form-control" id="c-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option><option value="Férias">Férias</option><option value="Afastado">Afastado</option></select></div>
         <div class="form-group"><label class="form-label">Data Admissão</label><input type="date" class="form-control" id="c-admissao"></div>
+        <div class="form-group"><label class="form-label">Data Nascimento</label><input type="date" class="form-control" id="c-nascimento"></div>
       </div>
       <div class="btn-actions"><button class="btn btn-purple" onclick="salvarColab()">Salvar</button><button class="btn btn-ghost" onclick="cancelarForm()">Cancelar</button></div>
     </div>
@@ -220,21 +235,22 @@ select.form-control{cursor:pointer}
 
 <script>
 /* ══ API Helper ══ */
-async function api(url, method='GET', data=null) {
-  const opts = { method, headers: {'Content-Type':'application/json'} };
+async function api(url, method, data) {
+  method = method || 'GET';
+  var opts = { method: method, headers: {'Content-Type':'application/json'} };
   if (data) opts.body = JSON.stringify(data);
-  const r = await fetch(url, opts);
+  var r = await fetch(url, opts);
   if (r.status === 401) { window.location.href = '/login'; return null; }
   return r.json();
 }
 
 /* ══ Dados em cache ══ */
-let colaboradores = [];
+var colaboradores = [];
 
 /* ══ Helpers ══ */
-function inic(n){if(!n)return'?';const p=n.trim().split(/\s+/);return(p[0][0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();}
-function stBadge(s){const m={'Ativo':['badge-success','🟢'],'Inativo':['badge-danger','🔴'],'Férias':['badge-warning','🌴'],'Afastado':['badge-info','🏥']};const d=m[s]||['badge-ghost','⚪'];return'<span class="badge '+d[0]+'">'+d[1]+' '+(s||'Ativo')+'</span>';}
-function toast(msg,type){type=type||'success';var d=document.getElementById('toast');var t=document.createElement('div');t.className='toast-item toast-'+type;t.textContent=msg;d.appendChild(t);setTimeout(function(){t.remove()},3500);}
+function inic(n){if(!n)return'?';var p=n.trim().split(/\s+/);return(p[0][0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();}
+function stBadge(s){var m={'Ativo':['badge-success','🟢'],'Inativo':['badge-danger','🔴'],'Férias':['badge-warning','🌴'],'Afastado':['badge-info','🏥']};var d=m[s]||['badge-ghost','⚪'];return'<span class="badge '+d[0]+'">'+d[1]+' '+(s||'Ativo')+'</span>';}
+function toast(msg,type){type=type||'success';var d=document.getElementById('toast');var t=document.createElement('div');t.className='toast-item toast-'+type;t.textContent=msg;d.appendChild(t);setTimeout(function(){t.remove();},3500);}
 function openM(id){document.getElementById(id).classList.add('show');}
 function closeM(id){document.getElementById(id).classList.remove('show');}
 function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('pt-BR');}
@@ -251,7 +267,7 @@ function updateClock(){
 }
 setInterval(updateClock,1000);
 
-/* ══ Colaboradores CRUD via API ══ */
+/* ══ Colaboradores CRUD ══ */
 function toggleForm(){document.getElementById('colab-form-area').style.display='block';document.getElementById('c-nome').focus();}
 function cancelarForm(){document.getElementById('colab-form-area').style.display='none';resetForm();}
 function resetForm(){
@@ -263,6 +279,7 @@ function resetForm(){
   document.getElementById('c-turno').value='1º Turno';
   document.getElementById('c-status').value='Ativo';
   document.getElementById('c-admissao').value='';
+  document.getElementById('c-nascimento').value='';
 }
 
 async function salvarColab(){
@@ -274,12 +291,14 @@ async function salvarColab(){
   var turno=document.getElementById('c-turno').value;
   var status=document.getElementById('c-status').value;
   var dt_admissao=document.getElementById('c-admissao').value||null;
+  var dt_nascimento=document.getElementById('c-nascimento').value||null;
   if(!nome){toast('Informe o nome do colaborador.','danger');return;}
+  var payload={nome:nome,mat:mat,cargo:cargo,setor:setor,turno:turno,status:status,dt_admissao:dt_admissao,dt_nascimento:dt_nascimento};
   if(editId){
-    await api('/api/colaboradores/'+editId,'PUT',{nome:nome,mat:mat,cargo:cargo,setor:setor,turno:turno,status:status,dt_admissao:dt_admissao});
+    await api('/api/colaboradores/'+editId,'PUT',payload);
     toast('Colaborador atualizado!');
   }else{
-    await api('/api/colaboradores','POST',{nome:nome,mat:mat,cargo:cargo,setor:setor,turno:turno,status:status,dt_admissao:dt_admissao});
+    await api('/api/colaboradores','POST',payload);
     toast('Colaborador cadastrado!');
   }
   cancelarForm();
@@ -297,6 +316,7 @@ function editarColab(id){
   document.getElementById('c-turno').value=c.turno||'1º Turno';
   document.getElementById('c-status').value=c.status||'Ativo';
   document.getElementById('c-admissao').value=c.dt_admissao?c.dt_admissao.slice(0,10):'';
+  document.getElementById('c-nascimento').value=c.dt_nascimento?c.dt_nascimento.slice(0,10):'';
   toggleForm();
 }
 
@@ -323,25 +343,49 @@ function renderColabs(){
   if(!cs.length){grid.innerHTML='<div style="color:var(--text-3);font-style:italic;grid-column:1/-1;text-align:center;padding:30px">Nenhum colaborador cadastrado.</div>';return;}
   grid.innerHTML=cs.map(function(c){
     var admTxt=c.dt_admissao?'Adm: '+fmtDate(c.dt_admissao):'';
-    return '<div class="colab-item"><div class="colab-av">'+inic(c.nome)+'</div><div style="flex:1;min-width:0"><div class="colab-nome">'+c.nome+'</div><div class="colab-mat">Mat: '+(c.mat||'—')+(admTxt?' | '+admTxt:'')+'</div><div class="colab-cargo">'+(c.cargo||'Sem cargo')+(c.turno?' · '+c.turno:'')+(c.setor?' · '+c.setor:'')+'</div><div class="colab-st">'+stBadge(c.status)+'</div></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editarColab('+c.id+')">✏️</button><button class="btn btn-ghost btn-xs" onclick="pedirDelColab('+c.id+')">🗑️</button></div></div>';
+    var nascTxt=c.dt_nascimento?'Nasc: '+fmtDate(c.dt_nascimento):'';
+    var extras=[];if(admTxt)extras.push(admTxt);if(nascTxt)extras.push(nascTxt);
+    var extraLine=extras.length?' | '+extras.join(' | '):'';
+    return '<div class="colab-item"><div class="colab-av">'+inic(c.nome)+'</div><div style="flex:1;min-width:0"><div class="colab-nome">'+c.nome+'</div><div class="colab-mat">Mat: '+(c.mat||'—')+extraLine+'</div><div class="colab-cargo">'+(c.cargo||'Sem cargo')+(c.turno?' · '+c.turno:'')+(c.setor?' · '+c.setor:'')+'</div><div class="colab-st">'+stBadge(c.status)+'</div></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editarColab('+c.id+')">✏️</button><button class="btn btn-ghost btn-xs" onclick="pedirDelColab('+c.id+')">🗑️</button></div></div>';
   }).join('');
 }
 
-/* ══ Aniversários de Empresa ══ */
+/* ══ Aniversários ══ */
 async function carregarAniversarios(){
   try{
-    var anivs=await api('/api/colaboradores/aniversarios-empresa')||[];
+    var anivEmpresa=await api('/api/colaboradores/aniversarios-empresa')||[];
+    var anivPessoal=await api('/api/colaboradores/aniversarios-pessoal')||[];
     var sec=document.getElementById('aniv-section');
-    var list=document.getElementById('aniv-list');
-    if(!anivs.length){sec.style.display='none';return;}
-    sec.style.display='block';
-    list.innerHTML=anivs.map(function(a){
-      var dias=parseInt(a.dias_faltam);
-      var anos=parseInt(a.anos_empresa);
-      var diasClass=dias===0?'aniv-hoje':'aniv-breve';
-      var diasTxt=dias===0?'HOJE!':'em '+dias+' dia'+(dias>1?'s':'');
-      return '<div class="aniv-item"><div class="aniv-av">🎉</div><div style="flex:1"><div class="aniv-nome">'+a.nome+'</div><div class="aniv-info">'+anos+' ano'+(anos>1?'s':'')+' de empresa'+(a.cargo?' · '+a.cargo:'')+'</div></div><span class="aniv-dias '+diasClass+'">'+diasTxt+'</span></div>';
-    }).join('');
+    var temAlgo=anivEmpresa.length>0||anivPessoal.length>0;
+    sec.style.display=temAlgo?'block':'none';
+
+    // Empresa
+    var cardEmp=document.getElementById('aniv-empresa-card');
+    var listEmp=document.getElementById('aniv-empresa-list');
+    if(anivEmpresa.length){
+      cardEmp.style.display='block';
+      listEmp.innerHTML=anivEmpresa.map(function(a){
+        var dias=parseInt(a.dias_faltam);
+        var anos=parseInt(a.anos_empresa);
+        var diasClass=dias===0?'aniv-hoje':'aniv-breve';
+        var diasTxt=dias===0?'HOJE!':'em '+dias+' dia'+(dias>1?'s':'');
+        return '<div class="aniv-item"><div class="aniv-av aniv-av-empresa">🏭</div><div style="flex:1"><div class="aniv-nome">'+a.nome+'</div><div class="aniv-info">'+anos+' ano'+(anos>1?'s':'')+' de empresa'+(a.cargo?' · '+a.cargo:'')+'</div></div><span class="aniv-dias '+diasClass+'">'+diasTxt+'</span></div>';
+      }).join('');
+    }else{cardEmp.style.display='none';}
+
+    // Pessoal
+    var cardPes=document.getElementById('aniv-pessoal-card');
+    var listPes=document.getElementById('aniv-pessoal-list');
+    if(anivPessoal.length){
+      cardPes.style.display='block';
+      listPes.innerHTML=anivPessoal.map(function(a){
+        var dias=parseInt(a.dias_faltam);
+        var idade=parseInt(a.idade);
+        var diasClass=dias===0?'aniv-hoje':'aniv-breve-pink';
+        var diasTxt=dias===0?'HOJE!':'em '+dias+' dia'+(dias>1?'s':'');
+        return '<div class="aniv-item"><div class="aniv-av aniv-av-pessoal">🎂</div><div style="flex:1"><div class="aniv-nome">'+a.nome+'</div><div class="aniv-info">Faz '+idade+' anos'+(a.cargo?' · '+a.cargo:'')+'</div></div><span class="aniv-dias '+diasClass+'">'+diasTxt+'</span></div>';
+      }).join('');
+    }else{cardPes.style.display='none';}
   }catch(e){console.error('Erro aniversarios:',e);}
 }
 
@@ -356,10 +400,7 @@ async function loadStats(){
 
 /* ══ User Info ══ */
 async function loadUser(){
-  try{
-    var u=await api('/api/me');
-    if(u&&u.nome)document.getElementById('user-display').textContent=u.nome;
-  }catch(e){}
+  try{var u=await api('/api/me');if(u&&u.nome)document.getElementById('user-display').textContent=u.nome;}catch(e){}
 }
 
 /* ══ Init ══ */
