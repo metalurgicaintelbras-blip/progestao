@@ -29,11 +29,13 @@ async function initDB() {
         turno VARCHAR(50),
         status VARCHAR(30) DEFAULT 'Ativo',
         dt_admissao DATE,
+        dt_nascimento DATE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS dt_admissao DATE;
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS dt_nascimento DATE;
 
       CREATE TABLE IF NOT EXISTS ferramentas (
         id SERIAL PRIMARY KEY,
