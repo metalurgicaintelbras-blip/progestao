@@ -40,6 +40,7 @@ const treinamentosRoutes = require('./routes/treinamentos');
 const diarioRoutes = require('./routes/diario');
 const checklistRoutes = require('./routes/checklist');
 const exportRoutes = require('./routes/export');
+const producaoRoutes = require('./routes/producao');
 
 // ======================== REGISTRAR ROTAS API ========================
 
@@ -52,6 +53,7 @@ app.use('/api', treinamentosRoutes);
 app.use('/api', diarioRoutes);
 app.use('/api', checklistRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api', producaoRoutes);
 
 // ======================== PAGINA DE LOGIN ========================
 
@@ -63,7 +65,7 @@ app.get('/login', (req, res) => {
 
 const paginas = [
   'ferramentas', 'epis', 'banco-horas',
-  'treinamentos', 'diario-bordo', 'checklist'
+  'treinamentos', 'diario-bordo', 'checklist', 'producao'
 ];
 
 // Página principal
