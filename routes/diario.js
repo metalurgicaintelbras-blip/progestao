@@ -3,47 +3,62 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
-// ======================== REGISTROS ========================
+// ==================== REGISTROS ====================
 
+// Listar todos
 router.get('/db-registros', requireAuth, async (req, res) => {
-  try { res.json((await pool.query('SELECT * FROM db_registros ORDER BY data DESC, hora DESC NULLS LAST')).rows); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const r = await pool.query('SELECT * FROM db_registros ORDER BY data DESC, hora DESC');
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Criar
 router.post('/db-registros', requireAuth, async (req, res) => {
   try {
-    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos } = req.body;
+    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
     if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
     const r = await pool.query(
-      'INSERT INTO db_registros (data,hora,turno,categoria,prioridade,status,descricao,acao,envolvidos) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
-      [data, hora||null, turno||null, categoria||null, prioridade||'Baixa', status||'Resolvido', descricao, acao||null, JSON.stringify(envolvidos||[])]
+      `INSERT INTO db_registros (data,hora,turno,categoria,prioridade,status,descricao,acao,envolvidos,foto)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [data, hora||null, turno||null, categoria||null, prioridade||'Baixa', status||'Pendente',
+       descricao, acao||null, JSON.stringify(envolvidos||[]), foto||null]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Atualizar
 router.put('/db-registros/:id', requireAuth, async (req, res) => {
   try {
-    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos } = req.body;
+    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
+    if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
     const r = await pool.query(
-      'UPDATE db_registros SET data=$1,hora=$2,turno=$3,categoria=$4,prioridade=$5,status=$6,descricao=$7,acao=$8,envolvidos=$9,updated_at=NOW() WHERE id=$10 RETURNING *',
-      [data, hora, turno, categoria, prioridade, status, descricao, acao, JSON.stringify(envolvidos||[]), req.params.id]
+      `UPDATE db_registros SET data=$1,hora=$2,turno=$3,categoria=$4,prioridade=$5,status=$6,
+       descricao=$7,acao=$8,envolvidos=$9,foto=$10 WHERE id=$11 RETURNING *`,
+      [data, hora||null, turno||null, categoria||null, prioridade||'Baixa', status||'Pendente',
+       descricao, acao||null, JSON.stringify(envolvidos||[]), foto||null, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Excluir
 router.delete('/db-registros/:id', requireAuth, async (req, res) => {
-  try { await pool.query('DELETE FROM db_registros WHERE id=$1', [req.params.id]); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    await pool.query('DELETE FROM db_registros WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ======================== RESUMOS ========================
+// ==================== RESUMOS ====================
 
 router.get('/db-resumos', requireAuth, async (req, res) => {
-  try { res.json((await pool.query('SELECT * FROM db_resumos ORDER BY data DESC')).rows); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const r = await pool.query('SELECT * FROM db_resumos ORDER BY data DESC');
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.post('/db-resumos', requireAuth, async (req, res) => {
@@ -58,7 +73,6 @@ router.post('/db-resumos', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUT /api/db-resumos/:id — editar resumo
 router.put('/db-resumos/:id', requireAuth, async (req, res) => {
   try {
     const { data, turno, texto, obs } = req.body;
@@ -73,8 +87,10 @@ router.put('/db-resumos/:id', requireAuth, async (req, res) => {
 });
 
 router.delete('/db-resumos/:id', requireAuth, async (req, res) => {
-  try { await pool.query('DELETE FROM db_resumos WHERE id=$1', [req.params.id]); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    await pool.query('DELETE FROM db_resumos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;
