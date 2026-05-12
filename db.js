@@ -242,9 +242,14 @@ async function initDB() {
         inicio DATE NOT NULL,
         status VARCHAR(30) DEFAULT 'Ativa',
         descricao TEXT,
+        horario TIME,
+        horario2 TIME,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE cl_atividades ADD COLUMN IF NOT EXISTS horario TIME;
+      ALTER TABLE cl_atividades ADD COLUMN IF NOT EXISTS horario2 TIME;
 
       CREATE TABLE IF NOT EXISTS cl_execucoes (
         id SERIAL PRIMARY KEY,
