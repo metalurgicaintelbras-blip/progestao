@@ -58,6 +58,20 @@ router.post('/db-resumos', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PUT /api/db-resumos/:id — editar resumo
+router.put('/db-resumos/:id', requireAuth, async (req, res) => {
+  try {
+    const { data, turno, texto, obs } = req.body;
+    if (!data || !texto) return res.status(400).json({ error: 'Data e texto obrigatorios' });
+    const r = await pool.query(
+      'UPDATE db_resumos SET data=$1,turno=$2,texto=$3,obs=$4 WHERE id=$5 RETURNING *',
+      [data, turno||null, texto, obs||null, req.params.id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.delete('/db-resumos/:id', requireAuth, async (req, res) => {
   try { await pool.query('DELETE FROM db_resumos WHERE id=$1', [req.params.id]); res.json({ success: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
