@@ -21,6 +21,24 @@
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}.modal-overlay.show{display:flex}
 .modal{background:var(--card);border-radius:var(--radius);padding:28px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto}
 .modal h3{margin-bottom:12px}.modal .btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+/* TAGS / CHIPS de envolvidos */
+.tags-wrap{display:flex;flex-direction:column;gap:6px}
+.tags-input-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tags-input-row input{flex:1;min-width:160px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem;font-family:inherit}
+.tags-input-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.2)}
+.tags-list{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:16px;font-size:.8rem;font-weight:600;background:rgba(59,130,246,.15);color:var(--accent);border:1px solid rgba(59,130,246,.3)}
+.tag-chip .tag-x{cursor:pointer;font-size:.9rem;color:var(--red);margin-left:2px;line-height:1}
+.tag-chip .tag-x:hover{color:#fff}
+.tag-chip.tag-externo{background:rgba(139,92,246,.15);color:var(--accent2);border-color:rgba(139,92,246,.3)}
+.suggestions{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:50;display:none}
+.suggestions.show{display:block}
+.sug-item{padding:8px 12px;font-size:.88rem;cursor:pointer;transition:.15s}
+.sug-item:hover{background:var(--accent);color:#fff}
+.sug-item .sug-mat{font-size:.75rem;color:var(--text2);margin-left:6px}
+.sug-item:hover .sug-mat{color:rgba(255,255,255,.7)}
+.input-wrap{position:relative;flex:1;min-width:160px}
+.envolvidos-hint{font-size:.75rem;color:var(--text2);font-style:italic}
 @media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -60,7 +78,7 @@
       <select id="filter-pri" onchange="renderReg()"><option value="">Prioridade</option><option>Alta</option><option>Média</option><option>Baixa</option><option>Crítica</option></select>
       <select id="filter-st" onchange="renderReg()"><option value="">Status</option><option>Pendente</option><option>Em andamento</option><option>Resolvido</option></select>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Hora</th><th>Turno</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="tb-reg"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Hora</th><th>Turno</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Descrição</th><th>Envolvidos</th><th>Ações</th></tr></thead><tbody id="tb-reg"></tbody></table></div>
   </div>
 
   <!-- NOVO -->
@@ -69,12 +87,29 @@
     <div class="form-grid" style="margin-top:14px">
       <div class="form-group"><label>Data *</label><input id="d-data" type="date"></div>
       <div class="form-group"><label>Hora</label><input id="d-hora" type="time"></div>
-      <div class="form-group"><label>Turno</label><select id="d-turno"><option value="">Selecione...</option><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+      <div class="form-group"><label>Turno</label><select id="d-turno"><option value="">Selecione...</option><option value="1º Turno">1º Turno</option><option value="2º Turno">2º Turno</option></select></div>
       <div class="form-group"><label>Categoria</label><select id="d-cat"><option value="">Selecione...</option><option>Produção</option><option>Qualidade</option><option>Segurança</option><option>Manutenção</option><option>RH</option><option>Outro</option></select></div>
       <div class="form-group"><label>Prioridade</label><select id="d-pri"><option>Baixa</option><option>Média</option><option>Alta</option><option>Crítica</option></select></div>
       <div class="form-group"><label>Status</label><select id="d-st"><option>Resolvido</option><option>Pendente</option><option>Em andamento</option></select></div>
     </div>
-    <div class="form-grid" style="margin-top:10px;max-width:700px;grid-template-columns:1fr">
+
+    <!-- ENVOLVIDOS -->
+    <div style="margin-top:14px;max-width:700px">
+      <label style="font-size:.8rem;color:var(--text2);display:block;margin-bottom:6px">Colaboradores Envolvidos</label>
+      <div class="tags-wrap">
+        <div class="tags-list" id="tags-list"></div>
+        <div class="tags-input-row">
+          <div class="input-wrap">
+            <input id="d-envolvido-input" placeholder="Digite o nome e selecione ou pressione Enter para adicionar..." autocomplete="off" oninput="filtrarSugestoes()" onkeydown="handleTagKey(event)">
+            <div class="suggestions" id="sugestoes"></div>
+          </div>
+          <button class="btn-sm btn-ghost" type="button" onclick="adicionarEnvolvidoManual()">+ Adicionar</button>
+        </div>
+        <div class="envolvidos-hint">Selecione da lista (banco de dados) ou digite um nome externo e pressione Enter/botão.</div>
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-top:14px;max-width:700px;grid-template-columns:1fr">
       <div class="form-group"><label>Descrição *</label><textarea id="d-desc"></textarea></div>
       <div class="form-group"><label>Ação tomada</label><textarea id="d-acao"></textarea></div>
     </div>
@@ -89,7 +124,7 @@
     <h3 id="form-title-res">Resumo do Turno</h3>
     <div class="form-grid" style="margin:14px 0">
       <div class="form-group"><label>Data *</label><input id="rs-data" type="date"></div>
-      <div class="form-group"><label>Turno</label><select id="rs-turno"><option value="">Selecione...</option><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
+      <div class="form-group"><label>Turno</label><select id="rs-turno"><option value="">Selecione...</option><option value="1º Turno">1º Turno</option><option value="2º Turno">2º Turno</option></select></div>
       <div class="form-group"><label>Texto *</label><textarea id="rs-texto"></textarea></div>
       <div class="form-group"><label>Obs</label><textarea id="rs-obs"></textarea></div>
     </div>
@@ -111,13 +146,11 @@
       <button class="btn-sm btn-primary" onclick="exportCSVRegistros()">Exportar Registros (CSV)</button>
       <button class="btn-sm btn-primary" onclick="exportCSVResumos()">Exportar Resumos (CSV)</button>
     </div>
-
     <h4 style="margin-bottom:10px">Resumo por Categoria</h4>
     <div class="tbl-wrap">
       <table><thead><tr><th>Categoria</th><th>Total</th><th>Resolvidos</th><th>Pendentes</th><th>Críticos/Alta</th></tr></thead>
       <tbody id="tb-rel-cat"></tbody></table>
     </div>
-
     <h4 style="margin:20px 0 10px">Resumo por Turno</h4>
     <div class="tbl-wrap">
       <table><thead><tr><th>Turno</th><th>Registros</th><th>Resumos</th></tr></thead>
@@ -141,9 +174,10 @@
 
 <script>
 /* ============ GLOBALS ============ */
-var registros=[], resumos=[];
+var registros=[], resumos=[], colabs=[];
 var editDbId=null;
 var editResId=null;
+var envolvidos=[]; // array de {nome, tipo:'interno'|'externo'}
 
 /* ============ API ============ */
 var api={
@@ -173,9 +207,10 @@ function showTab(t){
 
 /* ============ LOAD ============ */
 async function loadAll(){
-  var results=await Promise.all([api.get('/api/db-registros'),api.get('/api/db-resumos')]);
+  var results=await Promise.all([api.get('/api/db-registros'),api.get('/api/db-resumos'),api.get('/api/colaboradores')]);
   registros=results[0]||[];
   resumos=results[1]||[];
+  colabs=results[2]||[];
   updateKPIs();renderReg();renderRes();
 }
 
@@ -189,25 +224,126 @@ function updateKPIs(){
 function priBadge(p){var m={'Crítica':'badge-red','Alta':'badge-orange','Média':'badge-yellow','Baixa':'badge-blue'};return '<span class="badge '+(m[p]||'badge-blue')+'">'+(p||'Baixa')+'</span>'}
 function stBadge(s){var m={'Resolvido':'badge-green','Pendente':'badge-yellow','Em andamento':'badge-blue'};return '<span class="badge '+(m[s]||'badge-blue')+'">'+(s||'-')+'</span>'}
 
+/* ============ ENVOLVIDOS — tags com autocomplete ============ */
+function renderTags(){
+  var list=document.getElementById('tags-list');
+  if(!envolvidos.length){list.innerHTML='';return}
+  list.innerHTML=envolvidos.map(function(e,i){
+    var cls=e.tipo==='externo'?'tag-chip tag-externo':'tag-chip';
+    var label=e.nome+(e.tipo==='externo'?' (externo)':'');
+    return '<span class="'+cls+'">'+label+'<span class="tag-x" onclick="removerEnvolvido('+i+')">&times;</span></span>';
+  }).join('');
+}
+
+function removerEnvolvido(i){
+  envolvidos.splice(i,1);
+  renderTags();
+}
+
+function adicionarEnvolvido(nome,tipo){
+  nome=nome.trim();
+  if(!nome)return;
+  // Evitar duplicatas
+  var ja=envolvidos.find(function(e){return e.nome.toLowerCase()===nome.toLowerCase()});
+  if(ja)return;
+  envolvidos.push({nome:nome,tipo:tipo||'externo'});
+  renderTags();
+  document.getElementById('d-envolvido-input').value='';
+  fecharSugestoes();
+}
+
+function adicionarEnvolvidoManual(){
+  var input=document.getElementById('d-envolvido-input');
+  var nome=input.value.trim();
+  if(!nome){toast('Digite um nome','error');return}
+  // Verificar se é do banco
+  var colab=colabs.find(function(c){return c.nome.toLowerCase()===nome.toLowerCase()});
+  adicionarEnvolvido(nome,colab?'interno':'externo');
+}
+
+function handleTagKey(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    adicionarEnvolvidoManual();
+  }
+  if(e.key==='Escape'){
+    fecharSugestoes();
+  }
+}
+
+function filtrarSugestoes(){
+  var input=document.getElementById('d-envolvido-input');
+  var div=document.getElementById('sugestoes');
+  var q=input.value.trim().toLowerCase();
+  if(q.length<1){fecharSugestoes();return}
+  // Filtrar colaboradores que contêm o texto e não estão já adicionados
+  var nomes=envolvidos.map(function(e){return e.nome.toLowerCase()});
+  var filtered=colabs.filter(function(c){
+    return c.nome.toLowerCase().indexOf(q)>=0 && nomes.indexOf(c.nome.toLowerCase())<0;
+  }).slice(0,8);
+
+  if(!filtered.length){fecharSugestoes();return}
+  div.innerHTML=filtered.map(function(c){
+    return '<div class="sug-item" onmousedown="selecionarSugestao(\''+c.nome.replace(/'/g,"\\'")+'\')">'
+      +c.nome
+      +'<span class="sug-mat">'+(c.mat?'Mat: '+c.mat:'')+(c.cargo?' · '+c.cargo:'')+'</span>'
+      +'</div>';
+  }).join('');
+  div.classList.add('show');
+}
+
+function selecionarSugestao(nome){
+  adicionarEnvolvido(nome,'interno');
+}
+
+function fecharSugestoes(){
+  document.getElementById('sugestoes').classList.remove('show');
+}
+
+// Fechar sugestões ao clicar fora
+document.addEventListener('click',function(e){
+  var wrap=document.querySelector('.input-wrap');
+  if(wrap&&!wrap.contains(e.target))fecharSugestoes();
+});
+
 /* ============ REGISTROS ============ */
 function renderReg(){
   var q=(document.getElementById('search-reg').value||'').toLowerCase();
   var fp=document.getElementById('filter-pri').value;
   var fs=document.getElementById('filter-st').value;
   var list=registros;
-  if(q)list=list.filter(function(r){return(r.descricao||'').toLowerCase().indexOf(q)>=0||(r.categoria||'').toLowerCase().indexOf(q)>=0});
+  if(q)list=list.filter(function(r){return(r.descricao||'').toLowerCase().indexOf(q)>=0||(r.categoria||'').toLowerCase().indexOf(q)>=0||envolvidosTexto(r.envolvidos).toLowerCase().indexOf(q)>=0});
   if(fp)list=list.filter(function(r){return r.prioridade===fp});
   if(fs)list=list.filter(function(r){return r.status===fs});
   var tb=document.getElementById('tb-reg');
-  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2)">Nenhum registro</td></tr>';return}
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text2)">Nenhum registro</td></tr>';return}
   tb.innerHTML=list.map(function(r){
+    var envTxt=envolvidosHTML(r.envolvidos);
     return '<tr>'+
       '<td>'+fmtDate(r.data)+'</td><td>'+(r.hora||'-')+'</td><td>'+(r.turno||'-')+'</td><td>'+(r.categoria||'-')+'</td>'+
       '<td>'+priBadge(r.prioridade)+'</td><td>'+stBadge(r.status)+'</td>'+
-      '<td style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(r.descricao||'').replace(/"/g,'&quot;')+'">'+(r.descricao||'-')+'</td>'+
-      '<td><button class="btn-sm btn-ghost" onclick="editarReg('+r.id+')">✏</button> <button class="btn-sm btn-danger" onclick="pedirDelReg('+r.id+')">🗑</button></td>'+
+      '<td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(r.descricao||'').replace(/"/g,'&quot;')+'">'+(r.descricao||'-')+'</td>'+
+      '<td style="max-width:200px">'+envTxt+'</td>'+
+      '<td style="white-space:nowrap"><button class="btn-sm btn-ghost" onclick="editarReg('+r.id+')">✏</button> <button class="btn-sm btn-danger" onclick="pedirDelReg('+r.id+')">🗑</button></td>'+
     '</tr>';
   }).join('');
+}
+
+function envolvidosTexto(env){
+  if(!env||!env.length)return'';
+  if(typeof env==='string'){try{env=JSON.parse(env)}catch(e){return env}}
+  return env.map(function(e){return typeof e==='string'?e:e.nome||''}).join(', ');
+}
+
+function envolvidosHTML(env){
+  if(!env||!env.length)return'<span style="color:var(--text2)">-</span>';
+  if(typeof env==='string'){try{env=JSON.parse(env)}catch(e){return env}}
+  return env.map(function(e){
+    var nome=typeof e==='string'?e:e.nome||'';
+    var tipo=typeof e==='object'?e.tipo:'interno';
+    var cls=tipo==='externo'?'tag-chip tag-externo':'tag-chip';
+    return '<span class="'+cls+'" style="font-size:.75rem;padding:2px 8px">'+nome+'</span>';
+  }).join(' ');
 }
 
 function editarReg(id){
@@ -222,11 +358,24 @@ function editarReg(id){
   document.getElementById('d-st').value=r.status||'Resolvido';
   document.getElementById('d-desc').value=r.descricao||'';
   document.getElementById('d-acao').value=r.acao||'';
+  // Carregar envolvidos
+  envolvidos=[];
+  if(r.envolvidos&&r.envolvidos.length){
+    var env=r.envolvidos;
+    if(typeof env==='string'){try{env=JSON.parse(env)}catch(e){env=[]}}
+    envolvidos=env.map(function(e){
+      if(typeof e==='string')return{nome:e,tipo:'interno'};
+      return{nome:e.nome||'',tipo:e.tipo||'interno'};
+    });
+  }
+  renderTags();
   showTab('novo');
 }
 
 function cancelarReg(){
   editDbId=null;
+  envolvidos=[];
+  renderTags();
   document.getElementById('form-title-db').textContent='Novo Registro';
   document.getElementById('d-hora').value='';
   document.getElementById('d-desc').value='';
@@ -236,6 +385,8 @@ function cancelarReg(){
   document.getElementById('d-cat').value='';
   document.getElementById('d-pri').value='Baixa';
   document.getElementById('d-st').value='Resolvido';
+  document.getElementById('d-envolvido-input').value='';
+  fecharSugestoes();
   showTab('registros');
 }
 
@@ -243,7 +394,17 @@ async function salvarReg(){
   var data=document.getElementById('d-data').value;
   var descricao=document.getElementById('d-desc').value.trim();
   if(!data||!descricao)return toast('Data e descrição obrigatórios','error');
-  var body={data:data,hora:document.getElementById('d-hora').value||null,turno:document.getElementById('d-turno').value||null,categoria:document.getElementById('d-cat').value||null,prioridade:document.getElementById('d-pri').value,status:document.getElementById('d-st').value,descricao:descricao,acao:document.getElementById('d-acao').value.trim()||null,envolvidos:[]};
+  var body={
+    data:data,
+    hora:document.getElementById('d-hora').value||null,
+    turno:document.getElementById('d-turno').value||null,
+    categoria:document.getElementById('d-cat').value||null,
+    prioridade:document.getElementById('d-pri').value,
+    status:document.getElementById('d-st').value,
+    descricao:descricao,
+    acao:document.getElementById('d-acao').value.trim()||null,
+    envolvidos:envolvidos
+  };
   if(editDbId){await api.put('/api/db-registros/'+editDbId,body);toast('Atualizado!')}
   else{await api.post('/api/db-registros',body);toast('Registro salvo!')}
   cancelarReg();await loadAll();
@@ -271,7 +432,7 @@ function renderRes(){
       '<td>'+(r.turno||'-')+'</td>'+
       '<td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(r.texto||'').replace(/"/g,'&quot;')+'">'+(r.texto||'-')+'</td>'+
       '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.obs||'-')+'</td>'+
-      '<td>'+
+      '<td style="white-space:nowrap">'+
         '<button class="btn-sm btn-ghost" onclick="editarResumo('+r.id+')">✏</button> '+
         '<button class="btn-sm btn-danger" onclick="pedirDelRes('+r.id+')">🗑</button>'+
       '</td>'+
@@ -313,8 +474,7 @@ async function salvarResumo(){
     await api.post('/api/db-resumos',body);
     toast('Resumo salvo!');
   }
-  cancelarResumo();
-  await loadAll();
+  cancelarResumo();await loadAll();
 }
 
 function pedirDelRes(id){
@@ -329,10 +489,7 @@ function pedirDelRes(id){
 function fecharModal(){document.getElementById('modal-del').classList.remove('show')}
 
 /* ============ RELATÓRIOS ============ */
-function renderRelatorios(){
-  renderRelCat();
-  renderRelTurno();
-}
+function renderRelatorios(){renderRelCat();renderRelTurno()}
 
 function renderRelCat(){
   var cats={};
@@ -355,30 +512,19 @@ function renderRelCat(){
 
 function renderRelTurno(){
   var turnos={};
-  registros.forEach(function(r){
-    var t=r.turno||'Sem turno';
-    if(!turnos[t])turnos[t]={registros:0,resumos:0};
-    turnos[t].registros++;
-  });
-  resumos.forEach(function(r){
-    var t=r.turno||'Sem turno';
-    if(!turnos[t])turnos[t]={registros:0,resumos:0};
-    turnos[t].resumos++;
-  });
+  registros.forEach(function(r){var t=r.turno||'Sem turno';if(!turnos[t])turnos[t]={registros:0,resumos:0};turnos[t].registros++});
+  resumos.forEach(function(r){var t=r.turno||'Sem turno';if(!turnos[t])turnos[t]={registros:0,resumos:0};turnos[t].resumos++});
   var tb=document.getElementById('tb-rel-turno');
   var keys=Object.keys(turnos).sort();
   if(!keys.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
-  tb.innerHTML=keys.map(function(k){
-    var t=turnos[k];
-    return '<tr><td><strong>'+k+'</strong></td><td>'+t.registros+'</td><td>'+t.resumos+'</td></tr>';
-  }).join('');
+  tb.innerHTML=keys.map(function(k){var t=turnos[k];return '<tr><td><strong>'+k+'</strong></td><td>'+t.registros+'</td><td>'+t.resumos+'</td></tr>'}).join('');
 }
 
 /* ============ EXPORTAR CSV ============ */
 function exportCSVRegistros(){
-  var csv='Data;Hora;Turno;Categoria;Prioridade;Status;Descrição;Ação\n';
+  var csv='Data;Hora;Turno;Categoria;Prioridade;Status;Descrição;Ação;Envolvidos\n';
   registros.forEach(function(r){
-    csv+=fmtDate(r.data)+';'+(r.hora||'-')+';'+(r.turno||'-')+';'+(r.categoria||'-')+';'+(r.prioridade||'-')+';'+(r.status||'-')+';'+(r.descricao||'').replace(/;/g,',')+';'+(r.acao||'').replace(/;/g,',')+'\n';
+    csv+=fmtDate(r.data)+';'+(r.hora||'-')+';'+(r.turno||'-')+';'+(r.categoria||'-')+';'+(r.prioridade||'-')+';'+(r.status||'-')+';'+(r.descricao||'').replace(/;/g,',')+';'+(r.acao||'').replace(/;/g,',')+';'+envolvidosTexto(r.envolvidos).replace(/;/g,',')+'\n';
   });
   baixarCSV(csv,'diario_registros.csv');
 }
@@ -393,10 +539,7 @@ function exportCSVResumos(){
 
 function baixarCSV(csv,nome){
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=nome;
-  a.click();
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();
 }
 
 /* ============ USER ============ */
