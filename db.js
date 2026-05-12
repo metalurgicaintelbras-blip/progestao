@@ -219,9 +219,12 @@ async function initDB() {
         descricao TEXT NOT NULL,
         acao TEXT,
         envolvidos JSONB DEFAULT '[]',
+        foto TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS foto TEXT;
 
       CREATE TABLE IF NOT EXISTS db_resumos (
         id SERIAL PRIMARY KEY,
