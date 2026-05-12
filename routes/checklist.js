@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 // ======================== ATIVIDADES ========================
 
 router.get('/cl-atividades', requireAuth, async (req, res) => {
-  try { res.json((await pool.query('SELECT * FROM cl_atividades ORDER BY nome')).rows); }
+  try { res.json((await pool.query('SELECT * FROM cl_atividades ORDER BY horario ASC NULLS LAST, nome ASC')).rows); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -72,7 +72,6 @@ router.delete('/cl-execucoes/:id', requireAuth, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Desfazer por atividade + data (apaga TODAS execuções daquele dia)
 router.delete('/cl-execucoes/desfazer/:ativId/:data', requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM cl_execucoes WHERE atividade_id=$1 AND data=$2', [req.params.ativId, req.params.data]);
@@ -80,7 +79,6 @@ router.delete('/cl-execucoes/desfazer/:ativId/:data', requireAuth, async (req, r
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Desfazer execução individual (por ID)
 router.delete('/cl-execucoes/desfazer-um/:id', requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM cl_execucoes WHERE id=$1', [req.params.id]);
