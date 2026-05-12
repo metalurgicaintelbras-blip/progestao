@@ -19,7 +19,7 @@
 .section{display:none}.section.active{display:block}
 .search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.search-bar input,.search-bar select{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem}.search-bar input{flex:1;min-width:200px}
 .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:16px}
-.cl-card{background:var(--card);border-radius:var(--radius);padding:20px;border-left:4px solid var(--accent);border:1px solid var(--border);border-left:4px solid var(--accent)}
+.cl-card{background:var(--card);border-radius:var(--radius);padding:20px;border:1px solid var(--border);border-left:4px solid var(--accent)}
 .cl-card.done{border-left-color:var(--green);opacity:.75}
 .cl-card.partial{border-left-color:var(--orange)}
 .cl-card h4{margin-bottom:6px;font-size:.95rem}
@@ -62,33 +62,25 @@
     <div class="tab" onclick="showTab('historico')">📊 Histórico</div>
   </div>
 
-  <!-- ====== HOJE ====== -->
   <div class="section active" id="sec-hoje">
     <h3>Atividades de Hoje — <span id="hoje-data"></span></h3>
     <div class="cl-grid" id="grid-hoje"></div>
   </div>
 
-  <!-- ====== ATIVIDADES ====== -->
   <div class="section" id="sec-atividades">
     <div class="search-bar">
       <input id="search-ativ" placeholder="Buscar atividade..." oninput="renderAtiv()">
       <select id="filter-freq" onchange="renderAtiv()">
         <option value="">Todas frequências</option>
-        <option>Todo dia</option>
-        <option>2 vezes ao dia</option>
-        <option>A cada 2 dias</option>
-        <option>A cada 3 dias</option>
-        <option>A cada 4 dias</option>
-        <option>Semanal</option>
-        <option>Quinzenal</option>
-        <option>Mensal</option>
+        <option>Todo dia</option><option>2 vezes ao dia</option>
+        <option>A cada 2 dias</option><option>A cada 3 dias</option><option>A cada 4 dias</option>
+        <option>Semanal</option><option>Quinzenal</option><option>Mensal</option>
       </select>
       <button class="btn-sm btn-primary" onclick="showTab('cadastro')">+ Nova</button>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Frequência</th><th>Horário(s)</th><th>Início</th><th>Status</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="tb-ativ"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Horário</th><th>Nome</th><th>Frequência</th><th>Início</th><th>Status</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="tb-ativ"></tbody></table></div>
   </div>
 
-  <!-- ====== CADASTRO ====== -->
   <div class="section" id="sec-cadastro">
     <h3 id="form-title-cl">Nova Atividade</h3>
     <div class="form-grid" style="margin-top:14px">
@@ -96,14 +88,10 @@
       <div class="form-group">
         <label>Frequência *</label>
         <select id="c-freq" onchange="toggleHorario2()">
-          <option value="Todo dia">Todo dia</option>
-          <option value="2 vezes ao dia">2 vezes ao dia</option>
-          <option value="A cada 2 dias">A cada 2 dias</option>
-          <option value="A cada 3 dias">A cada 3 dias</option>
-          <option value="A cada 4 dias">A cada 4 dias</option>
-          <option value="Semanal">Semanal</option>
-          <option value="Quinzenal">Quinzenal</option>
-          <option value="Mensal">Mensal</option>
+          <option value="Todo dia">Todo dia</option><option value="2 vezes ao dia">2 vezes ao dia</option>
+          <option value="A cada 2 dias">A cada 2 dias</option><option value="A cada 3 dias">A cada 3 dias</option>
+          <option value="A cada 4 dias">A cada 4 dias</option><option value="Semanal">Semanal</option>
+          <option value="Quinzenal">Quinzenal</option><option value="Mensal">Mensal</option>
         </select>
       </div>
       <div class="form-group"><label>Data Início *</label><input id="c-inicio" type="date"></div>
@@ -118,7 +106,6 @@
     </div>
   </div>
 
-  <!-- ====== HISTORICO ====== -->
   <div class="section" id="sec-historico">
     <h3>Histórico de Execuções</h3>
     <div class="search-bar" style="margin-top:14px">
@@ -129,7 +116,6 @@
 
 </div></div>
 
-<!-- MODAL CONFIRMAÇÃO -->
 <div class="modal-overlay" id="modal-del">
   <div class="modal">
     <h3>Confirmar Exclusão</h3>
@@ -139,324 +125,4 @@
 </div>
 
 <script>
-/* ============ GLOBALS ============ */
-var atividades=[], execucoes=[];
-var editClId=null;
-
-/* ============ API ============ */
-var api={
-  get:async function(u){var r=await fetch(u);if(r.status===401){location.href='/login';return null}return r.json()},
-  post:async function(u,d){var r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null}return r.json()},
-  put:async function(u,d){var r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null}return r.json()},
-  del:async function(u){var r=await fetch(u,{method:'DELETE'});if(r.status===401){location.href='/login';return null}return r.json()}
-};
-
-/* ============ UTILS ============ */
-function toast(m,t){t=t||'success';var e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(function(){e.remove()},3000)}
-function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10);var p=s.split('-');if(p.length!==3)return'-';return p[2]+'/'+p[1]+'/'+p[0]}
-function getDateVal(d){if(!d)return'';return String(d).slice(0,10)}
-function fmtHora(h){if(!h)return'';return String(h).slice(0,5)}
-function updateClock(){var n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
-setInterval(updateClock,1000);updateClock();
-async function doLogout(){await fetch('/api/logout',{method:'POST'});location.href='/login'}
-function hoje(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-var todayStr=hoje();
-
-function fecharModal(){document.getElementById('modal-del').classList.remove('show')}
-
-/* ============ TABS ============ */
-function showTab(t){
-  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
-  document.querySelectorAll('.tab').forEach(function(s){s.classList.remove('active')});
-  document.getElementById('sec-'+t).classList.add('active');
-  var names=['hoje','atividades','cadastro','historico'];
-  var tabs=document.querySelectorAll('.tab');
-  for(var i=0;i<names.length;i++){if(names[i]===t&&tabs[i])tabs[i].classList.add('active')}
-  if(t==='hoje')renderHoje();
-  if(t==='historico')renderHist();
-}
-
-/* ============ TOGGLE HORARIO 2 ============ */
-function toggleHorario2(){
-  var freq=document.getElementById('c-freq').value;
-  var grupo=document.getElementById('grupo-horario2');
-  if(freq==='2 vezes ao dia'){
-    grupo.style.display='flex';
-  } else {
-    grupo.style.display='none';
-    document.getElementById('c-horario2').value='';
-  }
-}
-
-/* ============ LOAD ============ */
-async function loadAll(){
-  var results=await Promise.all([api.get('/api/cl-atividades'),api.get('/api/cl-execucoes')]);
-  atividades=results[0]||[];
-  execucoes=results[1]||[];
-  updateKPIs();renderHoje();renderAtiv();renderHist();
-}
-
-/* ============ FREQUENCIA LOGIC ============ */
-function isDueToday(a){
-  if(a.status!=='Ativa')return false;
-  var freq=a.freq;
-  // Compatibilidade com valores antigos
-  if(freq==='Diária')freq='Todo dia';
-
-  if(freq==='Todo dia' || freq==='2 vezes ao dia')return true;
-
-  var inicio=new Date(a.inicio+'T12:00:00');
-  var now=new Date(todayStr+'T12:00:00');
-  var diffDays=Math.round((now-inicio)/(1000*60*60*24));
-
-  if(freq==='A cada 2 dias')return diffDays>=0 && diffDays%2===0;
-  if(freq==='A cada 3 dias')return diffDays>=0 && diffDays%3===0;
-  if(freq==='A cada 4 dias')return diffDays>=0 && diffDays%4===0;
-  if(freq==='Semanal')return inicio.getDay()===now.getDay();
-  if(freq==='Quinzenal')return diffDays>=0 && diffDays%14===0;
-  if(freq==='Mensal')return inicio.getDate()===now.getDate();
-
-  return true;
-}
-
-function getRequiredCount(a){
-  var freq=a.freq;
-  if(freq==='Diária')freq='Todo dia';
-  if(freq==='2 vezes ao dia')return 2;
-  return 1;
-}
-
-function getTodayExecs(a){
-  return execucoes.filter(function(e){return e.atividade_id===a.id && e.data && e.data.startsWith(todayStr)});
-}
-
-/* ============ KPIs ============ */
-function updateKPIs(){
-  var ativas=atividades.filter(function(a){return a.status==='Ativa'});
-  document.getElementById('k-atividades').textContent=ativas.length;
-  var dueToday=ativas.filter(isDueToday);
-  var feitas=0, pendentes=0;
-  dueToday.forEach(function(a){
-    var needed=getRequiredCount(a);
-    var done=getTodayExecs(a).length;
-    if(done>=needed)feitas++;
-    else pendentes++;
-  });
-  document.getElementById('k-feitas').textContent=feitas;
-  document.getElementById('k-pendentes').textContent=pendentes;
-  document.getElementById('k-total-exec').textContent=execucoes.length;
-}
-
-/* ============ HOJE ============ */
-function renderHoje(){
-  document.getElementById('hoje-data').textContent=fmtDate(todayStr);
-  var grid=document.getElementById('grid-hoje');
-  var ativas=atividades.filter(function(a){return a.status==='Ativa'}).filter(isDueToday);
-  if(!ativas.length){grid.innerHTML='<p style="color:var(--text2)">Nenhuma atividade para hoje.</p>';return}
-
-  grid.innerHTML=ativas.map(function(a){
-    var needed=getRequiredCount(a);
-    var todayExecs=getTodayExecs(a);
-    var doneCount=todayExecs.length;
-    var allDone=doneCount>=needed;
-    var partial=doneCount>0&&doneCount<needed;
-    var cardClass='cl-card';
-    if(allDone)cardClass+=' done';
-    else if(partial)cardClass+=' partial';
-
-    var icon=allDone?'✅':partial?'🔶':'⬜';
-    var statusTxt=allDone?'Concluída':(partial?doneCount+'/'+needed+' feita(s)':'Pendente');
-
-    // Horários info
-    var horarioInfo='';
-    if(a.horario){
-      horarioInfo='🕐 '+fmtHora(a.horario);
-      if(needed===2 && a.horario2){
-        horarioInfo+=' e '+fmtHora(a.horario2);
-      }
-    }
-
-    // Execuções feitas
-    var execInfo='';
-    if(doneCount>0){
-      execInfo='<div style="font-size:.78rem;color:var(--green);margin-bottom:6px">'+todayExecs.map(function(e,i){
-        return '✔ '+(i+1)+'ª às '+(e.hora||'--:--');
-      }).join(' &nbsp;|&nbsp; ')+'</div>';
-    }
-
-    var btns='';
-    if(!allDone){
-      var label=needed===2?(doneCount===0?'Marcar 1ª execução':'Marcar 2ª execução'):'Marcar Feito';
-      btns+='<button class="btn-sm btn-green" onclick="marcarFeito('+a.id+')">'+label+'</button>';
-    }
-    if(doneCount>0){
-      btns+=' <button class="btn-sm btn-ghost" onclick="desfazerUltimo('+a.id+')">Desfazer última</button>';
-    }
-
-    return '<div class="'+cardClass+'">'+
-      '<h4>'+icon+' '+a.nome+'</h4>'+
-      '<div class="meta">'+a.freq+(a.descricao?' — '+a.descricao:'')+'<br><span class="badge '+(allDone?'badge-green':partial?'badge-yellow':'badge-red')+'">'+statusTxt+'</span></div>'+
-      (horarioInfo?'<div class="horario-info">'+horarioInfo+'</div>':'')+
-      execInfo+
-      '<div class="actions">'+btns+'</div>'+
-    '</div>';
-  }).join('');
-}
-
-async function marcarFeito(ativId){
-  var hora=new Date().toTimeString().slice(0,5);
-  await api.post('/api/cl-execucoes',{atividade_id:ativId,data:todayStr,hora:hora});
-  toast('Marcado como feito!');await loadAll();
-}
-
-async function desfazerUltimo(ativId){
-  var todayExecs=execucoes.filter(function(e){return e.atividade_id===ativId && e.data && e.data.startsWith(todayStr)});
-  if(!todayExecs.length)return;
-  // Pega a última execução (maior ID)
-  var ultima=todayExecs.reduce(function(prev,curr){return curr.id>prev.id?curr:prev});
-  await api.del('/api/cl-execucoes/desfazer-um/'+ultima.id);
-  toast('Desfeito!');await loadAll();
-}
-
-async function desfazerTodasHoje(ativId){
-  await api.del('/api/cl-execucoes/desfazer/'+ativId+'/'+todayStr);
-  toast('Todas execuções de hoje desfeitas!');await loadAll();
-}
-
-/* ============ ATIVIDADES (lista) ============ */
-function renderAtiv(){
-  var q=(document.getElementById('search-ativ').value||'').toLowerCase();
-  var ff=document.getElementById('filter-freq').value;
-  var list=atividades;
-  if(q)list=list.filter(function(a){return a.nome.toLowerCase().indexOf(q)>=0||(a.descricao||'').toLowerCase().indexOf(q)>=0});
-  if(ff){
-    list=list.filter(function(a){
-      var freq=a.freq;
-      if(freq==='Diária'&&ff==='Todo dia')return true;
-      return freq===ff;
-    });
-  }
-  var tb=document.getElementById('tb-ativ');
-  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2)">Nenhuma atividade</td></tr>';return}
-  tb.innerHTML=list.map(function(a){
-    var stBadge=a.status==='Ativa'?'badge-green':a.status==='Pausada'?'badge-yellow':'badge-red';
-    var horarios=fmtHora(a.horario)||(a.freq==='2 vezes ao dia'?'-':'-');
-    if(a.freq==='2 vezes ao dia'&&a.horario&&a.horario2){
-      horarios=fmtHora(a.horario)+' / '+fmtHora(a.horario2);
-    }
-    var freqLabel=a.freq==='Diária'?'Todo dia':a.freq;
-    return '<tr>'+
-      '<td><strong>'+a.nome+'</strong></td>'+
-      '<td><span class="badge badge-blue">'+freqLabel+'</span></td>'+
-      '<td>'+horarios+'</td>'+
-      '<td>'+fmtDate(a.inicio)+'</td>'+
-      '<td><span class="badge '+stBadge+'">'+a.status+'</span></td>'+
-      '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(a.descricao||'-')+'</td>'+
-      '<td style="white-space:nowrap"><button class="btn-sm btn-ghost" onclick="editarAtiv('+a.id+')">✏</button> <button class="btn-sm btn-danger" onclick="pedirDelAtiv('+a.id+')">🗑</button></td>'+
-    '</tr>';
-  }).join('');
-}
-
-function editarAtiv(id){
-  var a=atividades.find(function(x){return x.id===id});if(!a)return;
-  editClId=id;
-  document.getElementById('form-title-cl').textContent='Editar Atividade';
-  document.getElementById('c-nome').value=a.nome;
-  // Compatibilidade
-  var freq=a.freq==='Diária'?'Todo dia':a.freq;
-  document.getElementById('c-freq').value=freq;
-  document.getElementById('c-inicio').value=getDateVal(a.inicio);
-  document.getElementById('c-status').value=a.status||'Ativa';
-  document.getElementById('c-desc').value=a.descricao||'';
-  document.getElementById('c-horario').value=fmtHora(a.horario);
-  document.getElementById('c-horario2').value=fmtHora(a.horario2);
-  toggleHorario2();
-  showTab('cadastro');
-}
-
-function cancelarAtiv(){
-  editClId=null;
-  document.getElementById('form-title-cl').textContent='Nova Atividade';
-  document.getElementById('c-nome').value='';
-  document.getElementById('c-desc').value='';
-  document.getElementById('c-freq').value='Todo dia';
-  document.getElementById('c-inicio').value=todayStr;
-  document.getElementById('c-status').value='Ativa';
-  document.getElementById('c-horario').value='';
-  document.getElementById('c-horario2').value='';
-  toggleHorario2();
-  showTab('atividades');
-}
-
-async function salvarAtiv(){
-  var nome=document.getElementById('c-nome').value.trim();
-  var freq=document.getElementById('c-freq').value;
-  var inicio=document.getElementById('c-inicio').value;
-  if(!nome||!freq||!inicio)return toast('Preencha campos obrigatórios','error');
-  var body={
-    nome:nome,
-    freq:freq,
-    inicio:inicio,
-    status:document.getElementById('c-status').value,
-    descricao:document.getElementById('c-desc').value.trim()||null,
-    horario:document.getElementById('c-horario').value||null,
-    horario2:freq==='2 vezes ao dia'?document.getElementById('c-horario2').value||null:null
-  };
-  if(editClId){await api.put('/api/cl-atividades/'+editClId,body);toast('Atualizado!')}
-  else{await api.post('/api/cl-atividades',body);toast('Atividade criada!')}
-  cancelarAtiv();await loadAll();
-}
-
-function pedirDelAtiv(id){
-  document.getElementById('modal-del-msg').textContent='Excluir esta atividade e todas as suas execuções?';
-  document.getElementById('modal-del').classList.add('show');
-  document.getElementById('modal-del-btn').onclick=async function(){
-    await api.del('/api/cl-atividades/'+id);
-    toast('Excluído!');fecharModal();await loadAll();
-  };
-}
-
-/* ============ HISTORICO ============ */
-function renderHist(){
-  var q=(document.getElementById('search-hist')?document.getElementById('search-hist').value:'').toLowerCase();
-  var list=execucoes;
-  if(q)list=list.filter(function(e){return(e.ativ_nome||'').toLowerCase().indexOf(q)>=0||fmtDate(e.data).indexOf(q)>=0||(e.ativ_freq||'').toLowerCase().indexOf(q)>=0});
-  var tb=document.getElementById('tb-hist');
-  if(!list.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Nenhuma execução</td></tr>';return}
-  tb.innerHTML=list.slice(0,200).map(function(e){
-    var freqLabel=(e.ativ_freq==='Diária'?'Todo dia':e.ativ_freq)||'-';
-    return '<tr>'+
-      '<td><strong>'+(e.ativ_nome||'-')+'</strong></td>'+
-      '<td><span class="badge badge-blue">'+freqLabel+'</span></td>'+
-      '<td>'+fmtDate(e.data)+'</td>'+
-      '<td>'+(e.hora?fmtHora(e.hora):'-')+'</td>'+
-      '<td><button class="btn-sm btn-danger" onclick="pedirDelExec('+e.id+')">🗑</button></td>'+
-    '</tr>';
-  }).join('');
-}
-
-function pedirDelExec(id){
-  document.getElementById('modal-del-msg').textContent='Excluir esta execução?';
-  document.getElementById('modal-del').classList.add('show');
-  document.getElementById('modal-del-btn').onclick=async function(){
-    await api.del('/api/cl-execucoes/'+id);
-    toast('Excluído!');fecharModal();await loadAll();
-  };
-}
-
-/* ============ USER ============ */
-async function loadUser(){
-  try{var u=await api.get('/api/me');if(u)document.getElementById('user-display').textContent=u.nome||u.username}catch(e){}
-}
-
-/* ============ INIT ============ */
-async function init(){
-  updateClock();
-  document.getElementById('c-inicio').value=todayStr;
-  await loadUser();
-  await loadAll();
-}
-init();
-</script>
-</body>
-</html>
+var atividades=[], exec
