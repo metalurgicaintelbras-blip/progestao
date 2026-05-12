@@ -8,16 +8,19 @@
 :root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--accent:#3b82f6;--accent2:#8b5cf6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316;--text:#f1f5f9;--text2:#94a3b8;--border:#475569;--radius:12px}
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}a{color:var(--accent);text-decoration:none}
 .topbar{background:var(--card);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.topbar .logo{font-size:1.2rem;font-weight:700;color:var(--accent)}.topbar .right{display:flex;align-items:center;gap:16px}.topbar .clock{background:var(--card2);padding:4px 12px;border-radius:20px;font-size:.85rem;color:var(--text2)}.topbar .user{font-size:.9rem;color:var(--text2)}
-.btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}.btn-danger{background:var(--red);color:#fff}.btn-primary{background:var(--accent);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-primary:hover{background:#2563eb}.btn-green:hover{background:#16a34a}.btn-danger:hover{opacity:.85}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s;font-family:inherit}.btn-danger{background:var(--red);color:#fff}.btn-primary{background:var(--accent);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-primary:hover{background:#2563eb}.btn-green:hover{background:#16a34a}.btn-danger:hover{opacity:.85}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .layout{display:flex;min-height:calc(100vh - 57px)}.sidebar{width:220px;background:var(--card);padding:16px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px}.sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);color:var(--text2);font-size:.9rem;transition:.2s}.sidebar a:hover,.sidebar a.active{background:var(--accent);color:#fff}.main{flex:1;padding:24px;overflow-y:auto}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}.kpi{background:var(--card);padding:20px;border-radius:var(--radius);text-align:center}.kpi .num{font-size:2rem;font-weight:700}.kpi .lbl{font-size:.8rem;color:var(--text2);margin-top:4px}
-.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.tab{padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.2s}.tab:hover,.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.tab{padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.2s;font-family:inherit}.tab:hover,.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tbl-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.88rem}th{background:var(--card2);color:var(--text2);font-weight:600}tr:hover{background:rgba(59,130,246,.08)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px}.form-group{display:flex;flex-direction:column;gap:4px}.form-group label{font-size:.8rem;color:var(--text2)}.form-group input,.form-group select,.form-group textarea{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem}.form-group textarea{min-height:100px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px}.form-group{display:flex;flex-direction:column;gap:4px}.form-group label{font-size:.8rem;color:var(--text2)}.form-group input,.form-group select,.form-group textarea{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem;font-family:inherit}.form-group textarea{min-height:100px;resize:vertical}
 .badge{padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}.badge-green{background:rgba(34,197,94,.15);color:var(--green)}.badge-red{background:rgba(239,68,68,.15);color:var(--red)}.badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow)}.badge-blue{background:rgba(59,130,246,.15);color:var(--accent)}.badge-orange{background:rgba(249,115,22,.15);color:var(--orange)}
 .toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:var(--radius);color:#fff;font-weight:600;z-index:9999;animation:slideIn .3s}@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 .section{display:none}.section.active{display:block}
-.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.search-bar input,.search-bar select{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem}.search-bar input{flex:1;min-width:200px}
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.search-bar input,.search-bar select{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem;font-family:inherit}.search-bar input{flex:1;min-width:200px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);padding:28px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto}
+.modal h3{margin-bottom:12px}.modal .btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
 @media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -31,6 +34,7 @@
   <a href="/">🏠 Início</a><a href="/ferramentas">🔧 Ferramentas</a><a href="/epis">🦺 EPIs</a>
   <a href="/banco-horas">⏰ Banco Horas</a><a href="/treinamentos">📚 Treinamentos</a>
   <a href="/diario-bordo" class="active">📋 Diário Bordo</a><a href="/checklist">✅ Checklist</a>
+  <a href="/producao">📊 Produção</a>
 </nav>
 <div class="main">
   <h2 style="margin-bottom:20px">📋 Diário de Bordo</h2>
@@ -46,6 +50,7 @@
     <div class="tab active" onclick="showTab('registros')">📝 Registros</div>
     <div class="tab" onclick="showTab('novo')">➕ Novo</div>
     <div class="tab" onclick="showTab('resumos')">📄 Resumos</div>
+    <div class="tab" onclick="showTab('relatorios')">📊 Relatórios</div>
   </div>
 
   <!-- REGISTROS -->
@@ -69,7 +74,7 @@
       <div class="form-group"><label>Prioridade</label><select id="d-pri"><option>Baixa</option><option>Média</option><option>Alta</option><option>Crítica</option></select></div>
       <div class="form-group"><label>Status</label><select id="d-st"><option>Resolvido</option><option>Pendente</option><option>Em andamento</option></select></div>
     </div>
-    <div class="form-grid full" style="margin-top:10px;max-width:700px">
+    <div class="form-grid" style="margin-top:10px;max-width:700px;grid-template-columns:1fr">
       <div class="form-group"><label>Descrição *</label><textarea id="d-desc"></textarea></div>
       <div class="form-group"><label>Ação tomada</label><textarea id="d-acao"></textarea></div>
     </div>
@@ -81,80 +86,135 @@
 
   <!-- RESUMOS -->
   <div class="section" id="sec-resumos">
-    <h3>Resumo do Turno</h3>
+    <h3 id="form-title-res">Resumo do Turno</h3>
     <div class="form-grid" style="margin:14px 0">
       <div class="form-group"><label>Data *</label><input id="rs-data" type="date"></div>
       <div class="form-group"><label>Turno</label><select id="rs-turno"><option value="">Selecione...</option><option>Manhã</option><option>Tarde</option><option>Noite</option></select></div>
       <div class="form-group"><label>Texto *</label><textarea id="rs-texto"></textarea></div>
       <div class="form-group"><label>Obs</label><textarea id="rs-obs"></textarea></div>
     </div>
-    <button class="btn-sm btn-green" onclick="salvarResumo()">Salvar Resumo</button>
-    <div class="tbl-wrap" style="margin-top:20px"><table><thead><tr><th>Data</th><th>Turno</th><th>Texto</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="tb-res"></tbody></table></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-sm btn-green" onclick="salvarResumo()">Salvar Resumo</button>
+      <button class="btn-sm btn-ghost" id="btn-cancelar-res" onclick="cancelarResumo()" style="display:none">Cancelar Edição</button>
+    </div>
+    <div class="search-bar" style="margin-top:20px">
+      <input id="search-res" placeholder="Buscar resumo..." oninput="renderRes()">
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Turno</th><th>Texto</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="tb-res"></tbody></table></div>
+  </div>
+
+  <!-- RELATÓRIOS -->
+  <div class="section" id="sec-relatorios">
+    <h3>📊 Relatórios</h3>
+    <p style="color:var(--text2);font-size:.9rem;margin:10px 0 16px">Exporte os dados do Diário de Bordo em formato CSV.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <button class="btn-sm btn-primary" onclick="exportCSVRegistros()">Exportar Registros (CSV)</button>
+      <button class="btn-sm btn-primary" onclick="exportCSVResumos()">Exportar Resumos (CSV)</button>
+    </div>
+
+    <h4 style="margin-bottom:10px">Resumo por Categoria</h4>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Categoria</th><th>Total</th><th>Resolvidos</th><th>Pendentes</th><th>Críticos/Alta</th></tr></thead>
+      <tbody id="tb-rel-cat"></tbody></table>
+    </div>
+
+    <h4 style="margin:20px 0 10px">Resumo por Turno</h4>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Turno</th><th>Registros</th><th>Resumos</th></tr></thead>
+      <tbody id="tb-rel-turno"></tbody></table>
+    </div>
   </div>
 
 </div></div>
 
+<!-- MODAL CONFIRMAÇÃO -->
+<div class="modal-overlay" id="modal-del">
+  <div class="modal">
+    <h3>Confirmar Exclusão</h3>
+    <p id="modal-del-msg">Tem certeza?</p>
+    <div class="btns">
+      <button class="btn-sm btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-sm btn-danger" id="modal-del-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let registros=[],resumos=[];
-let editDbId=null;
-const api={
-  async get(u){const r=await fetch(u);if(r.status===401)return location.href='/login';return r.json()},
-  async post(u,d){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401)return location.href='/login';return r.json()},
-  async put(u,d){const r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401)return location.href='/login';return r.json()},
-  async del(u){const r=await fetch(u,{method:'DELETE'});if(r.status===401)return location.href='/login';return r.json()}
+/* ============ GLOBALS ============ */
+var registros=[], resumos=[];
+var editDbId=null;
+var editResId=null;
+
+/* ============ API ============ */
+var api={
+  get:async function(u){var r=await fetch(u);if(r.status===401){location.href='/login';return null}return r.json()},
+  post:async function(u,d){var r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null}return r.json()},
+  put:async function(u,d){var r=await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401){location.href='/login';return null}return r.json()},
+  del:async function(u){var r=await fetch(u,{method:'DELETE'});if(r.status===401){location.href='/login';return null}return r.json()}
 };
-function toast(m,t='success'){const e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3000)}
-function fmt(d){if(!d)return'-';return new Date(d).toLocaleDateString('pt-BR')}
-function updateClock(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
+
+/* ============ UTILS ============ */
+function toast(m,t){t=t||'success';var e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(function(){e.remove()},3000)}
+function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10);var p=s.split('-');if(p.length!==3)return'-';return p[2]+'/'+p[1]+'/'+p[0]}
+function getDateVal(d){if(!d)return'';return String(d).slice(0,10)}
+function updateClock(){var n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
 setInterval(updateClock,1000);updateClock();
 async function doLogout(){await fetch('/api/logout',{method:'POST'});location.href='/login'}
+function hoje(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 
+/* ============ TABS ============ */
 function showTab(t){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
+  document.querySelectorAll('.tab').forEach(function(s){s.classList.remove('active')});
   document.getElementById('sec-'+t).classList.add('active');
   if(event&&event.target)event.target.classList.add('active');
+  if(t==='relatorios')renderRelatorios();
 }
 
+/* ============ LOAD ============ */
 async function loadAll(){
-  [registros,resumos]=await Promise.all([api.get('/api/db-registros'),api.get('/api/db-resumos')]);
+  var results=await Promise.all([api.get('/api/db-registros'),api.get('/api/db-resumos')]);
+  registros=results[0]||[];
+  resumos=results[1]||[];
   updateKPIs();renderReg();renderRes();
 }
 
 function updateKPIs(){
   document.getElementById('k-registros').textContent=registros.length;
-  document.getElementById('k-pendentes').textContent=registros.filter(r=>r.status==='Pendente'||r.status==='Em andamento').length;
-  document.getElementById('k-criticos').textContent=registros.filter(r=>r.prioridade==='Crítica'||r.prioridade==='Alta').length;
+  document.getElementById('k-pendentes').textContent=registros.filter(function(r){return r.status==='Pendente'||r.status==='Em andamento'}).length;
+  document.getElementById('k-criticos').textContent=registros.filter(function(r){return r.prioridade==='Crítica'||r.prioridade==='Alta'}).length;
   document.getElementById('k-resumos').textContent=resumos.length;
 }
 
-function priBadge(p){const m={'Crítica':'badge-red','Alta':'badge-orange','Média':'badge-yellow','Baixa':'badge-blue'};return `<span class="badge ${m[p]||'badge-blue'}">${p||'Baixa'}</span>`}
-function stBadge(s){const m={'Resolvido':'badge-green','Pendente':'badge-yellow','Em andamento':'badge-blue'};return `<span class="badge ${m[s]||'badge-blue'}">${s||'-'}</span>`}
+function priBadge(p){var m={'Crítica':'badge-red','Alta':'badge-orange','Média':'badge-yellow','Baixa':'badge-blue'};return '<span class="badge '+(m[p]||'badge-blue')+'">'+(p||'Baixa')+'</span>'}
+function stBadge(s){var m={'Resolvido':'badge-green','Pendente':'badge-yellow','Em andamento':'badge-blue'};return '<span class="badge '+(m[s]||'badge-blue')+'">'+(s||'-')+'</span>'}
 
-/* REGISTROS */
+/* ============ REGISTROS ============ */
 function renderReg(){
-  const q=(document.getElementById('search-reg').value||'').toLowerCase();
-  const fp=document.getElementById('filter-pri').value;
-  const fs=document.getElementById('filter-st').value;
-  let list=registros;
-  if(q)list=list.filter(r=>(r.descricao||'').toLowerCase().includes(q)||(r.categoria||'').toLowerCase().includes(q));
-  if(fp)list=list.filter(r=>r.prioridade===fp);
-  if(fs)list=list.filter(r=>r.status===fs);
-  const tb=document.getElementById('tb-reg');
+  var q=(document.getElementById('search-reg').value||'').toLowerCase();
+  var fp=document.getElementById('filter-pri').value;
+  var fs=document.getElementById('filter-st').value;
+  var list=registros;
+  if(q)list=list.filter(function(r){return(r.descricao||'').toLowerCase().indexOf(q)>=0||(r.categoria||'').toLowerCase().indexOf(q)>=0});
+  if(fp)list=list.filter(function(r){return r.prioridade===fp});
+  if(fs)list=list.filter(function(r){return r.status===fs});
+  var tb=document.getElementById('tb-reg');
   if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2)">Nenhum registro</td></tr>';return}
-  tb.innerHTML=list.map(r=>`<tr>
-    <td>${fmt(r.data)}</td><td>${r.hora||'-'}</td><td>${r.turno||'-'}</td><td>${r.categoria||'-'}</td>
-    <td>${priBadge(r.prioridade)}</td><td>${stBadge(r.status)}</td>
-    <td style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(r.descricao||'').replace(/"/g,'&quot;')}">${r.descricao||'-'}</td>
-    <td><button class="btn-sm btn-ghost" onclick="editarReg(${r.id})">✏</button> <button class="btn-sm btn-danger" onclick="delReg(${r.id})">🗑</button></td>
-  </tr>`).join('');
+  tb.innerHTML=list.map(function(r){
+    return '<tr>'+
+      '<td>'+fmtDate(r.data)+'</td><td>'+(r.hora||'-')+'</td><td>'+(r.turno||'-')+'</td><td>'+(r.categoria||'-')+'</td>'+
+      '<td>'+priBadge(r.prioridade)+'</td><td>'+stBadge(r.status)+'</td>'+
+      '<td style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(r.descricao||'').replace(/"/g,'&quot;')+'">'+(r.descricao||'-')+'</td>'+
+      '<td><button class="btn-sm btn-ghost" onclick="editarReg('+r.id+')">✏</button> <button class="btn-sm btn-danger" onclick="pedirDelReg('+r.id+')">🗑</button></td>'+
+    '</tr>';
+  }).join('');
 }
 
 function editarReg(id){
-  const r=registros.find(x=>x.id===id);if(!r)return;
+  var r=registros.find(function(x){return x.id===id});if(!r)return;
   editDbId=id;
   document.getElementById('form-title-db').textContent='Editar Registro';
-  document.getElementById('d-data').value=r.data?r.data.split('T')[0]:'';
+  document.getElementById('d-data').value=getDateVal(r.data);
   document.getElementById('d-hora').value=r.hora||'';
   document.getElementById('d-turno').value=r.turno||'';
   document.getElementById('d-cat').value=r.categoria||'';
@@ -164,47 +224,193 @@ function editarReg(id){
   document.getElementById('d-acao').value=r.acao||'';
   showTab('novo');
 }
+
 function cancelarReg(){
   editDbId=null;
   document.getElementById('form-title-db').textContent='Novo Registro';
-  ['d-hora','d-desc','d-acao'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('d-data').value=new Date().toISOString().split('T')[0];
-  document.getElementById('d-turno').value='';document.getElementById('d-cat').value='';
-  document.getElementById('d-pri').value='Baixa';document.getElementById('d-st').value='Resolvido';
+  document.getElementById('d-hora').value='';
+  document.getElementById('d-desc').value='';
+  document.getElementById('d-acao').value='';
+  document.getElementById('d-data').value=hoje();
+  document.getElementById('d-turno').value='';
+  document.getElementById('d-cat').value='';
+  document.getElementById('d-pri').value='Baixa';
+  document.getElementById('d-st').value='Resolvido';
   showTab('registros');
 }
+
 async function salvarReg(){
-  const data=document.getElementById('d-data').value;
-  const descricao=document.getElementById('d-desc').value.trim();
+  var data=document.getElementById('d-data').value;
+  var descricao=document.getElementById('d-desc').value.trim();
   if(!data||!descricao)return toast('Data e descrição obrigatórios','error');
-  const body={data,hora:document.getElementById('d-hora').value||null,turno:document.getElementById('d-turno').value||null,categoria:document.getElementById('d-cat').value||null,prioridade:document.getElementById('d-pri').value,status:document.getElementById('d-st').value,descricao,acao:document.getElementById('d-acao').value.trim()||null,envolvidos:[]};
+  var body={data:data,hora:document.getElementById('d-hora').value||null,turno:document.getElementById('d-turno').value||null,categoria:document.getElementById('d-cat').value||null,prioridade:document.getElementById('d-pri').value,status:document.getElementById('d-st').value,descricao:descricao,acao:document.getElementById('d-acao').value.trim()||null,envolvidos:[]};
   if(editDbId){await api.put('/api/db-registros/'+editDbId,body);toast('Atualizado!')}
   else{await api.post('/api/db-registros',body);toast('Registro salvo!')}
   cancelarReg();await loadAll();
 }
-async function delReg(id){if(!confirm('Excluir registro?'))return;await api.del('/api/db-registros/'+id);toast('Excluído!');await loadAll()}
 
-/* RESUMOS */
+function pedirDelReg(id){
+  document.getElementById('modal-del-msg').textContent='Excluir este registro?';
+  document.getElementById('modal-del').classList.add('show');
+  document.getElementById('modal-del-btn').onclick=async function(){
+    await api.del('/api/db-registros/'+id);
+    toast('Excluído!');fecharModal();await loadAll();
+  };
+}
+
+/* ============ RESUMOS ============ */
 function renderRes(){
-  const tb=document.getElementById('tb-res');
-  if(!resumos.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Nenhum resumo</td></tr>';return}
-  tb.innerHTML=resumos.map(r=>`<tr><td>${fmt(r.data)}</td><td>${r.turno||'-'}</td><td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.texto||'-'}</td><td>${r.obs||'-'}</td><td><button class="btn-sm btn-danger" onclick="delRes(${r.id})">🗑</button></td></tr>`).join('');
+  var q=(document.getElementById('search-res')?document.getElementById('search-res').value:'').toLowerCase();
+  var list=resumos;
+  if(q)list=list.filter(function(r){return(r.texto||'').toLowerCase().indexOf(q)>=0||(r.turno||'').toLowerCase().indexOf(q)>=0||fmtDate(r.data).indexOf(q)>=0});
+  var tb=document.getElementById('tb-res');
+  if(!list.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Nenhum resumo</td></tr>';return}
+  tb.innerHTML=list.map(function(r){
+    return '<tr>'+
+      '<td>'+fmtDate(r.data)+'</td>'+
+      '<td>'+(r.turno||'-')+'</td>'+
+      '<td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(r.texto||'').replace(/"/g,'&quot;')+'">'+(r.texto||'-')+'</td>'+
+      '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.obs||'-')+'</td>'+
+      '<td>'+
+        '<button class="btn-sm btn-ghost" onclick="editarResumo('+r.id+')">✏</button> '+
+        '<button class="btn-sm btn-danger" onclick="pedirDelRes('+r.id+')">🗑</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
 }
-async function salvarResumo(){
-  const data=document.getElementById('rs-data').value;
-  const texto=document.getElementById('rs-texto').value.trim();
-  if(!data||!texto)return toast('Data e texto obrigatórios','error');
-  await api.post('/api/db-resumos',{data,turno:document.getElementById('rs-turno').value||null,texto,obs:document.getElementById('rs-obs').value.trim()||null});
-  toast('Resumo salvo!');document.getElementById('rs-texto').value='';document.getElementById('rs-obs').value='';await loadAll();
-}
-async function delRes(id){if(!confirm('Excluir?'))return;await api.del('/api/db-resumos/'+id);toast('Excluído!');await loadAll()}
 
-async function loadUser(){try{const u=await api.get('/api/me');document.getElementById('user-display').textContent=u.nome||u.username}catch(e){}}
+function editarResumo(id){
+  var r=resumos.find(function(x){return x.id===id});if(!r)return;
+  editResId=id;
+  document.getElementById('form-title-res').textContent='Editar Resumo';
+  document.getElementById('rs-data').value=getDateVal(r.data);
+  document.getElementById('rs-turno').value=r.turno||'';
+  document.getElementById('rs-texto').value=r.texto||'';
+  document.getElementById('rs-obs').value=r.obs||'';
+  document.getElementById('btn-cancelar-res').style.display='inline-flex';
+  showTab('resumos');
+}
+
+function cancelarResumo(){
+  editResId=null;
+  document.getElementById('form-title-res').textContent='Resumo do Turno';
+  document.getElementById('rs-data').value=hoje();
+  document.getElementById('rs-turno').value='';
+  document.getElementById('rs-texto').value='';
+  document.getElementById('rs-obs').value='';
+  document.getElementById('btn-cancelar-res').style.display='none';
+}
+
+async function salvarResumo(){
+  var data=document.getElementById('rs-data').value;
+  var texto=document.getElementById('rs-texto').value.trim();
+  if(!data||!texto)return toast('Data e texto obrigatórios','error');
+  var body={data:data,turno:document.getElementById('rs-turno').value||null,texto:texto,obs:document.getElementById('rs-obs').value.trim()||null};
+  if(editResId){
+    await api.put('/api/db-resumos/'+editResId,body);
+    toast('Resumo atualizado!');
+  }else{
+    await api.post('/api/db-resumos',body);
+    toast('Resumo salvo!');
+  }
+  cancelarResumo();
+  await loadAll();
+}
+
+function pedirDelRes(id){
+  document.getElementById('modal-del-msg').textContent='Excluir este resumo?';
+  document.getElementById('modal-del').classList.add('show');
+  document.getElementById('modal-del-btn').onclick=async function(){
+    await api.del('/api/db-resumos/'+id);
+    toast('Excluído!');fecharModal();await loadAll();
+  };
+}
+
+function fecharModal(){document.getElementById('modal-del').classList.remove('show')}
+
+/* ============ RELATÓRIOS ============ */
+function renderRelatorios(){
+  renderRelCat();
+  renderRelTurno();
+}
+
+function renderRelCat(){
+  var cats={};
+  registros.forEach(function(r){
+    var c=r.categoria||'Sem categoria';
+    if(!cats[c])cats[c]={total:0,resolvidos:0,pendentes:0,criticos:0};
+    cats[c].total++;
+    if(r.status==='Resolvido')cats[c].resolvidos++;
+    if(r.status==='Pendente'||r.status==='Em andamento')cats[c].pendentes++;
+    if(r.prioridade==='Crítica'||r.prioridade==='Alta')cats[c].criticos++;
+  });
+  var tb=document.getElementById('tb-rel-cat');
+  var keys=Object.keys(cats).sort();
+  if(!keys.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
+  tb.innerHTML=keys.map(function(k){
+    var c=cats[k];
+    return '<tr><td><strong>'+k+'</strong></td><td>'+c.total+'</td><td><span class="badge badge-green">'+c.resolvidos+'</span></td><td><span class="badge badge-yellow">'+c.pendentes+'</span></td><td><span class="badge badge-red">'+c.criticos+'</span></td></tr>';
+  }).join('');
+}
+
+function renderRelTurno(){
+  var turnos={};
+  registros.forEach(function(r){
+    var t=r.turno||'Sem turno';
+    if(!turnos[t])turnos[t]={registros:0,resumos:0};
+    turnos[t].registros++;
+  });
+  resumos.forEach(function(r){
+    var t=r.turno||'Sem turno';
+    if(!turnos[t])turnos[t]={registros:0,resumos:0};
+    turnos[t].resumos++;
+  });
+  var tb=document.getElementById('tb-rel-turno');
+  var keys=Object.keys(turnos).sort();
+  if(!keys.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
+  tb.innerHTML=keys.map(function(k){
+    var t=turnos[k];
+    return '<tr><td><strong>'+k+'</strong></td><td>'+t.registros+'</td><td>'+t.resumos+'</td></tr>';
+  }).join('');
+}
+
+/* ============ EXPORTAR CSV ============ */
+function exportCSVRegistros(){
+  var csv='Data;Hora;Turno;Categoria;Prioridade;Status;Descrição;Ação\n';
+  registros.forEach(function(r){
+    csv+=fmtDate(r.data)+';'+(r.hora||'-')+';'+(r.turno||'-')+';'+(r.categoria||'-')+';'+(r.prioridade||'-')+';'+(r.status||'-')+';'+(r.descricao||'').replace(/;/g,',')+';'+(r.acao||'').replace(/;/g,',')+'\n';
+  });
+  baixarCSV(csv,'diario_registros.csv');
+}
+
+function exportCSVResumos(){
+  var csv='Data;Turno;Texto;Obs\n';
+  resumos.forEach(function(r){
+    csv+=fmtDate(r.data)+';'+(r.turno||'-')+';'+(r.texto||'').replace(/;/g,',')+';'+(r.obs||'').replace(/;/g,',')+'\n';
+  });
+  baixarCSV(csv,'diario_resumos.csv');
+}
+
+function baixarCSV(csv,nome){
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=nome;
+  a.click();
+}
+
+/* ============ USER ============ */
+async function loadUser(){
+  try{var u=await api.get('/api/me');if(u)document.getElementById('user-display').textContent=u.nome||u.username}catch(e){}
+}
+
+/* ============ INIT ============ */
 async function init(){
   updateClock();
-  document.getElementById('d-data').value=new Date().toISOString().split('T')[0];
-  document.getElementById('rs-data').value=new Date().toISOString().split('T')[0];
-  await loadUser();await loadAll();
+  document.getElementById('d-data').value=hoje();
+  document.getElementById('rs-data').value=hoje();
+  await loadUser();
+  await loadAll();
 }
 init();
 </script>
