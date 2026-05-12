@@ -3,9 +3,44 @@ const router = express.Router();
 const { pool } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
+// ==================== SETORES ====================
+
+// Listar todos os setores
+router.get('/db-setores', requireAuth, async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM db_setores ORDER BY nome');
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Criar setor (ignora duplicata)
+router.post('/db-setores', requireAuth, async (req, res) => {
+  try {
+    const { nome } = req.body;
+    if (!nome || !nome.trim()) return res.status(400).json({ error: 'Nome obrigatorio' });
+    const r = await pool.query(
+      'INSERT INTO db_setores (nome) VALUES ($1) ON CONFLICT (nome) DO NOTHING RETURNING *',
+      [nome.trim()]
+    );
+    if (r.rows.length === 0) {
+      // Já existe, retorna o existente
+      const existing = await pool.query('SELECT * FROM db_setores WHERE nome=$1', [nome.trim()]);
+      return res.json(existing.rows[0]);
+    }
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Excluir setor
+router.delete('/db-setores/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM db_setores WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ==================== REGISTROS ====================
 
-// Listar todos
 router.get('/db-registros', requireAuth, async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM db_registros ORDER BY data DESC, hora DESC');
@@ -13,7 +48,6 @@ router.get('/db-registros', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Criar
 router.post('/db-registros', requireAuth, async (req, res) => {
   try {
     const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
@@ -28,7 +62,6 @@ router.post('/db-registros', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Atualizar
 router.put('/db-registros/:id', requireAuth, async (req, res) => {
   try {
     const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
@@ -44,7 +77,6 @@ router.put('/db-registros/:id', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Excluir
 router.delete('/db-registros/:id', requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM db_registros WHERE id=$1', [req.params.id]);
