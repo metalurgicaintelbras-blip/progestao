@@ -12,11 +12,11 @@ router.get('/cl-atividades', requireAuth, async (req, res) => {
 
 router.post('/cl-atividades', requireAuth, async (req, res) => {
   try {
-    const { nome, freq, inicio, status, descricao } = req.body;
+    const { nome, freq, inicio, status, descricao, horario, horario2 } = req.body;
     if (!nome || !freq || !inicio) return res.status(400).json({ error: 'Nome, frequencia e inicio obrigatorios' });
     const r = await pool.query(
-      'INSERT INTO cl_atividades (nome,freq,inicio,status,descricao) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-      [nome, freq, inicio, status||'Ativa', descricao||null]
+      'INSERT INTO cl_atividades (nome,freq,inicio,status,descricao,horario,horario2) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [nome, freq, inicio, status||'Ativa', descricao||null, horario||null, horario2||null]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -24,10 +24,10 @@ router.post('/cl-atividades', requireAuth, async (req, res) => {
 
 router.put('/cl-atividades/:id', requireAuth, async (req, res) => {
   try {
-    const { nome, freq, inicio, status, descricao } = req.body;
+    const { nome, freq, inicio, status, descricao, horario, horario2 } = req.body;
     const r = await pool.query(
-      'UPDATE cl_atividades SET nome=$1,freq=$2,inicio=$3,status=$4,descricao=$5,updated_at=NOW() WHERE id=$6 RETURNING *',
-      [nome, freq, inicio, status, descricao, req.params.id]
+      'UPDATE cl_atividades SET nome=$1,freq=$2,inicio=$3,status=$4,descricao=$5,horario=$6,horario2=$7,updated_at=NOW() WHERE id=$8 RETURNING *',
+      [nome, freq, inicio, status, descricao, horario||null, horario2||null, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
@@ -72,10 +72,18 @@ router.delete('/cl-execucoes/:id', requireAuth, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Desfazer por atividade + data
+// Desfazer por atividade + data (apaga TODAS execuções daquele dia)
 router.delete('/cl-execucoes/desfazer/:ativId/:data', requireAuth, async (req, res) => {
   try {
     await pool.query('DELETE FROM cl_execucoes WHERE atividade_id=$1 AND data=$2', [req.params.ativId, req.params.data]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Desfazer execução individual (por ID)
+router.delete('/cl-execucoes/desfazer-um/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM cl_execucoes WHERE id=$1', [req.params.id]);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
