@@ -85,7 +85,10 @@
       <div class="form-group"><label>Observação</label><input id="cv-obs"></div>
     </div>
     <button class="btn-sm btn-green" onclick="salvarConvite()">Registrar Convite</button>
-    <div class="tbl-wrap" style="margin-top:20px"><table><thead><tr><th>Colaborador</th><th>Data Convite</th><th>Data Banco</th><th>Resposta</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="tb-conv"></tbody></table></div>
+
+    <p style="font-size:.8rem;color:var(--text2);margin-top:20px">Clique no nome do colaborador para ver todos os convites dele</p>
+    <div class="search-bar" style="margin-top:8px"><input id="search-conv" placeholder="Buscar por nome do colaborador..." oninput="renderConv()"></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Data Convite</th><th>Data Banco</th><th>Resposta</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="tb-conv"></tbody></table></div>
   </div>
 
   <!-- SALDO POR COLABORADOR -->
@@ -118,7 +121,24 @@
   </div>
 </div></div>
 
-<!-- MODAL HISTÓRICO -->
+<!-- MODAL AJUSTAR CONVITE -->
+<div class="modal-overlay" id="modal-aj-conv"><div class="modal">
+  <h3>✏️ Ajustar Convite</h3>
+  <input type="hidden" id="ajc-id">
+  <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+    <div class="form-group"><label>Colaborador *</label><select id="ajc-colab"></select></div>
+    <div class="form-group"><label>Resposta</label><select id="ajc-resp"><option>Pendente</option><option>Aceito</option><option>Recusado</option></select></div>
+    <div class="form-group"><label>Data do Convite *</label><input id="ajc-data" type="date"></div>
+    <div class="form-group"><label>Data para Banco *</label><input id="ajc-db" type="date"></div>
+    <div class="form-group" style="grid-column:1/-1"><label>Observação</label><input id="ajc-obs"></div>
+  </div>
+  <div class="btns">
+    <button class="btn-sm btn-ghost" onclick="fecharModalAjConv()">Cancelar</button>
+    <button class="btn-sm btn-green" onclick="salvarAjusteConv()">Salvar Ajuste</button>
+  </div>
+</div></div>
+
+<!-- MODAL HISTÓRICO LANÇAMENTOS -->
 <div class="modal-overlay" id="modal-hist"><div class="modal lg">
   <h3 id="hist-titulo">Histórico</h3>
   <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
@@ -131,6 +151,17 @@
     <tbody id="hist-tb"></tbody>
   </table></div>
   <div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModalHist()">Fechar</button></div>
+</div></div>
+
+<!-- MODAL HISTÓRICO CONVITES (por colaborador, sem filtro de mês) -->
+<div class="modal-overlay" id="modal-hist-conv"><div class="modal lg">
+  <h3 id="hist-conv-titulo">Convites</h3>
+  <div class="hist-summary" id="hist-conv-summary"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Data Convite</th><th>Data Banco</th><th>Resposta</th><th>Observação</th></tr></thead>
+    <tbody id="hist-conv-tb"></tbody>
+  </table></div>
+  <div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModalHistConv()">Fechar</button></div>
 </div></div>
 
 <script>
@@ -154,9 +185,7 @@ function fmt(d){
   const dt=new Date(d);
   return isNaN(dt)?'-':dt.toLocaleDateString('pt-BR');
 }
-/* Extrai só "YYYY-MM-DD" de qualquer string vinda do banco */
 function isoDate(d){return d?String(d).slice(0,10):''}
-/* Extrai só "YYYY-MM" para agrupar por mês */
 function isoMes(d){return d?String(d).slice(0,7):''}
 
 function minToH(m){const h=Math.floor(Math.abs(m)/60);const mm=Math.abs(m)%60;return(m<0?'-':'')+h+'h'+String(mm).padStart(2,'0')}
@@ -174,7 +203,7 @@ function showTab(t){
 }
 
 function populateSelects(){
-  ['n-colab','cv-colab','aj-colab'].forEach(id=>{
+  ['n-colab','cv-colab','aj-colab','ajc-colab'].forEach(id=>{
     const s=document.getElementById(id);if(!s)return;
     s.innerHTML='<option value="">Selecione...</option>'+colabs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   });
@@ -265,11 +294,23 @@ async function salvarAjuste(){
 
 /* CONVITES */
 function renderConv(){
+  const q=(document.getElementById('search-conv')?.value||'').toLowerCase();
+  const list=convites.filter(c=>(c.colab_nome||'').toLowerCase().includes(q));
   const tb=document.getElementById('tb-conv');
-  if(!convites.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum convite</td></tr>';return}
-  tb.innerHTML=convites.map(c=>{
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum convite</td></tr>';return}
+  tb.innerHTML=list.map(c=>{
     const badge=c.resposta==='Aceito'?'badge-green':c.resposta==='Recusado'?'badge-red':'badge-yellow';
-    return `<tr><td>${c.colab_nome||'-'}</td><td>${fmt(c.data)}</td><td>${fmt(c.data_banco)}</td><td><span class="badge ${badge}">${c.resposta}</span></td><td>${c.obs||'-'}</td><td><button class="btn-sm btn-danger" onclick="delItem('bh-convites',${c.id})">🗑</button></td></tr>`;
+    return `<tr>
+      <td><span class="link-name" onclick="abrirHistoricoConv(${c.colaborador_id},'${(c.colab_nome||'').replace(/'/g,"\\'")}')">${c.colab_nome||'-'}</span></td>
+      <td>${fmt(c.data)}</td>
+      <td>${fmt(c.data_banco)}</td>
+      <td><span class="badge ${badge}">${c.resposta}</span></td>
+      <td>${c.obs||'-'}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="abrirAjusteConv(${c.id})" title="Ajustar">✏️</button>
+        <button class="btn-sm btn-danger" onclick="delItem('bh-convites',${c.id})" title="Excluir">🗑</button>
+      </td>
+    </tr>`;
   }).join('');
 }
 async function salvarConvite(){
@@ -280,8 +321,82 @@ async function salvarConvite(){
   const obs=document.getElementById('cv-obs').value;
   if(!colaborador_id||!data||!data_banco)return toast('Preencha campos obrigatórios','error');
   await api.post('/api/bh-convites',{colaborador_id:+colaborador_id,data,data_banco,resposta,obs});
-  toast('Convite registrado!');await loadAll();
+  toast('Convite registrado!');
+  document.getElementById('cv-obs').value='';
+  await loadAll();
 }
+
+/* AJUSTAR CONVITE */
+function abrirAjusteConv(id){
+  const c=convites.find(x=>x.id===id);
+  if(!c)return toast('Convite não encontrado','error');
+  const sel=document.getElementById('ajc-colab');
+  sel.innerHTML=colabs.map(co=>`<option value="${co.id}">${co.nome}</option>`).join('');
+  document.getElementById('ajc-id').value=c.id;
+  document.getElementById('ajc-colab').value=c.colaborador_id;
+  document.getElementById('ajc-resp').value=c.resposta||'Pendente';
+  document.getElementById('ajc-data').value=isoDate(c.data);
+  document.getElementById('ajc-db').value=isoDate(c.data_banco);
+  document.getElementById('ajc-obs').value=c.obs||'';
+  document.getElementById('modal-aj-conv').classList.add('show');
+}
+function fecharModalAjConv(){document.getElementById('modal-aj-conv').classList.remove('show')}
+async function salvarAjusteConv(){
+  const id=document.getElementById('ajc-id').value;
+  const colaborador_id=document.getElementById('ajc-colab').value;
+  const data=document.getElementById('ajc-data').value;
+  const data_banco=document.getElementById('ajc-db').value;
+  const resposta=document.getElementById('ajc-resp').value;
+  const obs=document.getElementById('ajc-obs').value;
+  if(!colaborador_id||!data||!data_banco)return toast('Preencha campos obrigatórios','error');
+  const r=await api.put('/api/bh-convites/'+id,{colaborador_id:+colaborador_id,data,data_banco,resposta,obs});
+  if(r.error)return toast(r.error,'error');
+  toast('Ajuste salvo!');
+  fecharModalAjConv();
+  await loadAll();
+}
+
+/* HISTÓRICO DE CONVITES POR COLABORADOR */
+function abrirHistoricoConv(colabId, nome){
+  document.getElementById('hist-conv-titulo').textContent='📩 Convites — '+nome;
+
+  // ordena por data do convite (mais recente primeiro)
+  const list=convites
+    .filter(c=>c.colaborador_id===colabId)
+    .slice()
+    .sort((a,b)=>isoDate(b.data).localeCompare(isoDate(a.data)));
+
+  // resumo
+  const tot=list.length;
+  const aceitos=list.filter(c=>c.resposta==='Aceito').length;
+  const recusados=list.filter(c=>c.resposta==='Recusado').length;
+  const pendentes=list.filter(c=>c.resposta==='Pendente').length;
+
+  document.getElementById('hist-conv-summary').innerHTML=`
+    <div class="hs-item"><div class="hs-num" style="color:var(--accent)">${tot}</div><div class="hs-lbl">Total</div></div>
+    <div class="hs-item"><div class="hs-num" style="color:var(--green)">${aceitos}</div><div class="hs-lbl">Aceitos</div></div>
+    <div class="hs-item"><div class="hs-num" style="color:var(--red)">${recusados}</div><div class="hs-lbl">Recusados</div></div>
+    <div class="hs-item"><div class="hs-num" style="color:var(--yellow)">${pendentes}</div><div class="hs-lbl">Pendentes</div></div>
+  `;
+
+  const tb=document.getElementById('hist-conv-tb');
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text2)">Nenhum convite</td></tr>';
+  } else {
+    tb.innerHTML=list.map(c=>{
+      const badge=c.resposta==='Aceito'?'badge-green':c.resposta==='Recusado'?'badge-red':'badge-yellow';
+      return `<tr>
+        <td>${fmt(c.data)}</td>
+        <td>${fmt(c.data_banco)}</td>
+        <td><span class="badge ${badge}">${c.resposta}</span></td>
+        <td style="max-width:280px;white-space:normal">${c.obs||'-'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('modal-hist-conv').classList.add('show');
+}
+function fecharModalHistConv(){document.getElementById('modal-hist-conv').classList.remove('show')}
 
 /* SALDO */
 function renderSaldo(){
@@ -304,7 +419,7 @@ function renderSaldo(){
   }).join('');
 }
 
-/* HISTÓRICO MENSAL */
+/* HISTÓRICO MENSAL DE LANÇAMENTOS */
 function abrirHistorico(colabId, nome){
   histColabId=colabId;
   document.getElementById('hist-titulo').textContent='📊 Histórico — '+nome;
@@ -318,13 +433,11 @@ function abrirHistorico(colabId, nome){
     return;
   }
 
-  // meses únicos (YYYY-MM) em ordem decrescente — sem usar Date pra evitar fuso
   const meses=[...new Set(list.map(l=>isoMes(l.data)))].filter(Boolean).sort().reverse();
 
   const sel=document.getElementById('hist-mes');
   sel.innerHTML=meses.map(m=>{
     const [y,mo]=m.split('-');
-    // monta nome do mês manualmente com Date local (sem timezone shift, pois usa construtor numérico)
     const nomeMes=new Date(+y,+mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     return `<option value="${m}">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</option>`;
   }).join('');
@@ -338,13 +451,11 @@ function renderHistMes(){
   const mes=document.getElementById('hist-mes').value;
   if(!mes||!histColabId)return;
 
-  // ordena por string YYYY-MM-DD (sem Date)
   const todos=lancamentos
     .filter(l=>l.colaborador_id===histColabId)
     .slice()
     .sort((a,b)=>isoDate(a.data).localeCompare(isoDate(b.data)));
 
-  // acumulado por linha
   let acc=0;
   const enriched=todos.map(l=>{
     const v=l.tipo==='Crédito'?l.minutos:-l.minutos;
@@ -352,7 +463,6 @@ function renderHistMes(){
     return {...l, acumulado:acc};
   });
 
-  // filtra do mês escolhido comparando strings
   const list=enriched.filter(l=>isoMes(l.data)===mes);
 
   let cred=0,deb=0;
