@@ -28,6 +28,22 @@ router.post('/bh-lancamentos', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// >>> NOVO: PUT para AJUSTE/EDIÇÃO de lançamento <<<
+router.put('/bh-lancamentos/:id', requireAuth, async (req, res) => {
+  try {
+    const { colaborador_id, tipo, minutos, data, motivo, justificativa } = req.body;
+    if (!colaborador_id || !data || !minutos) return res.status(400).json({ error: 'Campos obrigatorios' });
+    const r = await pool.query(
+      `UPDATE bh_lancamentos
+         SET colaborador_id=$1, tipo=$2, minutos=$3, data=$4, motivo=$5, justificativa=$6
+       WHERE id=$7 RETURNING *`,
+      [colaborador_id, tipo, minutos, data, motivo||null, justificativa||null, req.params.id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Lancamento nao encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.delete('/bh-lancamentos/:id', requireAuth, async (req, res) => {
   try { await pool.query('DELETE FROM bh_lancamentos WHERE id=$1', [req.params.id]); res.json({ success: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
@@ -62,7 +78,7 @@ router.delete('/bh-convites/:id', requireAuth, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ======================== ATRASOS ========================
+// ======================== ATRASOS (mantido no backend, oculto na UI) ========================
 
 router.get('/bh-atrasos', requireAuth, async (req, res) => {
   try {
@@ -91,7 +107,7 @@ router.delete('/bh-atrasos/:id', requireAuth, async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ======================== EVENTOS ========================
+// ======================== EVENTOS (mantido no backend, oculto na UI) ========================
 
 router.get('/bh-eventos', requireAuth, async (req, res) => {
   try {
