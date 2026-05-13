@@ -28,7 +28,6 @@ router.post('/bh-lancamentos', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// >>> NOVO: PUT para AJUSTE/EDIÇÃO de lançamento <<<
 router.put('/bh-lancamentos/:id', requireAuth, async (req, res) => {
   try {
     const { colaborador_id, tipo, minutos, data, motivo, justificativa } = req.body;
@@ -69,6 +68,22 @@ router.post('/bh-convites', requireAuth, async (req, res) => {
       'INSERT INTO bh_convites (colaborador_id,data,data_banco,resposta,obs) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [colaborador_id, data, data_banco, resposta||'Pendente', obs||null]
     );
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// >>> NOVO: PUT para AJUSTE/EDIÇÃO de convite <<<
+router.put('/bh-convites/:id', requireAuth, async (req, res) => {
+  try {
+    const { colaborador_id, data, data_banco, resposta, obs } = req.body;
+    if (!colaborador_id || !data || !data_banco) return res.status(400).json({ error: 'Campos obrigatorios' });
+    const r = await pool.query(
+      `UPDATE bh_convites
+         SET colaborador_id=$1, data=$2, data_banco=$3, resposta=$4, obs=$5
+       WHERE id=$6 RETURNING *`,
+      [colaborador_id, data, data_banco, resposta||'Pendente', obs||null, req.params.id]
+    );
+    if (!r.rows[0]) return res.status(404).json({ error: 'Convite nao encontrado' });
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
