@@ -23,7 +23,6 @@ router.post('/db-setores', requireAuth, async (req, res) => {
       [nome.trim()]
     );
     if (r.rows.length === 0) {
-      // Já existe, retorna o existente
       const existing = await pool.query('SELECT * FROM db_setores WHERE nome=$1', [nome.trim()]);
       return res.json(existing.rows[0]);
     }
@@ -50,13 +49,21 @@ router.get('/db-registros', requireAuth, async (req, res) => {
 
 router.post('/db-registros', requireAuth, async (req, res) => {
   try {
-    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
+    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao } = req.body;
     if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
+
+    const tipoFinal = (tipo === 'ocorrencia') ? 'ocorrencia' : 'pendencia';
+    // Ocorrência não usa prioridade, status, nem previsão de conclusão
+    const pri  = tipoFinal === 'ocorrencia' ? null : (prioridade || 'Baixa');
+    const st   = tipoFinal === 'ocorrencia' ? null : (status || 'Pendente');
+    const prev = tipoFinal === 'ocorrencia' ? null : (previsao_conclusao || null);
+
     const r = await pool.query(
-      `INSERT INTO db_registros (data,hora,turno,categoria,prioridade,status,descricao,acao,envolvidos,foto)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [data, hora||null, turno||null, categoria||null, prioridade||'Baixa', status||'Pendente',
-       descricao, acao||null, JSON.stringify(envolvidos||[]), foto||null]
+      `INSERT INTO db_registros
+        (tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [tipoFinal, data, hora || null, turno || null, categoria || null, pri, st,
+       descricao, acao || null, JSON.stringify(envolvidos || []), foto || null, prev]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -64,13 +71,22 @@ router.post('/db-registros', requireAuth, async (req, res) => {
 
 router.put('/db-registros/:id', requireAuth, async (req, res) => {
   try {
-    const { data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto } = req.body;
+    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao } = req.body;
     if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
+
+    const tipoFinal = (tipo === 'ocorrencia') ? 'ocorrencia' : 'pendencia';
+    const pri  = tipoFinal === 'ocorrencia' ? null : (prioridade || 'Baixa');
+    const st   = tipoFinal === 'ocorrencia' ? null : (status || 'Pendente');
+    const prev = tipoFinal === 'ocorrencia' ? null : (previsao_conclusao || null);
+
     const r = await pool.query(
-      `UPDATE db_registros SET data=$1,hora=$2,turno=$3,categoria=$4,prioridade=$5,status=$6,
-       descricao=$7,acao=$8,envolvidos=$9,foto=$10 WHERE id=$11 RETURNING *`,
-      [data, hora||null, turno||null, categoria||null, prioridade||'Baixa', status||'Pendente',
-       descricao, acao||null, JSON.stringify(envolvidos||[]), foto||null, req.params.id]
+      `UPDATE db_registros SET
+         tipo=$1, data=$2, hora=$3, turno=$4, categoria=$5, prioridade=$6, status=$7,
+         descricao=$8, acao=$9, envolvidos=$10, foto=$11, previsao_conclusao=$12,
+         updated_at=NOW()
+       WHERE id=$13 RETURNING *`,
+      [tipoFinal, data, hora || null, turno || null, categoria || null, pri, st,
+       descricao, acao || null, JSON.stringify(envolvidos || []), foto || null, prev, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
@@ -99,7 +115,7 @@ router.post('/db-resumos', requireAuth, async (req, res) => {
     if (!data || !texto) return res.status(400).json({ error: 'Data e texto obrigatorios' });
     const r = await pool.query(
       'INSERT INTO db_resumos (data,turno,texto,obs) VALUES ($1,$2,$3,$4) RETURNING *',
-      [data, turno||null, texto, obs||null]
+      [data, turno || null, texto, obs || null]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -110,8 +126,8 @@ router.put('/db-resumos/:id', requireAuth, async (req, res) => {
     const { data, turno, texto, obs } = req.body;
     if (!data || !texto) return res.status(400).json({ error: 'Data e texto obrigatorios' });
     const r = await pool.query(
-      'UPDATE db_resumos SET data=$1,turno=$2,texto=$3,obs=$4 WHERE id=$5 RETURNING *',
-      [data, turno||null, texto, obs||null, req.params.id]
+      'UPDATE db_resumos SET data=$1, turno=$2, texto=$3, obs=$4, updated_at=NOW() WHERE id=$5 RETURNING *',
+      [data, turno || null, texto, obs || null, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
