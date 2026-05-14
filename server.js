@@ -22,7 +22,6 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000, secure: false }
 }));
 
-// Servir arquivos estáticos SEM prefixo /public
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ======================== MIDDLEWARE AUTH ========================
@@ -41,6 +40,7 @@ const diarioRoutes = require('./routes/diario');
 const checklistRoutes = require('./routes/checklist');
 const exportRoutes = require('./routes/export');
 const producaoRoutes = require('./routes/producao');
+const produtosRoutes = require('./routes/produtos');
 
 // ======================== REGISTRAR ROTAS API ========================
 
@@ -54,6 +54,7 @@ app.use('/api', diarioRoutes);
 app.use('/api', checklistRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api', producaoRoutes);
+app.use('/api', produtosRoutes);
 
 // ======================== PAGINA DE LOGIN ========================
 
@@ -68,12 +69,10 @@ const paginas = [
   'treinamentos', 'diario-bordo', 'checklist', 'producao'
 ];
 
-// Página principal
 app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Cada módulo serve sua própria página HTML
 paginas.forEach(p => {
   app.get('/' + p, requireAuth, (req, res) => {
     const arquivo = path.join(__dirname, 'public', p + '.html');
