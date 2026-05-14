@@ -210,12 +210,14 @@ async function initDB() {
         acao TEXT,
         envolvidos JSONB DEFAULT '[]',
         foto TEXT,
+        fotos JSONB DEFAULT '[]',
         previsao_conclusao DATE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
       ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS foto TEXT;
+      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS fotos JSONB DEFAULT '[]';
       ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'pendencia';
       ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS previsao_conclusao DATE;
       UPDATE db_registros SET tipo='pendencia' WHERE tipo IS NULL OR tipo='';
