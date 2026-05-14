@@ -15,6 +15,7 @@ a{color:var(--accent);text-decoration:none}
 .topbar .clock{background:var(--card2);padding:4px 12px;border-radius:20px;font-size:.85rem;color:var(--text2)}
 .topbar .user{font-size:.9rem;color:var(--text2)}
 .btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}
+.btn-sm:disabled{opacity:.5;cursor:not-allowed}
 .btn-danger{background:var(--red);color:#fff}.btn-danger:hover{opacity:.85}
 .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#2563eb}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#16a34a}
@@ -86,6 +87,21 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
 .status-toggle button.nok.active{background:var(--red);color:#fff}
 .irreg-tags{display:flex;flex-wrap:wrap;gap:4px}
 .irreg-tag{background:rgba(239,68,68,.18);color:var(--red);padding:3px 9px;border-radius:10px;font-size:.75rem;font-weight:600}
+
+/* ===== CHECKING — multi-seleção de colaboradores ===== */
+.colab-search-wrap{position:relative;max-width:700px}
+.colab-sugestoes{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:240px;overflow-y:auto;z-index:50;margin-top:4px;box-shadow:0 8px 20px rgba(0,0,0,.4);display:none}
+.colab-sugestoes.show{display:block}
+.colab-sug-item{padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.88rem}
+.colab-sug-item:last-child{border-bottom:none}
+.colab-sug-item:hover{background:rgba(59,130,246,.12)}
+.colab-sug-empty{padding:12px;color:var(--text2);text-align:center;font-size:.85rem}
+.colab-chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:38px;padding:8px;border:1px dashed var(--border);border-radius:8px;background:rgba(255,255,255,.02);max-width:700px}
+.colab-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.45);border-radius:16px;font-size:.85rem;color:#93c5fd}
+.colab-chip button{background:none;border:none;color:var(--red);cursor:pointer;font-weight:700;font-size:1rem;line-height:1;padding:0 2px}
+.colab-empty-hint{color:var(--text2);font-size:.82rem;align-self:center}
+.colab-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;max-width:700px}
+.colab-counter{margin-left:auto;align-self:center;color:var(--text2);font-size:.82rem}
 
 @media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 </style>
@@ -198,14 +214,32 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
   <!-- CHECKING -->
   <div class="section" id="sec-checking">
     <h3>👀 Novo Checking de EPI</h3>
-    <p style="color:var(--text2);font-size:.85rem;margin-top:4px">Registre as inspeções na linha. Marque o status do colaborador e, se irregular, selecione quais EPIs ele não estava usando.</p>
+    <p style="color:var(--text2);font-size:.85rem;margin-top:4px">Registre as inspeções na linha. Selecione um ou vários colaboradores — um checking individual será criado para cada um.</p>
 
     <div class="form-grid" style="margin-top:14px">
       <div class="form-group"><label>Data *</label><input id="ch-data" type="date"></div>
       <div class="form-group"><label>Hora *</label><input id="ch-hora" type="time"></div>
-      <div class="form-group"><label>Colaborador *</label><select id="ch-colab"></select></div>
       <div class="form-group"><label>Turno</label>
         <select id="ch-turno"><option value="">Selecione...</option><option>1º Turno</option><option>2º Turno</option><option>3º Turno</option></select>
+      </div>
+    </div>
+
+    <!-- ===== MULTI-SELEÇÃO DE COLABORADORES ===== -->
+    <div style="margin-top:18px">
+      <label style="font-size:.8rem;color:var(--text2);display:block;margin-bottom:6px">
+        Colaboradores * <small style="color:var(--text2);font-weight:normal">(digite para buscar — pode adicionar vários)</small>
+      </label>
+      <div class="colab-search-wrap">
+        <input type="text" id="ch-colab-busca" placeholder="Digite o nome do colaborador..." autocomplete="off" oninput="chFiltrarColabs()" onfocus="chFiltrarColabs()">
+        <div id="ch-colab-sugestoes" class="colab-sugestoes"></div>
+      </div>
+      <div id="ch-colab-chips" class="colab-chips-wrap">
+        <span class="colab-empty-hint">Nenhum colaborador selecionado</span>
+      </div>
+      <div class="colab-actions">
+        <button type="button" class="btn-sm btn-ghost" onclick="chSelecionarTodos()">➕ Selecionar todos</button>
+        <button type="button" class="btn-sm btn-ghost" onclick="chLimparColabs()">🗑️ Limpar</button>
+        <span id="ch-colab-counter" class="colab-counter"></span>
       </div>
     </div>
 
@@ -215,6 +249,7 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
         <button type="button" id="bt-st-ok" class="ok active" onclick="setStatus('OK')">✅ Conforme</button>
         <button type="button" id="bt-st-nok" class="nok" onclick="setStatus('NOK')">❌ Irregular</button>
       </div>
+      <p style="color:var(--text2);font-size:.78rem;margin-top:6px">O status e os EPIs irregulares marcados serão aplicados a todos os colaboradores selecionados.</p>
     </div>
 
     <div id="grp-epis-irreg" style="margin-top:18px;max-width:900px;display:none">
@@ -227,7 +262,7 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
     </div>
 
     <div style="margin-top:14px;display:flex;gap:10px">
-      <button class="btn-sm btn-green" onclick="salvarChecking()">Registrar Checking</button>
+      <button class="btn-sm btn-green" id="btn-salvar-checking" onclick="salvarChecking()">Registrar Checking</button>
       <button class="btn-sm btn-ghost" onclick="limparChecking()">Limpar</button>
     </div>
 
@@ -318,6 +353,7 @@ var editId=null;
 var fotoBase64=null;
 var chStatus='OK';        // OK ou NOK
 var chEpisIrreg=[];       // ids dos EPIs marcados como irregulares
+var chColabsSel=[];       // ids dos colaboradores selecionados (multi)
 
 /* ============ API ============ */
 var api={
@@ -328,7 +364,7 @@ var api={
 };
 
 /* ============ UTILS ============ */
-function toast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast';t.style.background=type==='error'?'var(--red)':'var(--green)';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000)}
+function toast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast';var bg='var(--green)';if(type==='error')bg='var(--red)';else if(type==='warning')bg='var(--orange)';t.style.background=bg;t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},3000)}
 function fmtDate(d){if(!d)return'-';var s=String(d).slice(0,10);var p=s.split('-');if(p.length!==3)return'-';return p[2]+'/'+p[1]+'/'+p[0]}
 function isoDate(d){return d?String(d).slice(0,10):''}
 function hoje(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -386,7 +422,6 @@ async function loadAll(){
   entregas=results[1]||[];
   colabs=results[2]||[];
   checkings=results[3]||[];
-  // normaliza registros (vem JSON do banco — já decodificado pelo pg)
   checkings.forEach(function(c){if(typeof c.registros==='string'){try{c.registros=JSON.parse(c.registros)}catch(e){c.registros=[]}}});
   updateKPIs();
   renderLista();
@@ -410,7 +445,6 @@ function updateKPIs(){
   document.getElementById('k-vencer').textContent=vencer;
   document.getElementById('k-vencidos').textContent=vencidos;
 
-  // Checkings de hoje
   var h=hoje();
   var hojeList=checkings.filter(function(c){return isoDate(c.data)===h});
   var irreg=hojeList.filter(function(c){return c.irregulares>0});
@@ -501,15 +535,73 @@ function renderEntregas(){
 
 /* ============ CHECKING ============ */
 function prepareChecking(){
-  // popula colaboradores
-  var sc=document.getElementById('ch-colab');
-  sc.innerHTML='<option value="">Selecione...</option>'+colabs.map(function(c){return'<option value="'+c.id+'">'+escHtml(c.nome)+'</option>'}).join('');
   if(!document.getElementById('ch-data').value)document.getElementById('ch-data').value=hoje();
   if(!document.getElementById('ch-hora').value)document.getElementById('ch-hora').value=horaAgora();
-  // popula chips de EPIs
   renderEpiChips();
+  chRenderColabChips();
 }
 
+/* ----- Multi-seleção de colaboradores ----- */
+function chFiltrarColabs(){
+  var termo=(document.getElementById('ch-colab-busca').value||'').toLowerCase().trim();
+  var box=document.getElementById('ch-colab-sugestoes');
+  var lista=(colabs||[])
+    .filter(function(c){return chColabsSel.indexOf(c.id)<0})
+    .filter(function(c){return !termo || (c.nome||'').toLowerCase().indexOf(termo)>=0})
+    .slice(0,30);
+
+  if(!lista.length){
+    box.innerHTML='<div class="colab-sug-empty">Nenhum colaborador encontrado</div>';
+  } else {
+    box.innerHTML=lista.map(function(c){
+      return '<div class="colab-sug-item" onclick="chAdicionarColab('+c.id+')"><span>👤 '+escHtml(c.nome)+'</span><small style="color:var(--text2)">'+escHtml(c.setor||'')+'</small></div>';
+    }).join('');
+  }
+  box.classList.add('show');
+}
+function chAdicionarColab(id){
+  if(chColabsSel.indexOf(id)<0){chColabsSel.push(id);chRenderColabChips()}
+  document.getElementById('ch-colab-busca').value='';
+  document.getElementById('ch-colab-sugestoes').classList.remove('show');
+  document.getElementById('ch-colab-busca').focus();
+}
+function chRemoverColab(id){
+  chColabsSel=chColabsSel.filter(function(x){return x!==id});
+  chRenderColabChips();
+}
+function chRenderColabChips(){
+  var box=document.getElementById('ch-colab-chips');
+  var counter=document.getElementById('ch-colab-counter');
+  if(!chColabsSel.length){
+    box.innerHTML='<span class="colab-empty-hint">Nenhum colaborador selecionado</span>';
+    counter.textContent='';
+    return;
+  }
+  box.innerHTML=chColabsSel.map(function(id){
+    var c=(colabs||[]).find(function(x){return x.id===id});
+    if(!c)return'';
+    return '<span class="colab-chip">👤 '+escHtml(c.nome)+' <button type="button" onclick="chRemoverColab('+id+')" title="Remover">×</button></span>';
+  }).join('');
+  counter.textContent=chColabsSel.length+' selecionado(s)';
+}
+function chSelecionarTodos(){
+  chColabsSel=(colabs||[]).map(function(c){return c.id});
+  chRenderColabChips();
+  toast(chColabsSel.length+' colaboradores selecionados');
+}
+function chLimparColabs(){
+  chColabsSel=[];
+  chRenderColabChips();
+}
+// Fecha sugestões ao clicar fora
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ch-colab-busca')&&!e.target.closest('#ch-colab-sugestoes')){
+    var box=document.getElementById('ch-colab-sugestoes');
+    if(box)box.classList.remove('show');
+  }
+});
+
+/* ----- EPIs irregulares (chips) ----- */
 function renderEpiChips(){
   var wrap=document.getElementById('epi-chips');
   if(!epis.length){wrap.innerHTML='<span style="color:var(--text2);font-size:.85rem">Nenhum EPI cadastrado. Cadastre EPIs primeiro na aba "Cadastro".</span>';return}
@@ -534,49 +626,81 @@ function setStatus(st){
 function limparChecking(){
   document.getElementById('ch-data').value=hoje();
   document.getElementById('ch-hora').value=horaAgora();
-  document.getElementById('ch-colab').value='';
   document.getElementById('ch-turno').value='';
   document.getElementById('ch-obs').value='';
+  document.getElementById('ch-colab-busca').value='';
+  chColabsSel=[];
   chEpisIrreg=[];
+  chRenderColabChips();
   setStatus('OK');
 }
 
+/* ----- Salvar (loop individual por colaborador) ----- */
 async function salvarChecking(){
   var data=document.getElementById('ch-data').value;
   var hora=document.getElementById('ch-hora').value;
-  var colab_id=document.getElementById('ch-colab').value;
   var turno=document.getElementById('ch-turno').value;
   var obs=document.getElementById('ch-obs').value.trim();
-  if(!data||!hora||!colab_id)return toast('Data, hora e colaborador são obrigatórios','error');
+
+  if(!data||!hora)return toast('Data e hora são obrigatórias','error');
+  if(!chColabsSel.length)return toast('Selecione ao menos um colaborador','error');
   if(chStatus==='NOK' && !chEpisIrreg.length)return toast('Selecione ao menos 1 EPI irregular','error');
 
-  var colab=colabs.find(function(c){return c.id===parseInt(colab_id)});
+  var total=chColabsSel.length;
+  if(total>1){
+    if(!confirm('Será criado 1 checking individual para cada um dos '+total+' colaboradores selecionados.\n\nConfirmar?'))return;
+  }
+
+  var btn=document.getElementById('btn-salvar-checking');
+  btn.disabled=true;
   var nomesIrreg=chEpisIrreg.map(function(id){var e=epis.find(function(x){return x.id===id});return e?e.nome:'?'});
 
-  // Monta o registro detalhado para gravar dentro do campo JSON 'registros'
-  var detalhe={
-    hora:hora,
-    colaborador_id:parseInt(colab_id),
-    colab_nome:colab?colab.nome:'',
-    status:chStatus,
-    epis_irregulares_ids:chEpisIrreg.slice(),
-    epis_irregulares_nomes:nomesIrreg,
-    obs:obs
-  };
+  var sucesso=0, falhas=0;
 
-  var body={
-    data:data,
-    turno:turno||null,
-    total:1,
-    conformes:chStatus==='OK'?1:0,
-    irregulares:chStatus==='NOK'?1:0,
-    pct:chStatus==='OK'?100:0,
-    registros:[detalhe]
-  };
+  for(var i=0;i<chColabsSel.length;i++){
+    var colab_id=chColabsSel[i];
+    btn.textContent='Salvando '+(i+1)+'/'+total+'...';
 
-  var r=await api.post('/api/epis/checklists',body);
-  if(r&&r.error)return toast(r.error,'error');
-  toast('Checking registrado!');
+    var colab=colabs.find(function(c){return c.id===colab_id});
+    var detalhe={
+      hora:hora,
+      colaborador_id:colab_id,
+      colab_nome:colab?colab.nome:'',
+      status:chStatus,
+      epis_irregulares_ids:chEpisIrreg.slice(),
+      epis_irregulares_nomes:nomesIrreg.slice(),
+      obs:obs
+    };
+    var body={
+      data:data,
+      turno:turno||null,
+      total:1,
+      conformes:chStatus==='OK'?1:0,
+      irregulares:chStatus==='NOK'?1:0,
+      pct:chStatus==='OK'?100:0,
+      registros:[detalhe]
+    };
+
+    try{
+      var r=await api.post('/api/epis/checklists',body);
+      if(r && !r.error) sucesso++; else falhas++;
+    }catch(err){
+      console.error('Erro ao salvar checking p/ colab',colab_id,err);
+      falhas++;
+    }
+  }
+
+  btn.disabled=false;
+  btn.textContent='Registrar Checking';
+
+  if(falhas===0){
+    toast('✅ '+sucesso+' checking(s) registrado(s)!','success');
+  } else if(sucesso>0){
+    toast('⚠️ '+sucesso+' salvos, '+falhas+' falharam','warning');
+  } else {
+    toast('❌ Falha ao registrar os checkings','error');
+  }
+
   limparChecking();
   await loadAll();
 }
@@ -587,7 +711,6 @@ function renderCheckings(){
   var fdt=document.getElementById('filter-ch-dt').value;
   var list=checkings.slice();
 
-  // Cada registro tem 1 item dentro de registros (modelo desta aba). Vamos achatar para exibir 1 linha por inspeção.
   var rows=[];
   list.forEach(function(c){
     var det=(c.registros&&c.registros[0])||{};
@@ -682,7 +805,6 @@ function renderResumo(){
       if(e.dur_qtd>0){var val=calcValidade(en.dt,e.dur_qtd,e.dur_tipo||'meses');var dd=diffDays(val);if(dd!==null&&dd<0)vencidos++;else ativos++}
       else ativos++;
     });
-    // Quantas vezes esse EPI apareceu como irregular em algum checking
     var reprov=0;
     checkings.forEach(function(c){var det=(c.registros&&c.registros[0])||{};if(det.epis_irregulares_ids&&det.epis_irregulares_ids.indexOf(e.id)>=0)reprov++});
     return '<tr><td>'+escHtml(e.nome)+'</td><td>'+ents.length+'</td><td><span class="badge badge-green">'+ativos+'</span></td><td><span class="badge badge-red">'+vencidos+'</span></td><td><span class="badge badge-orange">'+reprov+'</span></td></tr>';
