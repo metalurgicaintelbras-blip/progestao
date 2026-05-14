@@ -255,25 +255,53 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS prod_planos (
+      /* ====== PRODUÇÃO ====== */
+
+      CREATE TABLE IF NOT EXISTS prod_produtos (
         id SERIAL PRIMARY KEY,
-        data DATE NOT NULL,
-        turno VARCHAR(30),
-        produto VARCHAR(200),
-        meta INTEGER DEFAULT 0,
-        obs TEXT,
+        cod_decio VARCHAR(50) UNIQUE NOT NULL,
+        cod_intelbras VARCHAR(50),
+        descricao VARCHAR(255) NOT NULL,
+        categoria VARCHAR(100),
+        valor NUMERIC(12,2),
+        minutos_reportados NUMERIC(10,3),
+        hora_reportado NUMERIC(10,6),
+        ativo BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE INDEX IF NOT EXISTS idx_prod_produtos_decio ON prod_produtos(cod_decio);
+      CREATE INDEX IF NOT EXISTS idx_prod_produtos_intelbras ON prod_produtos(cod_intelbras);
+
+      CREATE TABLE IF NOT EXISTS prod_planos (
+        id SERIAL PRIMARY KEY,
+        mes VARCHAR(7) NOT NULL,
+        codigo VARCHAR(50) NOT NULL,
+        descricao VARCHAR(255) NOT NULL,
+        meta_mensal INTEGER DEFAULT 0,
+        obs TEXT,
+        cod_decio VARCHAR(50),
+        cod_intelbras VARCHAR(50),
+        status VARCHAR(30) DEFAULT 'Ativo',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Ativo';
+      UPDATE prod_planos SET status='Ativo' WHERE status IS NULL OR status='';
+
       CREATE TABLE IF NOT EXISTS prod_apontamentos (
         id SERIAL PRIMARY KEY,
         plano_id INTEGER REFERENCES prod_planos(id) ON DELETE CASCADE,
-        hora TIME,
-        qtd INTEGER DEFAULT 0,
-        defeitos INTEGER DEFAULT 0,
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        data DATE NOT NULL,
+        qtd_realizada INTEGER DEFAULT 0,
+        atingiu_meta BOOLEAN DEFAULT TRUE,
+        justificativa TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(plano_id, data)
       );
 
       CREATE TABLE IF NOT EXISTS "session" (
