@@ -199,21 +199,26 @@ async function initDB() {
 
       CREATE TABLE IF NOT EXISTS db_registros (
         id SERIAL PRIMARY KEY,
+        tipo VARCHAR(20) DEFAULT 'pendencia',
         data DATE NOT NULL,
         hora TIME,
         turno VARCHAR(30),
         categoria VARCHAR(100),
         prioridade VARCHAR(30),
-        status VARCHAR(30) DEFAULT 'Resolvido',
+        status VARCHAR(30) DEFAULT 'Pendente',
         descricao TEXT NOT NULL,
         acao TEXT,
         envolvidos JSONB DEFAULT '[]',
         foto TEXT,
+        previsao_conclusao DATE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
       ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS foto TEXT;
+      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'pendencia';
+      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS previsao_conclusao DATE;
+      UPDATE db_registros SET tipo='pendencia' WHERE tipo IS NULL OR tipo='';
 
       CREATE TABLE IF NOT EXISTS db_resumos (
         id SERIAL PRIMARY KEY,
