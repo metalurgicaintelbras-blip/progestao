@@ -12,7 +12,7 @@ router.get('/prod-planos', requireAuth, async (req, res) => {
     let q = 'SELECT * FROM prod_planos';
     const params = [];
     if (mes) { q += ' WHERE mes=$1'; params.push(mes); }
-    q += ' ORDER BY codigo';
+    q += ' ORDER BY data_limite NULLS LAST, codigo';
     res.json((await pool.query(q, params)).rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -26,18 +26,29 @@ router.get('/prod-planos/:id', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Helper: extrai "YYYY-MM" de uma data ISO (data_limite)
+function mesDeData(dataIso) {
+  if (!dataIso) return null;
+  const s = String(dataIso).slice(0, 7); // YYYY-MM
+  return /^\d{4}-\d{2}$/.test(s) ? s : null;
+}
+
 // POST /api/prod-planos
 router.post('/prod-planos', requireAuth, async (req, res) => {
   try {
-    const { mes, codigo, descricao, meta_mensal, obs, cod_decio, cod_intelbras, status } = req.body;
-    if (!mes || !codigo || !descricao || !meta_mensal) {
-      return res.status(400).json({ error: 'Campos obrigatorios: mes, codigo, descricao, meta_mensal' });
+    const { mes, codigo, descricao, meta_mensal, obs, cod_decio, cod_intelbras, data_limite } = req.body;
+    if (!codigo || !descricao || !meta_mensal || !data_limite) {
+      return res.status(400).json({ error: 'Campos obrigatorios: codigo, descricao, meta_mensal, data_limite' });
     }
+    // Se "mes" não vier, derivamos do data_limite (mantém compatibilidade)
+    const mesFinal = mes || mesDeData(data_limite);
+    if (!mesFinal) return res.status(400).json({ error: 'Não foi possível determinar o mês a partir da data limite' });
+
     const r = await pool.query(
-      `INSERT INTO prod_planos (mes,codigo,descricao,meta_mensal,obs,cod_decio,cod_intelbras,status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [mes, codigo, descricao, parseInt(meta_mensal), obs || null,
-       cod_decio || null, cod_intelbras || null, status || 'Ativo']
+      `INSERT INTO prod_planos (mes,codigo,descricao,meta_mensal,obs,cod_decio,cod_intelbras,status,data_limite)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [mesFinal, codigo, descricao, parseInt(meta_mensal), obs || null,
+       cod_decio || null, cod_intelbras || null, 'Em andamento', data_limite]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -46,12 +57,13 @@ router.post('/prod-planos', requireAuth, async (req, res) => {
 // PUT /api/prod-planos/:id
 router.put('/prod-planos/:id', requireAuth, async (req, res) => {
   try {
-    const { mes, codigo, descricao, meta_mensal, obs, cod_decio, cod_intelbras, status } = req.body;
+    const { mes, codigo, descricao, meta_mensal, obs, cod_decio, cod_intelbras, data_limite } = req.body;
+    const mesFinal = mes || mesDeData(data_limite);
     const r = await pool.query(
       `UPDATE prod_planos SET mes=$1,codigo=$2,descricao=$3,meta_mensal=$4,obs=$5,
-       cod_decio=$6,cod_intelbras=$7,status=$8,updated_at=NOW() WHERE id=$9 RETURNING *`,
-      [mes, codigo, descricao, parseInt(meta_mensal), obs || null,
-       cod_decio || null, cod_intelbras || null, status || 'Ativo', req.params.id]
+       cod_decio=$6,cod_intelbras=$7,data_limite=$8,updated_at=NOW() WHERE id=$9 RETURNING *`,
+      [mesFinal, codigo, descricao, parseInt(meta_mensal), obs || null,
+       cod_decio || null, cod_intelbras || null, data_limite || null, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
@@ -72,7 +84,7 @@ router.delete('/prod-planos/:id', requireAuth, async (req, res) => {
 router.get('/prod-apontamentos', requireAuth, async (req, res) => {
   try {
     const { plano_id, mes } = req.query;
-    let q = `SELECT a.*, p.codigo, p.descricao as prod_descricao, p.meta_mensal
+    let q = `SELECT a.*, p.codigo, p.descricao as prod_descricao, p.meta_mensal, p.data_limite
              FROM prod_apontamentos a
              JOIN prod_planos p ON a.plano_id = p.id`;
     const params = [];
