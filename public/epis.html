@@ -51,6 +51,8 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
 .badge-red{background:rgba(239,68,68,.15);color:var(--red)}
 .badge-blue{background:rgba(59,130,246,.15);color:var(--accent)}
 .badge-orange{background:rgba(249,115,22,.15);color:var(--orange)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--accent2)}
+.badge-gray{background:rgba(148,163,184,.15);color:var(--text2)}
 .toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:var(--radius);color:#fff;font-weight:600;z-index:9999;animation:slideIn .3s}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}
@@ -198,6 +200,15 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
       <div class="form-group"><label>EPI *</label><select id="e-epi"></select></div>
       <div class="form-group"><label>Colaborador *</label><select id="e-colab"></select></div>
       <div class="form-group"><label>Data *</label><input id="e-data" type="date"></div>
+      <div class="form-group"><label>Motivo *</label>
+        <select id="e-motivo">
+          <option value="">Selecione...</option>
+          <option value="Novo">🆕 Novo</option>
+          <option value="Gasto">🧰 Gasto</option>
+          <option value="Vencimento">⏰ Vencimento</option>
+          <option value="Perda">❌ Perda</option>
+        </select>
+      </div>
     </div>
     <div style="margin-top:14px;display:flex;gap:10px">
       <button class="btn-sm btn-green" onclick="salvarEntrega()">Registrar Entrega</button>
@@ -205,9 +216,16 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
     <h3 style="margin-top:28px">Histórico de Entregas</h3>
     <div class="search-bar" style="margin-top:10px">
       <input id="search-entrega" placeholder="Buscar entrega..." oninput="renderEntregas()">
+      <select id="filter-entrega-motivo" onchange="renderEntregas()">
+        <option value="">Todos os motivos</option>
+        <option value="Novo">🆕 Novo</option>
+        <option value="Gasto">🧰 Gasto</option>
+        <option value="Vencimento">⏰ Vencimento</option>
+        <option value="Perda">❌ Perda</option>
+      </select>
     </div>
     <div class="tbl-wrap">
-      <table><thead><tr><th>EPI</th><th>Colaborador</th><th>Data Entrega</th><th>Validade</th><th>Status</th><th>Ações</th></tr></thead>
+      <table><thead><tr><th>EPI</th><th>Colaborador</th><th>Data Entrega</th><th>Validade</th><th>Motivo</th><th>Status</th><th>Ações</th></tr></thead>
       <tbody id="tb-entregas"></tbody></table>
     </div>
   </div>
@@ -303,6 +321,14 @@ tr.row-irregular:hover{background:rgba(239,68,68,.12)}
     </div>
 
     <div style="margin-top:24px">
+      <h4>Entregas por Motivo</h4>
+      <div class="tbl-wrap" style="margin-top:10px">
+        <table><thead><tr><th>Motivo</th><th>Total de Entregas</th><th>% do Total</th></tr></thead>
+        <tbody id="tb-resumo-motivo"></tbody></table>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
       <h4>Resumo por Colaborador (Checking)</h4>
       <div class="tbl-wrap" style="margin-top:10px">
         <table><thead><tr><th>Colaborador</th><th>Checkings</th><th>Conformes</th><th>Irregulares</th><th>% Conformidade</th></tr></thead>
@@ -378,6 +404,17 @@ function calcValidade(dtEntrega,durQtd,durTipo){
   else d.setDate(d.getDate()+durQtd);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+function badgeMotivo(m){
+  if(!m)return '<span class="badge badge-gray">-</span>';
+  var map={
+    'Novo':{cls:'badge-green',ic:'🆕'},
+    'Gasto':{cls:'badge-yellow',ic:'🧰'},
+    'Vencimento':{cls:'badge-orange',ic:'⏰'},
+    'Perda':{cls:'badge-red',ic:'❌'}
+  };
+  var cfg=map[m]||{cls:'badge-blue',ic:''};
+  return '<span class="badge '+cfg.cls+'">'+cfg.ic+' '+escHtml(m)+'</span>';
+}
 
 /* ============ FOTO ============ */
 function handleFotoSelect(e){var file=e.target.files[0];if(file)processarFoto(file)}
@@ -405,7 +442,7 @@ function showTab(t){
   if(t==='entregas')populateSelects();
   if(t==='checking')prepareChecking();
   if(t==='alertas')renderAlertas();
-  if(t==='relatorios'){renderResumo();renderResumoColab()}
+  if(t==='relatorios'){renderResumo();renderResumoMotivo();renderResumoColab()}
 }
 
 /* ============ LOAD DATA ============ */
@@ -420,7 +457,6 @@ async function loadAll(){
   entregas=results[1]||[];
   colabs=results[2]||[];
   checkings=results[3]||[];
-  // Ordena colaboradores em ordem alfabética
   colabs.sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'','pt-BR')});
   checkings.forEach(function(c){if(typeof c.registros==='string'){try{c.registros=JSON.parse(c.registros)}catch(e){c.registros=[]}}});
   updateKPIs();
@@ -509,15 +545,27 @@ async function salvarEntrega(){
   var epi_id=document.getElementById('e-epi').value;
   var colaborador_id=document.getElementById('e-colab').value;
   var dt=document.getElementById('e-data').value;
-  if(!epi_id||!colaborador_id||!dt)return toast('Preencha todos os campos','error');
-  await api.post('/api/epis/entregas',{epi_id:parseInt(epi_id),colaborador_id:parseInt(colaborador_id),dt:dt});
-  toast('Entrega registrada!');await loadAll();
+  var motivo=document.getElementById('e-motivo').value;
+  if(!epi_id||!colaborador_id||!dt)return toast('Preencha EPI, colaborador e data','error');
+  if(!motivo)return toast('Selecione o motivo da entrega','error');
+  await api.post('/api/epis/entregas',{epi_id:parseInt(epi_id),colaborador_id:parseInt(colaborador_id),dt:dt,motivo:motivo});
+  toast('Entrega registrada!');
+  // limpa o motivo após salvar (mantém EPI/colab/data para entregas em sequência)
+  document.getElementById('e-motivo').value='';
+  await loadAll();
 }
 function renderEntregas(){
   var q=(document.getElementById('search-entrega').value||'').toLowerCase();
-  var list=entregas.filter(function(e){var epi=epis.find(function(x){return x.id===e.epi_id});var name=(epi?epi.nome:'')+(e.colab_nome||'');return name.toLowerCase().indexOf(q)>=0});
+  var fmot=document.getElementById('filter-entrega-motivo').value;
+  var list=entregas.filter(function(e){
+    var epi=epis.find(function(x){return x.id===e.epi_id});
+    var name=(epi?epi.nome:'')+(e.colab_nome||'');
+    if(name.toLowerCase().indexOf(q)<0)return false;
+    if(fmot && (e.motivo||'')!==fmot)return false;
+    return true;
+  });
   var tb=document.getElementById('tb-entregas');
-  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhuma entrega</td></tr>';return}
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2)">Nenhuma entrega</td></tr>';return}
   tb.innerHTML=list.map(function(e){
     var epi=epis.find(function(x){return x.id===e.epi_id});
     var epiNome=epi?epi.nome:'?';
@@ -529,7 +577,7 @@ function renderEntregas(){
       else if(dd<=30)statusBadge='<span class="badge badge-yellow">A vencer</span>';
       else statusBadge='<span class="badge badge-green">Válido</span>';
     }
-    return '<tr><td>'+escHtml(epiNome)+'</td><td>'+escHtml(e.colab_nome||'-')+'</td><td>'+fmtDate(e.dt)+'</td><td>'+(valDate?fmtDate(valDate):'-')+'</td><td>'+statusBadge+'</td><td><button class="btn-sm btn-danger" onclick="confirmarDel(\'entrega\','+e.id+',\'entrega de '+epiNome.replace(/'/g,"\\'")+'\')">🗑</button></td></tr>';
+    return '<tr><td>'+escHtml(epiNome)+'</td><td>'+escHtml(e.colab_nome||'-')+'</td><td>'+fmtDate(e.dt)+'</td><td>'+(valDate?fmtDate(valDate):'-')+'</td><td>'+badgeMotivo(e.motivo)+'</td><td>'+statusBadge+'</td><td><button class="btn-sm btn-danger" onclick="confirmarDel(\'entrega\','+e.id+',\'entrega de '+epiNome.replace(/'/g,"\\'")+'\')">🗑</button></td></tr>';
   }).join('');
 }
 
@@ -546,7 +594,6 @@ function chFiltrarColabs(){
   var termo=(document.getElementById('ch-colab-busca').value||'').toLowerCase().trim();
   var box=document.getElementById('ch-colab-sugestoes');
 
-  // Mostra todos do banco (menos os já selecionados); se digitar, filtra
   var lista=(colabs||[])
     .filter(function(c){return chColabsSel.indexOf(c.id)<0})
     .filter(function(c){return !termo || (c.nome||'').toLowerCase().indexOf(termo)>=0});
@@ -566,7 +613,6 @@ function chFiltrarColabs(){
 function chAdicionarColab(id){
   if(chColabsSel.indexOf(id)<0){chColabsSel.push(id);chRenderColabChips()}
   document.getElementById('ch-colab-busca').value='';
-  // Mantém a lista aberta para permitir múltiplas seleções rápidas
   chFiltrarColabs();
   document.getElementById('ch-colab-busca').focus();
 }
@@ -598,7 +644,6 @@ function chLimparColabs(){
   chColabsSel=[];
   chRenderColabChips();
 }
-// Fecha sugestões ao clicar fora
 document.addEventListener('click',function(e){
   if(!e.target.closest('#ch-colab-busca')&&!e.target.closest('#ch-colab-sugestoes')){
     var box=document.getElementById('ch-colab-sugestoes');
@@ -639,7 +684,6 @@ function limparChecking(){
   setStatus('OK');
 }
 
-/* ----- Salvar (loop individual por colaborador) ----- */
 async function salvarChecking(){
   var data=document.getElementById('ch-data').value;
   var hora=document.getElementById('ch-hora').value;
@@ -812,6 +856,29 @@ function renderResumo(){
   }).join('');
 }
 
+function renderResumoMotivo(){
+  var tb=document.getElementById('tb-resumo-motivo');
+  var motivos=['Novo','Gasto','Vencimento','Perda'];
+  var map={};
+  motivos.forEach(function(m){map[m]=0});
+  var semMot=0;
+  entregas.forEach(function(e){
+    var m=e.motivo||'';
+    if(map.hasOwnProperty(m))map[m]++;
+    else semMot++;
+  });
+  var total=entregas.length||1;
+  var rows=motivos.map(function(m){
+    var qt=map[m];
+    var pct=Math.round((qt/total)*100);
+    return '<tr><td>'+badgeMotivo(m)+'</td><td><strong>'+qt+'</strong></td><td>'+pct+'%</td></tr>';
+  });
+  if(semMot>0){
+    rows.push('<tr><td><span class="badge badge-gray">Sem motivo</span></td><td><strong>'+semMot+'</strong></td><td>'+Math.round((semMot/total)*100)+'%</td></tr>');
+  }
+  tb.innerHTML=rows.join('');
+}
+
 function renderResumoColab(){
   var tb=document.getElementById('tb-resumo-colab');
   var map={};
@@ -832,11 +899,11 @@ function renderResumoColab(){
 }
 
 function exportCSV(){
-  var csv='EPI;Colaborador;Data Entrega;Validade;Status\n';
+  var csv='EPI;Colaborador;Data Entrega;Validade;Motivo;Status\n';
   entregas.forEach(function(e){
     var epi=epis.find(function(x){return x.id===e.epi_id});var nome=epi?epi.nome:'?';var val='-',st='Sem validade';
     if(epi&&epi.dur_qtd>0){val=calcValidade(e.dt,epi.dur_qtd,epi.dur_tipo||'meses');var dd=diffDays(val);st=dd<0?'Vencido':dd<=30?'A vencer':'Válido';val=fmtDate(val)}
-    csv+=nome+';'+(e.colab_nome||'-')+';'+fmtDate(e.dt)+';'+val+';'+st+'\n';
+    csv+=nome+';'+(e.colab_nome||'-')+';'+fmtDate(e.dt)+';'+val+';'+(e.motivo||'-')+';'+st+'\n';
   });
   baixarCSV(csv,'epis_entregas.csv');
 }
