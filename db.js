@@ -283,15 +283,21 @@ async function initDB() {
         obs TEXT,
         cod_decio VARCHAR(50),
         cod_intelbras VARCHAR(50),
-        status VARCHAR(30) DEFAULT 'Ativo',
+        status VARCHAR(30) DEFAULT 'Em andamento',
+        data_limite DATE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
 
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Ativo';
-      UPDATE prod_planos SET status='Ativo' WHERE status IS NULL OR status='';
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Em andamento';
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
+
+      /* Define data_limite = último dia do mês para planos antigos que ainda não tinham data */
+      UPDATE prod_planos
+      SET data_limite = (DATE_TRUNC('month', TO_DATE(mes || '-01','YYYY-MM-DD')) + INTERVAL '1 month - 1 day')::date
+      WHERE data_limite IS NULL AND mes IS NOT NULL;
 
       CREATE TABLE IF NOT EXISTS prod_apontamentos (
         id SERIAL PRIMARY KEY,
