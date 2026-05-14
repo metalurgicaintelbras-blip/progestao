@@ -49,21 +49,27 @@ router.get('/db-registros', requireAuth, async (req, res) => {
 
 router.post('/db-registros', requireAuth, async (req, res) => {
   try {
-    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao } = req.body;
+    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, fotos, previsao_conclusao } = req.body;
     if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
 
     const tipoFinal = (tipo === 'ocorrencia') ? 'ocorrencia' : 'pendencia';
-    // Ocorrência não usa prioridade, status, nem previsão de conclusão
+    // Ocorrência não usa prioridade, status nem previsão
     const pri  = tipoFinal === 'ocorrencia' ? null : (prioridade || 'Baixa');
     const st   = tipoFinal === 'ocorrencia' ? null : (status || 'Pendente');
     const prev = tipoFinal === 'ocorrencia' ? null : (previsao_conclusao || null);
 
+    // Normaliza fotos: aceita array novo OU campo "foto" antigo
+    let fotosArr = Array.isArray(fotos) ? fotos.filter(Boolean) : [];
+    if (!fotosArr.length && foto) fotosArr = [foto];
+    const fotoPrincipal = fotosArr.length ? fotosArr[0] : null;
+
     const r = await pool.query(
       `INSERT INTO db_registros
-        (tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        (tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, fotos, previsao_conclusao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
       [tipoFinal, data, hora || null, turno || null, categoria || null, pri, st,
-       descricao, acao || null, JSON.stringify(envolvidos || []), foto || null, prev]
+       descricao, acao || null, JSON.stringify(envolvidos || []),
+       fotoPrincipal, JSON.stringify(fotosArr), prev]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -71,7 +77,7 @@ router.post('/db-registros', requireAuth, async (req, res) => {
 
 router.put('/db-registros/:id', requireAuth, async (req, res) => {
   try {
-    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, previsao_conclusao } = req.body;
+    const { tipo, data, hora, turno, categoria, prioridade, status, descricao, acao, envolvidos, foto, fotos, previsao_conclusao } = req.body;
     if (!data || !descricao) return res.status(400).json({ error: 'Data e descricao obrigatorios' });
 
     const tipoFinal = (tipo === 'ocorrencia') ? 'ocorrencia' : 'pendencia';
@@ -79,14 +85,19 @@ router.put('/db-registros/:id', requireAuth, async (req, res) => {
     const st   = tipoFinal === 'ocorrencia' ? null : (status || 'Pendente');
     const prev = tipoFinal === 'ocorrencia' ? null : (previsao_conclusao || null);
 
+    let fotosArr = Array.isArray(fotos) ? fotos.filter(Boolean) : [];
+    if (!fotosArr.length && foto) fotosArr = [foto];
+    const fotoPrincipal = fotosArr.length ? fotosArr[0] : null;
+
     const r = await pool.query(
       `UPDATE db_registros SET
          tipo=$1, data=$2, hora=$3, turno=$4, categoria=$5, prioridade=$6, status=$7,
-         descricao=$8, acao=$9, envolvidos=$10, foto=$11, previsao_conclusao=$12,
+         descricao=$8, acao=$9, envolvidos=$10, foto=$11, fotos=$12, previsao_conclusao=$13,
          updated_at=NOW()
-       WHERE id=$13 RETURNING *`,
+       WHERE id=$14 RETURNING *`,
       [tipoFinal, data, hora || null, turno || null, categoria || null, pri, st,
-       descricao, acao || null, JSON.stringify(envolvidos || []), foto || null, prev, req.params.id]
+       descricao, acao || null, JSON.stringify(envolvidos || []),
+       fotoPrincipal, JSON.stringify(fotosArr), prev, req.params.id]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
     res.json(r.rows[0]);
