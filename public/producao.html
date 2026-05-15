@@ -6,799 +6,891 @@
 <title>ProGestão – Produção</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-:root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--accent:#3b82f6;--accent2:#8b5cf6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316;--pink:#f43f5e;--text:#f1f5f9;--text2:#94a3b8;--border:#475569;--radius:12px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;background:#0b1120;border-bottom:1px solid var(--border)}
-.topbar .logo{font-size:15px;font-weight:700;color:var(--text)}.topbar .logo a{color:var(--accent);text-decoration:none}
-.topbar .right{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text2)}
-.btn-sm{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:.2s}
-.btn-sm:disabled{opacity:.5;cursor:not-allowed}
-.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#dc2626}
-.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:#2563eb}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-ghost:hover{background:var(--card2);color:var(--text)}
-.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#16a34a}
-.btn-orange{background:var(--orange);color:#fff}.btn-orange:hover{background:#ea580c}
-.layout{display:flex;min-height:calc(100vh - 49px)}
-.sidebar{width:220px;background:#0b1120;border-right:1px solid var(--border);padding:16px 0;flex-shrink:0}
-.sidebar a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;transition:.2s;border-left:3px solid transparent}
-.sidebar a:hover,.sidebar a.active{background:rgba(59,130,246,.08);color:var(--accent);border-left-color:var(--accent)}
-.main{flex:1;padding:24px;overflow-y:auto}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
-.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center}
-.kpi-val{font-size:28px;font-weight:800;letter-spacing:-1px}.kpi-lab{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
-.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
-.tab{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:.2s;font-family:inherit}
-.tab:hover{background:var(--card2);color:var(--text)}
-.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.section{display:none}.section.show{display:block}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
-.card-title{font-size:16px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-td{padding:10px 12px;border-bottom:1px solid rgba(71,85,105,.3);vertical-align:middle}
-tr:hover td{background:rgba(59,130,246,.04)}
-tr.row-atrasada td{background:rgba(239,68,68,.05)}
-tr.row-atrasada:hover td{background:rgba(239,68,68,.10)}
-.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px}
-.fg{display:flex;flex-direction:column;gap:4px;position:relative}
-.fg label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit}
-.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.2)}
-.fg input[readonly]{opacity:.85;cursor:not-allowed;background:#283449}
-.fg textarea{min-height:60px;resize:vertical}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
-.badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}
-.badge-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.badge-yellow{background:rgba(234,179,8,.12);color:var(--yellow);border:1px solid rgba(234,179,8,.3)}
-.badge-blue{background:rgba(59,130,246,.12);color:var(--accent);border:1px solid rgba(59,130,246,.3)}
-.badge-purple{background:rgba(139,92,246,.12);color:var(--accent2);border:1px solid rgba(139,92,246,.3)}
-.badge-gray{background:rgba(148,163,184,.15);color:var(--text2);border:1px solid rgba(148,163,184,.3)}
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
-.chart-wrap canvas{max-height:320px}
-.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-bottom:16px}
-#toast{position:fixed;bottom:20px;right:20px;z-index:900;display:flex;flex-direction:column;gap:8px}
-.toast-item{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;animation:slideIn .3s}
-@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-.toast-success{background:var(--green)}.toast-danger{background:var(--red)}.toast-info{background:var(--accent)}.toast-warning{background:var(--orange)}
-.apontar-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.apontar-info{flex:1;min-width:200px}
-.apontar-prod{font-weight:700;font-size:14px}.apontar-meta{font-size:12px;color:var(--text2)}
-.apontar-inputs{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.apontar-inputs input,.apontar-inputs textarea{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit}
-.apontar-inputs input:focus,.apontar-inputs textarea:focus{outline:none;border-color:var(--accent)}
-.apontar-inputs input[type=number]{width:90px}
-.apontar-inputs textarea{width:200px;min-height:36px}
-.empty{text-align:center;color:var(--text2);font-style:italic;padding:30px}
-
-/* Autocomplete (Plano Mensal) */
-.ac-box{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow-y:auto;z-index:100;margin-top:4px;box-shadow:0 8px 20px rgba(0,0,0,.4);display:none}
-.ac-box.show{display:block}
-.ac-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:12px;display:flex;justify-content:space-between;gap:8px}
-.ac-item:last-child{border-bottom:none}
-.ac-item:hover{background:rgba(59,130,246,.12)}
-.ac-item small{color:var(--text2)}
-.ac-empty{padding:12px;color:var(--text2);text-align:center;font-size:12px}
-.ac-header{padding:6px 12px;background:var(--card2);color:var(--text2);font-size:10px;text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--border)}
-
-@media(max-width:768px){.sidebar{display:none}.main{padding:16px}.charts-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{padding:10px 12px}}
+:root{--bg:#0f1419;--panel:#1a2332;--panel2:#243447;--border:#2d4055;--text:#e6edf3;--text2:#8b98a5;--accent:#3fb950;--accent2:#2ea043;--blue:#58a6ff;--orange:#f0883e;--red:#f85149;--yellow:#d29922;--purple:#a371f7}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:18px;font-weight:700;color:var(--accent)}
+.topbar .user-info{display:flex;align-items:center;gap:16px;font-size:13px}
+.topbar .clock{color:var(--text2)}
+.topbar .btn-logout{background:var(--red);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.sidebar{width:220px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;flex-shrink:0}
+.sidebar a{display:block;padding:10px 24px;color:var(--text2);text-decoration:none;font-size:14px;border-left:3px solid transparent;transition:all .2s}
+.sidebar a:hover{background:var(--panel2);color:var(--text)}
+.sidebar a.active{background:var(--panel2);color:var(--accent);border-left-color:var(--accent)}
+.main{flex:1;padding:24px;overflow-x:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
+.kpi .lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi .val{font-size:24px;font-weight:700;color:var(--text)}
+.kpi.green .val{color:var(--accent)}
+.kpi.blue .val{color:var(--blue)}
+.kpi.orange .val{color:var(--orange)}
+.kpi.red .val{color:var(--red)}
+.kpi.yellow .val{color:var(--yellow)}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{background:transparent;border:none;color:var(--text2);padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:2px solid transparent;transition:all .2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.section{display:none}
+.section.show{display:block}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.form-group input,.form-group select,.form-group textarea{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+.form-group input.invalid{border-color:var(--red)}
+.form-group input.valid{border-color:var(--accent)}
+.form-group input[readonly]{background:#0d1419;color:var(--text2);cursor:not-allowed}
+.form-group textarea{min-height:60px;resize:vertical;font-family:inherit}
+.form-group small.hint{font-size:10px;color:var(--text2)}
+.form-group small.hint.error{color:var(--red)}
+.btn-sm{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:opacity .2s}
+.btn-sm:hover{opacity:.85}
+.btn-sm:disabled{opacity:.4;cursor:not-allowed}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+table th{background:var(--panel2);color:var(--text2);text-align:left;padding:10px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;font-size:11px;border-bottom:1px solid var(--border)}
+table td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--text)}
+table tr:hover{background:var(--panel2)}
+.badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.badge.green{background:rgba(63,185,80,.15);color:var(--accent)}
+.badge.blue{background:rgba(88,166,255,.15);color:var(--blue)}
+.badge.orange{background:rgba(240,136,62,.15);color:var(--orange)}
+.badge.red{background:rgba(248,81,73,.15);color:var(--red)}
+.badge.yellow{background:rgba(210,153,34,.15);color:var(--yellow)}
+.badge.purple{background:rgba(163,113,247,.15);color:var(--purple)}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);padding:12px 18px;border-radius:6px;color:var(--text);font-size:13px;z-index:1000;opacity:0;transform:translateY(20px);transition:all .3s;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:360px}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.error{border-left-color:var(--red)}
+#toast.warn{border-left-color:var(--yellow)}
+.autocomplete{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;max-height:240px;overflow-y:auto;z-index:50;display:none}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)}
+.autocomplete-item:hover{background:var(--panel2)}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item strong{color:var(--accent)}
+@media(max-width:768px){.sidebar{width:60px}.sidebar a{padding:10px;text-align:center;font-size:10px}}
 </style>
 </head>
 <body>
+
 <div class="topbar">
-  <div class="logo"><a href="/">⚙ ProGestão</a> / Produção</div>
-  <div class="right"><span class="clock" id="clock"></span><span class="user" id="user-display"></span><button class="btn-sm btn-danger" onclick="doLogout()">Sair</button></div>
+  <div class="logo">⚙️ ProGestão</div>
+  <div class="user-info">
+    <span class="clock" id="clock">--:--</span>
+    <span id="user-name">Carregando...</span>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
 </div>
+
 <div class="layout">
-<nav class="sidebar">
-  <a href="/">🏠 Início</a>
-  <a href="/ferramentas">🔧 Ferramentas</a>
-  <a href="/epis">🦺 EPIs</a>
-  <a href="/banco-horas">⏰ Banco Horas</a>
-  <a href="/treinamentos">📚 Treinamentos</a>
-  <a href="/diario-bordo">📋 Diário Bordo</a>
-  <a href="/checklist">✅ Checklist</a>
-  <a href="/producao" class="active">📊 Produção</a>
-</nav>
-<div class="main">
+  <nav class="sidebar">
+    <a href="/">🏠 Início</a>
+    <a href="/ferramentas">🔧 Ferramentas</a>
+    <a href="/epis">🦺 EPIs</a>
+    <a href="/banco-horas">⏰ Banco Horas</a>
+    <a href="/treinamentos">📚 Treinamentos</a>
+    <a href="/diario-bordo">📓 Diário Bordo</a>
+    <a href="/checklist">✅ Checklist</a>
+    <a href="/producao" class="active">🏭 Produção</a>
+  </nav>
 
-<!-- KPIs -->
-<div class="kpis">
-  <div class="kpi"><div class="kpi-val" id="kpi-produtos" style="color:var(--accent)">0</div><div class="kpi-lab">Planos no Mês</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-meta" style="color:var(--yellow)">0</div><div class="kpi-lab">Meta Total (un.)</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-realizado" style="color:var(--green)">0</div><div class="kpi-lab">Realizado Total</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-pct" style="color:var(--pink)">0%</div><div class="kpi-lab">% Atendimento</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-atrasadas" style="color:var(--red)">0</div><div class="kpi-lab">Atrasadas</div></div>
-  <div class="kpi"><div class="kpi-val" id="kpi-cadastrados" style="color:var(--accent2)">0</div><div class="kpi-lab">Produtos Cadastrados</div></div>
-</div>
+  <div class="main">
+    <div class="kpis">
+      <div class="kpi blue"><div class="lbl">Produtos no Plano</div><div class="val" id="kpi-produtos">0</div></div>
+      <div class="kpi green"><div class="lbl">Meta Total</div><div class="val" id="kpi-meta">0</div></div>
+      <div class="kpi orange"><div class="lbl">Realizado Total</div><div class="val" id="kpi-realizado">0</div></div>
+      <div class="kpi yellow"><div class="lbl">% Atendimento</div><div class="val" id="kpi-pct">0%</div></div>
+      <div class="kpi red"><div class="lbl">Planos Atrasados</div><div class="val" id="kpi-atrasados">0</div></div>
+    </div>
 
-<!-- Filtro de mês -->
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-  <label style="font-size:13px;font-weight:700;color:var(--text2)">Mês:</label>
-  <input type="month" id="filtro-mes" class="btn-sm" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-family:inherit">
-</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <label style="font-size:12px;color:var(--text2);font-weight:600">Filtrar por mês:</label>
+      <input type="month" id="filtro-mes" onchange="loadAll()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px">
+    </div>
 
-<!-- Tabs -->
-<div class="tabs">
-  <button class="tab active" onclick="showTab('dashboard',event)">📊 Dashboard</button>
-  <button class="tab" onclick="showTab('planos',event)">📋 Plano Mensal</button>
-  <button class="tab" onclick="showTab('apontar',event)">✏️ Apontamento Diário</button>
-  <button class="tab" onclick="showTab('historico',event)">📜 Histórico</button>
-  <button class="tab" onclick="showTab('produtos',event)">🗂️ Produtos</button>
-</div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('dashboard',event)">📊 Dashboard</button>
+      <button class="tab" onclick="showTab('planos',event)">📋 Plano Mensal</button>
+      <button class="tab" onclick="showTab('apontar',event)">✏️ Apontamento Diário</button>
+      <button class="tab" onclick="showTab('historico',event)">📜 Histórico</button>
+      <button class="tab" onclick="showTab('produtos',event)">🗂️ Produtos</button>
+    </div>
 
-<!-- Tab: Dashboard -->
-<div class="section show" id="sec-dashboard">
-  <div class="charts-grid">
-    <div class="chart-wrap"><canvas id="chart-meta-real"></canvas></div>
-    <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
-  </div>
-  <div class="chart-wrap"><canvas id="chart-acumulado"></canvas></div>
-</div>
-
-<!-- Tab: Plano Mensal -->
-<div class="section" id="sec-planos">
-  <div class="card">
-    <div class="card-title">Cadastrar Produto no Plano</div>
-    <input type="hidden" id="plano-edit-id">
-    <div class="form-row">
-      <div class="fg">
-        <label>Data Limite *</label>
-        <input type="date" id="p-data-limite">
+    <!-- ============ DASHBOARD ============ -->
+    <div class="section show" id="sec-dashboard">
+      <div class="card">
+        <div class="card-title">📊 Meta vs Realizado por Produto</div>
+        <canvas id="chartBar" style="max-height:300px"></canvas>
       </div>
-      <div class="fg">
-        <label>Código Décio *</label>
-        <input type="text" id="p-cod-decio" placeholder="Digite ou busque..." autocomplete="off" oninput="acProdutoBuscar()" onfocus="acProdutoBuscar()">
-        <div id="ac-produto" class="ac-box"></div>
-      </div>
-      <div class="fg">
-        <label>Código Intelbras</label>
-        <input type="text" id="p-cod-intelbras" readonly placeholder="(preenchido automaticamente)">
-      </div>
-      <div class="fg">
-        <label>Descrição</label>
-        <input type="text" id="p-descricao" readonly placeholder="(preenchido automaticamente)">
-      </div>
-      <div class="fg">
-        <label>Meta (un.) *</label>
-        <input type="number" id="p-meta" min="1" placeholder="Quantidade">
-      </div>
-      <div class="fg" style="grid-column:1/-1">
-        <label>Observação</label>
-        <input type="text" id="p-obs" placeholder="Opcional">
+      <div class="card">
+        <div class="card-title">📈 Produção Acumulada no Mês</div>
+        <canvas id="chartLine" style="max-height:300px"></canvas>
       </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn-sm btn-accent" onclick="salvarPlano()">💾 Salvar</button>
-      <button class="btn-sm btn-ghost" onclick="cancelarPlano()">Cancelar</button>
-      <span style="margin-left:auto;font-size:11px;color:var(--text2)">💡 O status é calculado automaticamente: <strong style="color:var(--accent)">Em andamento</strong> · <strong style="color:var(--red)">Atrasada</strong> · <strong style="color:var(--green)">Concluído</strong></span>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">📋 Planos do Mês</div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Data Limite</th>
-            <th>Cód. Décio</th>
-            <th>Cód. Intelbras</th>
-            <th>Descrição</th>
-            <th>Meta</th>
-            <th>Realizado</th>
-            <th>%</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tb-planos"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
-<!-- Tab: Apontamento Diário -->
-<div class="section" id="sec-apontar">
-  <div class="card">
-    <div class="card-title">Apontamento do Dia</div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-      <label style="font-size:13px;font-weight:700;color:var(--text2)">Data:</label>
-      <input type="date" id="apontar-data" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit">
-      <button class="btn-sm btn-green" onclick="salvarTodosApontamentos()">💾 Salvar Todos</button>
-    </div>
-    <div id="apontar-list"></div>
-  </div>
-</div>
-
-<!-- Tab: Histórico -->
-<div class="section" id="sec-historico">
-  <div class="card">
-    <div class="card-title">Histórico de Apontamentos</div>
-    <table>
-      <thead><tr><th>Data</th><th>Cód. Décio</th><th>Descrição</th><th>Meta Diária</th><th>Realizado</th><th>Status</th><th>Justificativa</th><th>Ações</th></tr></thead>
-      <tbody id="tb-historico"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Tab: Produtos (BANCO) -->
-<div class="section" id="sec-produtos">
-  <div class="card">
-    <div class="card-title">
-      🗂️ Cadastro de Produtos
-      <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-sm btn-orange" onclick="importarSeed()" id="btn-seed" title="Importa os 65 produtos da planilha inicial (não duplica)">📥 Importar Banco Inicial (65 itens)</button>
-      </span>
-    </div>
-    <input type="hidden" id="prod-edit-id">
-    <div class="form-row">
-      <div class="fg"><label>Código Décio *</label><input type="text" id="pr-decio" placeholder="Ex: 4531411"></div>
-      <div class="fg"><label>Código Intelbras</label><input type="text" id="pr-intelbras" placeholder="Ex: 4770068"></div>
-      <div class="fg" style="grid-column:span 2"><label>Descrição *</label><input type="text" id="pr-desc" placeholder="Nome do produto"></div>
-      <div class="fg"><label>Categoria</label>
-        <select id="pr-cat">
-          <option value="">Selecione...</option>
-          <option>Parede</option>
-          <option>Piso</option>
-          <option>Acessórios</option>
-          <option>Luiz</option>
-          <option>Outro</option>
-        </select>
+    <!-- ============ PLANO MENSAL ============ -->
+    <div class="section" id="sec-planos">
+      <div class="card">
+        <div class="card-title">➕ Novo Plano Mensal</div>
+        <input type="hidden" id="plano-edit-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data Limite *</label>
+            <input type="date" id="p-data-limite">
+          </div>
+          <div class="form-group autocomplete">
+            <label>Código Décio *</label>
+            <input type="text" id="p-cod-decio" oninput="autocompletePlano(this.value)" autocomplete="off">
+            <div class="autocomplete-list" id="plano-ac-list"></div>
+          </div>
+          <div class="form-group">
+            <label>Código Intelbras</label>
+            <input type="text" id="p-cod-intelbras" readonly>
+          </div>
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="p-descricao" readonly>
+          </div>
+          <div class="form-group">
+            <label>Meta Mensal *</label>
+            <input type="number" id="p-meta" step="0.01" min="0">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm btn-accent" onclick="salvarPlano()">💾 Salvar Plano</button>
+          <button class="btn-sm btn-ghost" onclick="limparPlano()">Cancelar</button>
+        </div>
       </div>
-      <div class="fg"><label>Valor (R$)</label><input type="number" id="pr-valor" step="0.01" placeholder="0.00"></div>
-      <div class="fg"><label>Minutos reportados</label><input type="number" id="pr-min" step="0.001" placeholder="0.000"></div>
-      <div class="fg"><label>Hora reportado</label><input type="number" id="pr-hora" step="0.000001" placeholder="0.000000"></div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-sm btn-accent" onclick="salvarProduto()">💾 Salvar Produto</button>
-      <button class="btn-sm btn-ghost" onclick="cancelarProduto()">Cancelar / Limpar</button>
-    </div>
-  </div>
 
-  <div class="card">
-    <div class="card-title">
-      📦 Produtos Cadastrados
-      <span style="margin-left:auto;font-size:11px;color:var(--text2);font-weight:600">Total: <span id="prod-total">0</span></span>
+      <div class="card">
+        <div class="card-title">📋 Produtos do Mês</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Data Limite</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tb-planos"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-      <input type="text" id="prod-busca" placeholder="🔍 Buscar por código ou descrição..." oninput="renderProdutos()" style="flex:1;min-width:220px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit;font-size:13px">
-      <select id="prod-filtro-cat" onchange="renderProdutos()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:inherit;font-size:13px">
-        <option value="">Todas categorias</option>
-        <option>Parede</option>
-        <option>Piso</option>
-        <option>Acessórios</option>
-        <option>Luiz</option>
-        <option>Outro</option>
-      </select>
-    </div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Cód. Décio</th>
-            <th>Cód. Intelbras</th>
-            <th>Descrição</th>
-            <th>Categoria</th>
-            <th>Valor</th>
-            <th>Min. Rep.</th>
-            <th>Hora Rep.</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tb-produtos"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
-</div>
+    <!-- ============ APONTAMENTO DIÁRIO ============ -->
+    <div class="section" id="sec-apontar">
+      <div class="card">
+        <div class="card-title">✏️ Novo Apontamento Detalhado</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data de Execução *</label>
+            <input type="date" id="a-data">
+          </div>
+          <div class="form-group">
+            <label>Turno *</label>
+            <select id="a-turno">
+              <option value="">Selecione...</option>
+              <option value="1">1º Turno</option>
+              <option value="2">2º Turno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Célula *</label>
+            <select id="a-celula">
+              <option value="">Selecione...</option>
+              <option value="Célula 01">Célula 01</option>
+              <option value="Célula 02">Célula 02</option>
+              <option value="Célula 03">Célula 03</option>
+              <option value="Célula 04">Célula 04</option>
+              <option value="Hora Extra">Hora Extra</option>
+              <option value="Previsão Falta">Previsão Falta</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>N° OP (8 dígitos) *</label>
+            <input type="text" id="a-num-op" maxlength="8" oninput="validarDigitos(this,8)" placeholder="Ex: 12345678">
+            <small class="hint" id="hint-op">Digite 8 dígitos numéricos</small>
+          </div>
+          <div class="form-group">
+            <label>N° Série Inicial (13 dígitos) *</label>
+            <input type="text" id="a-serie-ini" maxlength="13" oninput="validarDigitos(this,13)" placeholder="Ex: 1234567890123">
+            <small class="hint" id="hint-sini">Digite 13 dígitos numéricos</small>
+          </div>
+          <div class="form-group">
+            <label>N° Série Final (13 dígitos) *</label>
+            <input type="text" id="a-serie-fim" maxlength="13" oninput="validarDigitos(this,13)" placeholder="Ex: 1234567890124">
+            <small class="hint" id="hint-sfim">Digite 13 dígitos numéricos</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group autocomplete">
+            <label>Código Décio *</label>
+            <input type="text" id="a-cod-decio" oninput="autocompleteApont(this.value)" autocomplete="off">
+            <div class="autocomplete-list" id="apont-ac-list"></div>
+          </div>
+          <div class="form-group">
+            <label>Código Intelbras</label>
+            <input type="text" id="a-cod-intelbras" readonly>
+          </div>
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="a-descricao" readonly>
+          </div>
+          <div class="form-group">
+            <label>Categoria (editável)</label>
+            <select id="a-categoria">
+              <option value="">Selecione...</option>
+              <option>Parede</option>
+              <option>Piso</option>
+              <option>Acessórios</option>
+              <option>Luiz</option>
+              <option>Outro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Meta *</label>
+            <input type="number" id="a-meta" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Realizado *</label>
+            <input type="number" id="a-realizado" step="0.01" min="0" oninput="calcularHoraTotal()">
+          </div>
+          <div class="form-group">
+            <label>Hora Reportada Total (calculada)</label>
+            <input type="text" id="a-hora-total" readonly>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Observações</label>
+            <textarea id="a-obs" placeholder="Observações sobre atrasos ou qualquer detalhe relevante..."></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm btn-accent" onclick="salvarApontamentoDetalhado()" id="btn-salvar-apont">💾 Salvar Apontamento</button>
+          <button class="btn-sm btn-ghost" onclick="limparApontamento()">Limpar Formulário</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📜 Histórico de Apontamentos
+          <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn-sm btn-blue" onclick="exportarApontamentosCSV()">📥 Exportar CSV</button>
+          </span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px">
+          <input type="date" id="f-data-ini" onchange="renderApontamentosDet()" title="Data início" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <input type="date" id="f-data-fim" onchange="renderApontamentosDet()" title="Data fim" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <select id="f-turno" onchange="renderApontamentosDet()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+            <option value="">Todos turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option>
+          </select>
+          <select id="f-celula" onchange="renderApontamentosDet()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+            <option value="">Todas células</option>
+            <option>Célula 01</option><option>Célula 02</option><option>Célula 03</option><option>Célula 04</option>
+            <option>Hora Extra</option><option>Previsão Falta</option>
+          </select>
+          <input type="text" id="f-op" placeholder="N° OP" oninput="renderApontamentosDet()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+          <input type="text" id="f-decio" placeholder="Cód. Décio" oninput="renderApontamentosDet()" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px">
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Data</th><th>Turno</th><th>Célula</th><th>N° OP</th><th>Série Ini</th><th>Série Fim</th>
+              <th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Categoria</th>
+              <th>Meta</th><th>Realizado</th><th>Hora Total</th><th>Obs.</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="tb-apont-det"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ HISTÓRICO ============ -->
+    <div class="section" id="sec-historico">
+      <div class="card">
+        <div class="card-title">📜 Histórico Geral de Planos</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Data Limite</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th></tr></thead>
+            <tbody id="tb-historico"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PRODUTOS ============ -->
+    <div class="section" id="sec-produtos">
+      <div class="card">
+        <div class="card-title">🗂️ Cadastro de Produtos</div>
+        <input type="hidden" id="prod-edit-id">
+        <div class="form-row">
+          <div class="form-group"><label>Cód. Décio *</label><input type="text" id="prod-decio"></div>
+          <div class="form-group"><label>Cód. Intelbras</label><input type="text" id="prod-intelbras"></div>
+          <div class="form-group"><label>Descrição</label><input type="text" id="prod-desc"></div>
+          <div class="form-group"><label>Categoria</label>
+            <select id="prod-cat"><option value="">--</option><option>Parede</option><option>Piso</option><option>Acessórios</option><option>Luiz</option><option>Outro</option></select>
+          </div>
+          <div class="form-group"><label>Valor (R$)</label><input type="number" id="prod-valor" step="0.01" min="0"></div>
+          <div class="form-group"><label>Min. Reportados</label><input type="number" id="prod-min" step="0.01" min="0"></div>
+          <div class="form-group"><label>Hora Reportada</label><input type="number" id="prod-hora" step="0.0001" min="0"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm btn-accent" onclick="salvarProduto()">💾 Salvar Produto</button>
+          <button class="btn-sm btn-ghost" onclick="limparProduto()">Cancelar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📦 Produtos Cadastrados <span style="margin-left:auto;font-size:11px;color:var(--text2)">Total: <span id="prod-total">0</span></span></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <input type="text" id="prod-busca" placeholder="🔍 Buscar..." oninput="renderProdutos()" style="flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px">
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Min.</th><th>Hora</th><th>Ações</th></tr></thead>
+            <tbody id="tb-produtos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-/* ══════════ Globais ══════════ */
-let planos=[], apontamentos=[], produtos=[], chartMetaReal=null, chartPct=null, chartAcum=null;
+// =================== GLOBAIS ===================
+let planos = [], apontamentos = [], apontamentosDet = [], produtos = [];
+let chartBarObj = null, chartLineObj = null;
 
-/* ══════════ API ══════════ */
-async function api(url, method, data){
-  method = method || 'GET';
-  const opts = { method: method, headers: { 'Content-Type': 'application/json' } };
-  if (data) opts.body = JSON.stringify(data);
-  const r = await fetch(url, opts);
-  if (r.status === 401) { window.location.href = '/login'; return null; }
+// =================== API HELPER ===================
+async function api(url, opts = {}) {
+  opts.headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+  const r = await fetch('/api' + url, opts);
+  if (!r.ok) {
+    let msg = 'Erro na requisição';
+    try { const j = await r.json(); msg = j.error || msg; } catch(e){}
+    throw new Error(msg);
+  }
   return r.json();
 }
 
-/* ══════════ Helpers ══════════ */
-function toast(m, t){
-  t = t || 'success';
-  const d = document.getElementById('toast');
-  const el = document.createElement('div');
-  el.className = 'toast-item toast-' + t;
-  el.textContent = m;
-  d.appendChild(el);
-  setTimeout(() => el.remove(), 3500);
-}
-function isoDate(d){ return d ? String(d).slice(0,10) : ''; }
-function fmtDate(d){ if(!d) return '—'; const s=isoDate(d); const p=s.split('-'); if(p.length!==3) return '—'; return p[2]+'/'+p[1]+'/'+p[0]; }
-function fmtMes(m){ if(!m) return '—'; const p=String(m).split('-'); if(p.length<2) return m; const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return meses[parseInt(p[1])-1]+'/'+p[0]; }
-function getMes(){ return document.getElementById('filtro-mes').value; }
-function getHoje(){ return new Date().toISOString().slice(0,10); }
-function mesDeIso(iso){ const s=isoDate(iso); return s ? s.slice(0,7) : ''; }
-function diasUteisNoMes(mes){
-  const p=mes.split('-'); const y=parseInt(p[0]), m=parseInt(p[1]);
-  const total=new Date(y,m,0).getDate(); let uteis=0;
-  for(let d=1; d<=total; d++){ const dow=new Date(y,m-1,d).getDay(); if(dow!==0 && dow!==6) uteis++; }
-  return uteis;
-}
-function esc(s){ if(s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-/* Cálculo automático do status do plano */
-function calcStatus(plano){
-  const apts = apontamentos.filter(a => a.plano_id === plano.id);
-  let soma = 0; apts.forEach(a => soma += a.qtd_realizada);
-  const meta = plano.meta_mensal || 0;
-  const pct = meta > 0 ? (soma / meta) * 100 : 0;
-  const hoje = getHoje();
-  const limite = isoDate(plano.data_limite);
-
-  if (pct >= 100) {
-    return { key:'Concluído', label:'✅ Concluído', cls:'badge-green', pct:Math.round(pct), realizado:soma };
-  }
-  if (limite && limite < hoje) {
-    return { key:'Atrasada', label:'⚠️ Atrasada', cls:'badge-red', pct:Math.round(pct), realizado:soma };
-  }
-  return { key:'Em andamento', label:'🔄 Em andamento', cls:'badge-blue', pct:Math.round(pct), realizado:soma };
+// =================== TOAST ===================
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type === 'error' ? 'show error' : type === 'warn' ? 'show warn' : 'show';
+  setTimeout(() => t.className = '', 3500);
 }
 
-/* ══════════ Clock / User / Logout ══════════ */
-function updateClock(){ document.getElementById('clock').textContent = new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
-setInterval(updateClock, 1000);
-async function doLogout(){ await fetch('/api/logout',{method:'POST'}); window.location.href='/login'; }
-async function loadUser(){ try{ const u=await api('/api/me'); if(u && u.nome) document.getElementById('user-display').textContent=u.nome; }catch(e){} }
+// =================== CLOCK ===================
+function updateClock() {
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+setInterval(updateClock, 30000);
+updateClock();
 
-/* ══════════ Tabs ══════════ */
-function showTab(t, ev){
+// =================== AUTH ===================
+async function loadUser() {
+  try {
+    const u = await api('/auth/me');
+    document.getElementById('user-name').textContent = u.nome || u.username || 'Usuário';
+  } catch(e) { window.location.href = '/login'; }
+}
+async function logout() { await fetch('/api/auth/logout', { method:'POST' }); window.location.href = '/login'; }
+
+// =================== TABS ===================
+function showTab(name, ev) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('sec-'+t).classList.add('show');
-  if (ev && ev.target) ev.target.classList.add('active');
-  if (t==='apontar') renderApontar();
-  if (t==='dashboard') renderDashboard();
-  if (t==='produtos') renderProdutos();
-  if (t==='historico') renderHistorico();
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('show');
+  if (ev) ev.target.classList.add('active');
+  if (name === 'historico') renderHistorico();
+  if (name === 'produtos') renderProdutos();
+  if (name === 'apontar') renderApontamentosDet();
+  if (name === 'dashboard') renderDashboard();
 }
 
-/* ══════════ Carregar dados ══════════ */
-async function loadAll(){
-  const mes = getMes();
-  planos = await api('/api/prod-planos?mes=' + mes) || [];
-  apontamentos = await api('/api/prod-apontamentos?mes=' + mes) || [];
-  produtos = await api('/api/prod-produtos') || [];
-  produtos.sort((a,b) => (a.descricao||'').localeCompare(b.descricao||'','pt-BR'));
-  // Ordena planos por data limite (mais próximas primeiro), depois código
-  planos.sort((a,b) => (isoDate(a.data_limite)||'9999').localeCompare(isoDate(b.data_limite)||'9999') || (a.codigo||'').localeCompare(b.codigo||''));
-  calcKPIs();
-  renderPlanos();
-  renderApontar();
-  renderHistorico();
-  renderDashboard();
-  renderProdutos();
+// =================== HELPERS ===================
+function fmtData(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR'); }
+function fmtNum(n) { return Number(n||0).toLocaleString('pt-BR', { maximumFractionDigits:2 }); }
+function badgeStatus(s) {
+  if (s === 'concluido') return '<span class="badge green">✅ Concluído</span>';
+  if (s === 'atrasado') return '<span class="badge red">⚠️ Atrasado</span>';
+  return '<span class="badge blue">🔄 Em Andamento</span>';
 }
 
-/* ══════════ KPIs ══════════ */
-function calcKPIs(){
-  let metaTotal=0, realTotal=0, atrasadas=0;
-  planos.forEach(p => {
-    metaTotal += (p.meta_mensal||0);
-    const st = calcStatus(p);
-    realTotal += st.realizado;
-    if (st.key === 'Atrasada') atrasadas++;
-  });
-  const pct = metaTotal>0 ? Math.round(realTotal/metaTotal*100) : 0;
-  document.getElementById('kpi-produtos').textContent = planos.length;
-  document.getElementById('kpi-meta').textContent = metaTotal.toLocaleString('pt-BR');
-  document.getElementById('kpi-realizado').textContent = realTotal.toLocaleString('pt-BR');
-  document.getElementById('kpi-pct').textContent = pct + '%';
-  document.getElementById('kpi-atrasadas').textContent = atrasadas;
-  document.getElementById('kpi-cadastrados').textContent = produtos.length;
-}
-
-/* ══════════ AUTOCOMPLETE — produtos (Plano Mensal) ══════════ */
-function acProdutoBuscar(){
-  const termo = (document.getElementById('p-cod-decio').value || '').toLowerCase().trim();
-  const box = document.getElementById('ac-produto');
-
-  const lista = (produtos || [])
-    .filter(p => !termo
-      || (p.cod_decio||'').toLowerCase().includes(termo)
-      || (p.cod_intelbras||'').toLowerCase().includes(termo)
-      || (p.descricao||'').toLowerCase().includes(termo))
-    .slice(0, 25);
-
-  if (!produtos.length) {
-    box.innerHTML = '<div class="ac-empty">Nenhum produto cadastrado. Vá à aba <strong>Produtos</strong> e cadastre ou importe o banco inicial.</div>';
-  } else if (!lista.length) {
-    box.innerHTML = '<div class="ac-empty">Nenhum produto encontrado para "'+esc(termo)+'"</div>';
-  } else {
-    const header = '<div class="ac-header">'+lista.length+' resultado(s)</div>';
-    box.innerHTML = header + lista.map(p =>
-      '<div class="ac-item" onclick="acProdutoSelecionar('+p.id+')">' +
-        '<span><strong>'+esc(p.cod_decio)+'</strong> · '+esc(p.descricao)+'</span>' +
-        '<small>'+esc(p.cod_intelbras||'-')+' · '+esc(p.categoria||'')+'</small>' +
-      '</div>'
-    ).join('');
+// =================== VALIDAÇÃO DE DÍGITOS ===================
+function validarDigitos(input, qtd) {
+  // Permite só números
+  input.value = input.value.replace(/\D/g, '');
+  const ok = input.value.length === qtd;
+  input.classList.toggle('valid', ok);
+  input.classList.toggle('invalid', input.value.length > 0 && !ok);
+  // Atualiza hint
+  let hintId = '';
+  if (input.id === 'a-num-op') hintId = 'hint-op';
+  else if (input.id === 'a-serie-ini') hintId = 'hint-sini';
+  else if (input.id === 'a-serie-fim') hintId = 'hint-sfim';
+  if (hintId) {
+    const h = document.getElementById(hintId);
+    if (ok) { h.textContent = '✓ OK'; h.classList.remove('error'); }
+    else if (input.value.length === 0) { h.textContent = `Digite ${qtd} dígitos numéricos`; h.classList.remove('error'); }
+    else { h.textContent = `Faltam ${qtd - input.value.length} dígito(s)`; h.classList.add('error'); }
   }
-  box.classList.add('show');
 }
-function acProdutoSelecionar(id){
-  const p = produtos.find(x => x.id===id);
+
+// =================== DATA LOADING ===================
+async function loadAll() {
+  const mes = document.getElementById('filtro-mes').value;
+  try {
+    const url = mes ? '/prod-planos?mes=' + mes : '/prod-planos';
+    planos = await api(url);
+    apontamentos = await api('/prod-apontamentos' + (mes ? '?mes=' + mes : ''));
+    apontamentosDet = await api('/prod-apontamentos-detalhados' + (mes ? '?mes=' + mes : ''));
+    produtos = await api('/prod-produtos').catch(()=>[]);
+    renderKPIs();
+    renderPlanos();
+    renderDashboard();
+    renderApontamentosDet();
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao carregar dados: ' + e.message, 'error');
+  }
+}
+
+// =================== KPIs ===================
+function renderKPIs() {
+  document.getElementById('kpi-produtos').textContent = planos.length;
+  const meta = planos.reduce((s,p) => s + (parseFloat(p.meta)||0), 0);
+  const real = planos.reduce((s,p) => s + (parseFloat(p.realizado)||0), 0);
+  const pct = meta > 0 ? (real/meta)*100 : 0;
+  const atrasados = planos.filter(p => p.status === 'atrasado').length;
+  document.getElementById('kpi-meta').textContent = fmtNum(meta);
+  document.getElementById('kpi-realizado').textContent = fmtNum(real);
+  document.getElementById('kpi-pct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('kpi-atrasados').textContent = atrasados;
+}
+
+// =================== AUTOCOMPLETE: PLANO ===================
+function autocompletePlano(q) {
+  const list = document.getElementById('plano-ac-list');
+  if (!q || q.length < 1) { list.classList.remove('show'); return; }
+  const ql = q.toLowerCase();
+  const matches = produtos.filter(p =>
+    (p.cod_decio||'').toLowerCase().includes(ql) ||
+    (p.cod_intelbras||'').toLowerCase().includes(ql) ||
+    (p.descricao||'').toLowerCase().includes(ql)
+  ).slice(0,10);
+  if (!matches.length) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.map(p =>
+    `<div class="autocomplete-item" onclick="selecionarProdutoPlano('${p.cod_decio}')">
+      <strong>${p.cod_decio}</strong> | ${p.cod_intelbras||'-'} | ${p.descricao||'-'}
+    </div>`).join('');
+  list.classList.add('show');
+}
+function selecionarProdutoPlano(decio) {
+  const p = produtos.find(x => x.cod_decio === decio);
   if (!p) return;
-  document.getElementById('p-cod-decio').value = p.cod_decio || '';
+  document.getElementById('p-cod-decio').value = p.cod_decio;
   document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
   document.getElementById('p-descricao').value = p.descricao || '';
-  document.getElementById('ac-produto').classList.remove('show');
-  document.getElementById('p-meta').focus();
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('#p-cod-decio') && !e.target.closest('#ac-produto')) {
-    const box = document.getElementById('ac-produto');
-    if (box) box.classList.remove('show');
-  }
-});
-
-/* ══════════ Planos CRUD ══════════ */
-function renderPlanos(){
-  const tb = document.getElementById('tb-planos');
-  if (!planos.length) { tb.innerHTML='<tr><td colspan="9" class="empty">Nenhum produto cadastrado neste mês.</td></tr>'; return; }
-  tb.innerHTML = planos.map(p => {
-    const st = calcStatus(p);
-    const pctCls = st.pct>=100 ? 'badge-green' : st.pct>=70 ? 'badge-yellow' : 'badge-red';
-    const rowCls = st.key==='Atrasada' ? 'row-atrasada' : '';
-    return '<tr class="'+rowCls+'">' +
-      '<td><strong>'+fmtDate(p.data_limite)+'</strong></td>' +
-      '<td>'+esc(p.cod_decio || p.codigo)+'</td>' +
-      '<td>'+esc(p.cod_intelbras || '—')+'</td>' +
-      '<td>'+esc(p.descricao)+'</td>' +
-      '<td>'+(p.meta_mensal||0).toLocaleString('pt-BR')+'</td>' +
-      '<td>'+st.realizado.toLocaleString('pt-BR')+'</td>' +
-      '<td><span class="badge '+pctCls+'">'+st.pct+'%</span></td>' +
-      '<td><span class="badge '+st.cls+'">'+st.label+'</span></td>' +
-      '<td style="white-space:nowrap"><button class="btn-sm btn-ghost" onclick="editarPlano('+p.id+')">✏️</button> <button class="btn-sm btn-ghost" onclick="deletarPlano('+p.id+')">🗑️</button></td>' +
-    '</tr>';
-  }).join('');
+  document.getElementById('plano-ac-list').classList.remove('show');
 }
 
-async function salvarPlano(){
-  const editId = document.getElementById('plano-edit-id').value;
+// =================== AUTOCOMPLETE: APONTAMENTO ===================
+function autocompleteApont(q) {
+  const list = document.getElementById('apont-ac-list');
+  if (!q || q.length < 1) { list.classList.remove('show'); return; }
+  const ql = q.toLowerCase();
+  const matches = produtos.filter(p =>
+    (p.cod_decio||'').toLowerCase().includes(ql) ||
+    (p.cod_intelbras||'').toLowerCase().includes(ql) ||
+    (p.descricao||'').toLowerCase().includes(ql)
+  ).slice(0,10);
+  if (!matches.length) { list.classList.remove('show'); return; }
+  list.innerHTML = matches.map(p =>
+    `<div class="autocomplete-item" onclick="selecionarProdutoApont('${p.cod_decio}')">
+      <strong>${p.cod_decio}</strong> | ${p.cod_intelbras||'-'} | ${p.descricao||'-'}
+    </div>`).join('');
+  list.classList.add('show');
+}
+function selecionarProdutoApont(decio) {
+  const p = produtos.find(x => x.cod_decio === decio);
+  if (!p) return;
+  document.getElementById('a-cod-decio').value = p.cod_decio;
+  document.getElementById('a-cod-intelbras').value = p.cod_intelbras || '';
+  document.getElementById('a-descricao').value = p.descricao || '';
+  document.getElementById('a-categoria').value = p.categoria || '';
+  document.getElementById('a-cod-decio').dataset.horaRep = p.hora_reportado || 0;
+  document.getElementById('apont-ac-list').classList.remove('show');
+  calcularHoraTotal();
+}
+
+// =================== CALCULAR HORA TOTAL ===================
+function calcularHoraTotal() {
+  const hora = parseFloat(document.getElementById('a-cod-decio').dataset.horaRep || 0);
+  const real = parseFloat(document.getElementById('a-realizado').value || 0);
+  const total = hora * real;
+  document.getElementById('a-hora-total').value = total.toFixed(4) + ' h';
+}
+
+// =================== PLANO MENSAL: CRUD ===================
+async function salvarPlano() {
   const data_limite = document.getElementById('p-data-limite').value;
   const cod_decio = document.getElementById('p-cod-decio').value.trim();
   const cod_intelbras = document.getElementById('p-cod-intelbras').value.trim();
   const descricao = document.getElementById('p-descricao').value.trim();
-  const meta_mensal = parseInt(document.getElementById('p-meta').value) || 0;
-  const obs = document.getElementById('p-obs').value.trim();
-
-  if (!data_limite) { toast('Informe a data limite.','danger'); return; }
-  if (!cod_decio) { toast('Informe o código décio.','danger'); return; }
-  if (!descricao) { toast('Descrição em branco — selecione um produto cadastrado ou cadastre-o primeiro.','danger'); return; }
-  if (!meta_mensal) { toast('Informe a meta.','danger'); return; }
-
-  const body = {
-    mes: mesDeIso(data_limite),    // mantém compatibilidade
-    data_limite,
-    codigo: cod_decio,
-    descricao,
-    meta_mensal,
-    obs,
-    cod_decio,
-    cod_intelbras
-  };
-
-  if (editId) {
-    await api('/api/prod-planos/'+editId, 'PUT', body);
-    toast('Plano atualizado!');
-  } else {
-    await api('/api/prod-planos', 'POST', body);
-    toast('Plano adicionado!');
-  }
-  cancelarPlano();
-  await loadAll();
+  const meta = parseFloat(document.getElementById('p-meta').value || 0);
+  if (!data_limite) return toast('Informe a data limite', 'error');
+  if (!cod_decio) return toast('Informe o código Décio', 'error');
+  if (meta <= 0) return toast('Informe uma meta válida', 'error');
+  const editId = document.getElementById('plano-edit-id').value;
+  try {
+    if (editId) {
+      await api('/prod-planos/' + editId, { method:'PUT', body:{ data_limite, cod_decio, cod_intelbras, descricao, meta } });
+      toast('Plano atualizado!');
+    } else {
+      await api('/prod-planos', { method:'POST', body:{ data_limite, cod_decio, cod_intelbras, descricao, meta } });
+      toast('Plano salvo!');
+    }
+    limparPlano();
+    loadAll();
+  } catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
-
-function editarPlano(id){
-  const p = planos.find(x => x.id===id);
-  if (!p) return;
-  document.getElementById('plano-edit-id').value = p.id;
-  document.getElementById('p-data-limite').value = isoDate(p.data_limite);
-  document.getElementById('p-cod-decio').value = p.cod_decio || p.codigo || '';
-  document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('p-descricao').value = p.descricao || '';
-  document.getElementById('p-meta').value = p.meta_mensal;
-  document.getElementById('p-obs').value = p.obs || '';
-  showTab('planos', { target: document.querySelectorAll('.tab')[1] });
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
-
-function cancelarPlano(){
+function limparPlano() {
   document.getElementById('plano-edit-id').value = '';
-  document.getElementById('p-data-limite').value = getHoje();
+  document.getElementById('p-data-limite').value = '';
   document.getElementById('p-cod-decio').value = '';
   document.getElementById('p-cod-intelbras').value = '';
   document.getElementById('p-descricao').value = '';
   document.getElementById('p-meta').value = '';
-  document.getElementById('p-obs').value = '';
 }
-
-async function deletarPlano(id){
-  if (!confirm('Excluir este plano?')) return;
-  await api('/api/prod-planos/'+id, 'DELETE');
-  toast('Plano excluído.','info');
-  await loadAll();
+function editarPlano(id) {
+  const p = planos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('plano-edit-id').value = p.id;
+  document.getElementById('p-data-limite').value = p.data_limite ? String(p.data_limite).substring(0,10) : '';
+  document.getElementById('p-cod-decio').value = p.cod_decio || '';
+  document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
+  document.getElementById('p-descricao').value = p.descricao || '';
+  document.getElementById('p-meta').value = p.meta || '';
+  window.scrollTo({ top:0, behavior:'smooth' });
 }
-
-/* ══════════ Apontamento Diário ══════════ */
-function renderApontar(){
-  const data = document.getElementById('apontar-data').value;
-  const div = document.getElementById('apontar-list');
-  if (!planos.length) { div.innerHTML='<div class="empty">Cadastre planos no Plano Mensal primeiro.</div>'; return; }
-  const uteis = diasUteisNoMes(getMes());
-  div.innerHTML = planos.map(p => {
-    const metaDia = Math.ceil((p.meta_mensal||0)/Math.max(uteis,1));
-    const apt = apontamentos.find(a => a.plano_id===p.id && a.data && isoDate(a.data)===data);
-    const qtd = apt ? apt.qtd_realizada : '';
-    const just = apt ? (apt.justificativa||'') : '';
-    const st = calcStatus(p);
-    return '<div class="apontar-card">' +
-      '<div class="apontar-info">' +
-        '<div class="apontar-prod">'+esc(p.cod_decio || p.codigo)+' — '+esc(p.descricao)+'</div>' +
-        '<div class="apontar-meta">Cód. Intelbras: '+esc(p.cod_intelbras||'—')+' | Prazo: <strong>'+fmtDate(p.data_limite)+'</strong> | Meta: '+(p.meta_mensal||0)+' | Meta diária: ~'+metaDia+' un. | <span class="badge '+st.cls+'">'+st.label+'</span></div>' +
-      '</div>' +
-      '<div class="apontar-inputs">' +
-        '<input type="number" id="apt-qtd-'+p.id+'" placeholder="Qtd" min="0" value="'+qtd+'">' +
-        '<textarea id="apt-just-'+p.id+'" placeholder="Justificativa (se não bateu meta)">'+esc(just)+'</textarea>' +
-      '</div>' +
-    '</div>';
+async function excluirPlano(id) {
+  if (!confirm('Excluir este plano? Isto NÃO exclui os apontamentos detalhados já feitos.')) return;
+  try { await api('/prod-planos/' + id, { method:'DELETE' }); toast('Plano excluído'); loadAll(); }
+  catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+function renderPlanos() {
+  const tb = document.getElementById('tb-planos');
+  if (!planos.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano cadastrado.</td></tr>'; return; }
+  tb.innerHTML = planos.map(p => {
+    const meta = parseFloat(p.meta)||0;
+    const real = parseFloat(p.realizado)||0;
+    const pct = meta > 0 ? (real/meta)*100 : 0;
+    return `<tr>
+      <td>${fmtData(p.data_limite)}</td>
+      <td><strong>${p.cod_decio||'-'}</strong></td>
+      <td>${p.cod_intelbras||'-'}</td>
+      <td>${p.descricao||p.produto||'-'}</td>
+      <td>${fmtNum(meta)}</td>
+      <td>${fmtNum(real)}</td>
+      <td>${pct.toFixed(1)}%</td>
+      <td>${badgeStatus(p.status)}</td>
+      <td>
+        <button class="btn-sm btn-blue" onclick="editarPlano(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
+        <button class="btn-sm btn-red" onclick="excluirPlano(${p.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
+      </td>
+    </tr>`;
   }).join('');
 }
 
-async function salvarTodosApontamentos(){
-  const data = document.getElementById('apontar-data').value;
-  if (!data) { toast('Selecione uma data.','danger'); return; }
-  const uteis = diasUteisNoMes(getMes());
-  let salvos = 0;
-  for (let i=0; i<planos.length; i++) {
-    const p = planos[i];
-    const qtdEl = document.getElementById('apt-qtd-'+p.id);
-    const justEl = document.getElementById('apt-just-'+p.id);
-    if (!qtdEl) continue;
-    const qtd = parseInt(qtdEl.value);
-    if (isNaN(qtd)) continue;
-    const metaDia = Math.ceil((p.meta_mensal||0)/Math.max(uteis,1));
-    const atingiu = qtd >= metaDia;
-    const just = justEl.value.trim();
-    await api('/api/prod-apontamentos','POST',{ plano_id:p.id, data, qtd_realizada:qtd, atingiu_meta:atingiu, justificativa: just||null });
-    salvos++;
+// =================== APONTAMENTO DETALHADO: CRUD ===================
+async function salvarApontamentoDetalhado() {
+  const data_execucao = document.getElementById('a-data').value;
+  const turno = document.getElementById('a-turno').value;
+  const celula = document.getElementById('a-celula').value;
+  const num_op = document.getElementById('a-num-op').value;
+  const serie_inicial = document.getElementById('a-serie-ini').value;
+  const serie_final = document.getElementById('a-serie-fim').value;
+  const cod_decio = document.getElementById('a-cod-decio').value.trim();
+  const cod_intelbras = document.getElementById('a-cod-intelbras').value.trim();
+  const descricao = document.getElementById('a-descricao').value.trim();
+  const categoria = document.getElementById('a-categoria').value;
+  const meta = parseFloat(document.getElementById('a-meta').value || 0);
+  const realizado = parseFloat(document.getElementById('a-realizado').value || 0);
+  const horaRep = parseFloat(document.getElementById('a-cod-decio').dataset.horaRep || 0);
+  const hora_reportada_total = horaRep * realizado;
+  const observacoes = document.getElementById('a-obs').value.trim();
+
+  // Validações
+  if (!data_execucao) return toast('Informe a data de execução', 'error');
+  if (!turno) return toast('Selecione o turno', 'error');
+  if (!celula) return toast('Selecione a célula', 'error');
+  if (!/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos numéricos', 'error');
+  if (!/^\d{13}$/.test(serie_inicial)) return toast('Série Inicial deve ter exatos 13 dígitos numéricos', 'error');
+  if (!/^\d{13}$/.test(serie_final)) return toast('Série Final deve ter exatos 13 dígitos numéricos', 'error');
+  if (!cod_decio) return toast('Informe o código Décio', 'error');
+  if (realizado <= 0) return toast('Informe a quantidade realizada', 'error');
+
+  const btn = document.getElementById('btn-salvar-apont');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    const res = await api('/prod-apontamentos-detalhados', {
+      method:'POST',
+      body:{ data_execucao, turno, celula, num_op, serie_inicial, serie_final,
+             cod_decio, cod_intelbras, descricao, categoria, meta, realizado,
+             hora_reportada_total, observacoes }
+    });
+    if (res.plano_encontrado) {
+      toast('✅ Apontamento salvo e somado ao plano mensal!');
+    } else {
+      toast('⚠️ Apontamento salvo, mas sem plano mensal correspondente para esse Décio/mês', 'warn');
+    }
+    limparApontamento();
+    loadAll();
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar Apontamento';
   }
-  toast(salvos+' apontamento(s) salvo(s).','success');
-  await loadAll();
 }
 
-/* ══════════ Histórico ══════════ */
-function renderHistorico(){
+function limparApontamento() {
+  ['a-data','a-turno','a-celula','a-num-op','a-serie-ini','a-serie-fim',
+   'a-cod-decio','a-cod-intelbras','a-descricao','a-categoria',
+   'a-meta','a-realizado','a-hora-total','a-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('a-cod-decio').dataset.horaRep = 0;
+  document.querySelectorAll('#sec-apontar input').forEach(i => i.classList.remove('valid','invalid'));
+  document.getElementById('hint-op').textContent = 'Digite 8 dígitos numéricos';
+  document.getElementById('hint-sini').textContent = 'Digite 13 dígitos numéricos';
+  document.getElementById('hint-sfim').textContent = 'Digite 13 dígitos numéricos';
+  ['hint-op','hint-sini','hint-sfim'].forEach(id => document.getElementById(id).classList.remove('error'));
+}
+
+async function excluirApontamentoDet(id) {
+  if (!confirm('Excluir este apontamento? O realizado será subtraído do plano mensal.')) return;
+  try { await api('/prod-apontamentos-detalhados/' + id, { method:'DELETE' }); toast('Apontamento excluído'); loadAll(); }
+  catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+function renderApontamentosDet() {
+  const tb = document.getElementById('tb-apont-det');
+  let lista = [...apontamentosDet];
+  const dIni = document.getElementById('f-data-ini').value;
+  const dFim = document.getElementById('f-data-fim').value;
+  const turno = document.getElementById('f-turno').value;
+  const celula = document.getElementById('f-celula').value;
+  const op = document.getElementById('f-op').value.trim().toLowerCase();
+  const decio = document.getElementById('f-decio').value.trim().toLowerCase();
+  if (dIni) lista = lista.filter(a => String(a.data_execucao).substring(0,10) >= dIni);
+  if (dFim) lista = lista.filter(a => String(a.data_execucao).substring(0,10) <= dFim);
+  if (turno) lista = lista.filter(a => a.turno === turno);
+  if (celula) lista = lista.filter(a => a.celula === celula);
+  if (op) lista = lista.filter(a => (a.num_op||'').toLowerCase().includes(op));
+  if (decio) lista = lista.filter(a => (a.cod_decio||'').toLowerCase().includes(decio));
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Nenhum apontamento encontrado.</td></tr>'; return; }
+  tb.innerHTML = lista.map(a => `<tr>
+    <td>${fmtData(a.data_execucao)}</td>
+    <td>${a.turno}º</td>
+    <td>${a.celula||'-'}</td>
+    <td><strong>${a.num_op||'-'}</strong></td>
+    <td>${a.serie_inicial||'-'}</td>
+    <td>${a.serie_final||'-'}</td>
+    <td><strong>${a.cod_decio||'-'}</strong></td>
+    <td>${a.cod_intelbras||'-'}</td>
+    <td title="${a.descricao||''}">${(a.descricao||'-').substring(0,30)}${(a.descricao||'').length>30?'...':''}</td>
+    <td>${a.categoria||'-'}</td>
+    <td>${fmtNum(a.meta)}</td>
+    <td>${fmtNum(a.realizado)}</td>
+    <td>${fmtNum(a.hora_reportada_total)} h</td>
+    <td title="${a.observacoes||''}">${(a.observacoes||'-').substring(0,20)}${(a.observacoes||'').length>20?'...':''}</td>
+    <td><button class="btn-sm btn-red" onclick="excluirApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px">🗑️</button></td>
+  </tr>`).join('');
+}
+
+function exportarApontamentosCSV() {
+  if (!apontamentosDet.length) return toast('Nada para exportar', 'warn');
+  const headers = ['Data','Turno','Célula','N° OP','Série Inicial','Série Final','Cód. Décio','Cód. Intelbras','Descrição','Categoria','Meta','Realizado','Hora Total','Observações'];
+  const rows = apontamentosDet.map(a => [
+    fmtData(a.data_execucao), a.turno+'º', a.celula||'', a.num_op||'', a.serie_inicial||'', a.serie_final||'',
+    a.cod_decio||'', a.cod_intelbras||'', (a.descricao||'').replace(/[\r\n;]/g,' '), a.categoria||'',
+    a.meta||0, a.realizado||0, a.hora_reportada_total||0, (a.observacoes||'').replace(/[\r\n;]/g,' ')
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `apontamentos_${new Date().toISOString().substring(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado!');
+}
+
+// =================== HISTÓRICO ===================
+function renderHistorico() {
   const tb = document.getElementById('tb-historico');
-  if (!apontamentos.length) { tb.innerHTML='<tr><td colspan="8" class="empty">Sem apontamentos no mês.</td></tr>'; return; }
-  const uteis = diasUteisNoMes(getMes());
-  const rows = apontamentos.slice().sort((a,b) => (isoDate(b.data)||'').localeCompare(isoDate(a.data)||''));
-  tb.innerHTML = rows.map(a => {
-    const p = planos.find(x => x.id===a.plano_id);
-    const metaDia = p ? Math.ceil((p.meta_mensal||0)/Math.max(uteis,1)) : 0;
-    const st = a.atingiu_meta ? '<span class="badge badge-green">✅ Bateu</span>' : '<span class="badge badge-red">❌ Não bateu</span>';
-    return '<tr>' +
-      '<td>'+fmtDate(a.data)+'</td>' +
-      '<td><strong>'+esc(a.codigo||'-')+'</strong></td>' +
-      '<td>'+esc(a.prod_descricao||'-')+'</td>' +
-      '<td>'+metaDia+'</td>' +
-      '<td>'+a.qtd_realizada+'</td>' +
-      '<td>'+st+'</td>' +
-      '<td style="max-width:220px;color:var(--text2)">'+esc(a.justificativa||'—')+'</td>' +
-      '<td><button class="btn-sm btn-ghost" onclick="delApontamento('+a.id+')">🗑️</button></td>' +
-    '</tr>';
+  if (!planos.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano.</td></tr>'; return; }
+  tb.innerHTML = planos.map(p => {
+    const meta = parseFloat(p.meta)||0;
+    const real = parseFloat(p.realizado)||0;
+    const pct = meta > 0 ? (real/meta)*100 : 0;
+    return `<tr>
+      <td>${fmtData(p.data_limite)}</td>
+      <td>${p.cod_decio||'-'}</td>
+      <td>${p.cod_intelbras||'-'}</td>
+      <td>${p.descricao||p.produto||'-'}</td>
+      <td>${fmtNum(meta)}</td>
+      <td>${fmtNum(real)}</td>
+      <td>${pct.toFixed(1)}%</td>
+      <td>${badgeStatus(p.status)}</td>
+    </tr>`;
   }).join('');
 }
-async function delApontamento(id){
-  if (!confirm('Excluir este apontamento?')) return;
-  await api('/api/prod-apontamentos/'+id,'DELETE');
-  toast('Apontamento excluído.','info');
-  await loadAll();
-}
 
-/* ══════════ PRODUTOS (banco) ══════════ */
-function renderProdutos(){
+// =================== PRODUTOS ===================
+async function salvarProduto() {
+  const cod_decio = document.getElementById('prod-decio').value.trim();
+  const cod_intelbras = document.getElementById('prod-intelbras').value.trim();
+  const descricao = document.getElementById('prod-desc').value.trim();
+  const categoria = document.getElementById('prod-cat').value;
+  const valor = parseFloat(document.getElementById('prod-valor').value || 0);
+  const minutos_reportados = parseFloat(document.getElementById('prod-min').value || 0);
+  const hora_reportado = parseFloat(document.getElementById('prod-hora').value || 0);
+  if (!cod_decio) return toast('Informe o código Décio', 'error');
+  const editId = document.getElementById('prod-edit-id').value;
+  try {
+    if (editId) {
+      await api('/prod-produtos/' + editId, { method:'PUT', body:{ cod_decio, cod_intelbras, descricao, categoria, valor, minutos_reportados, hora_reportado } });
+      toast('Produto atualizado!');
+    } else {
+      await api('/prod-produtos', { method:'POST', body:{ cod_decio, cod_intelbras, descricao, categoria, valor, minutos_reportados, hora_reportado } });
+      toast('Produto criado!');
+    }
+    limparProduto();
+    produtos = await api('/prod-produtos').catch(()=>[]);
+    renderProdutos();
+  } catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+function limparProduto() {
+  ['prod-edit-id','prod-decio','prod-intelbras','prod-desc','prod-cat','prod-valor','prod-min','prod-hora'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+}
+function editarProduto(id) {
+  const p = produtos.find(x => x.id === id); if (!p) return;
+  document.getElementById('prod-edit-id').value = p.id;
+  document.getElementById('prod-decio').value = p.cod_decio || '';
+  document.getElementById('prod-intelbras').value = p.cod_intelbras || '';
+  document.getElementById('prod-desc').value = p.descricao || '';
+  document.getElementById('prod-cat').value = p.categoria || '';
+  document.getElementById('prod-valor').value = p.valor || '';
+  document.getElementById('prod-min').value = p.minutos_reportados || '';
+  document.getElementById('prod-hora').value = p.hora_reportado || '';
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+async function excluirProduto(id) {
+  if (!confirm('Excluir este produto?')) return;
+  try { await api('/prod-produtos/' + id, { method:'DELETE' }); toast('Produto excluído'); produtos = await api('/prod-produtos').catch(()=>[]); renderProdutos(); }
+  catch(e) { toast('Erro: ' + e.message, 'error'); }
+}
+function renderProdutos() {
   const tb = document.getElementById('tb-produtos');
-  const q = (document.getElementById('prod-busca').value || '').toLowerCase().trim();
-  const fcat = document.getElementById('prod-filtro-cat').value;
-  let lista = produtos.slice();
+  const q = (document.getElementById('prod-busca')?.value || '').toLowerCase();
+  let lista = [...produtos];
   if (q) lista = lista.filter(p =>
     (p.cod_decio||'').toLowerCase().includes(q) ||
     (p.cod_intelbras||'').toLowerCase().includes(q) ||
     (p.descricao||'').toLowerCase().includes(q));
-  if (fcat) lista = lista.filter(p => (p.categoria||'')===fcat);
-
-  document.getElementById('prod-total').textContent = lista.length + (lista.length!==produtos.length ? ' (de '+produtos.length+')' : '');
-
-  if (!lista.length) { tb.innerHTML='<tr><td colspan="8" class="empty">Nenhum produto cadastrado. Use o botão <strong>📥 Importar Banco Inicial</strong> para carregar os 65 produtos da planilha.</td></tr>'; return; }
-
-  tb.innerHTML = lista.map(p =>
-    '<tr>' +
-      '<td><strong>'+esc(p.cod_decio)+'</strong></td>' +
-      '<td>'+esc(p.cod_intelbras||'—')+'</td>' +
-      '<td>'+esc(p.descricao)+'</td>' +
-      '<td>'+(p.categoria ? '<span class="badge badge-purple">'+esc(p.categoria)+'</span>' : '—')+'</td>' +
-      '<td>'+(p.valor!=null ? 'R$ '+Number(p.valor).toFixed(2).replace('.',',') : '—')+'</td>' +
-      '<td>'+(p.minutos_reportados!=null ? Number(p.minutos_reportados).toFixed(3) : '—')+'</td>' +
-      '<td>'+(p.hora_reportado!=null ? Number(p.hora_reportado).toFixed(6) : '—')+'</td>' +
-      '<td style="white-space:nowrap">' +
-        '<button class="btn-sm btn-ghost" onclick="editarProduto('+p.id+')">✏️</button> ' +
-        '<button class="btn-sm btn-ghost" onclick="delProduto('+p.id+')">🗑️</button>' +
-      '</td>' +
-    '</tr>'
-  ).join('');
+  document.getElementById('prod-total').textContent = lista.length;
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum produto.</td></tr>'; return; }
+  tb.innerHTML = lista.map(p => `<tr>
+    <td><strong>${p.cod_decio||'-'}</strong></td>
+    <td>${p.cod_intelbras||'-'}</td>
+    <td>${p.descricao||'-'}</td>
+    <td>${p.categoria||'-'}</td>
+    <td>${fmtNum(p.valor)}</td>
+    <td>${fmtNum(p.minutos_reportados)}</td>
+    <td>${fmtNum(p.hora_reportado)}</td>
+    <td>
+      <button class="btn-sm btn-blue" onclick="editarProduto(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
+      <button class="btn-sm btn-red" onclick="excluirProduto(${p.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
+    </td>
+  </tr>`).join('');
 }
 
-async function salvarProduto(){
-  const editId = document.getElementById('prod-edit-id').value;
-  const body = {
-    cod_decio: document.getElementById('pr-decio').value.trim(),
-    cod_intelbras: document.getElementById('pr-intelbras').value.trim(),
-    descricao: document.getElementById('pr-desc').value.trim(),
-    categoria: document.getElementById('pr-cat').value || null,
-    valor: parseFloat(document.getElementById('pr-valor').value) || null,
-    minutos_reportados: parseFloat(document.getElementById('pr-min').value) || null,
-    hora_reportado: parseFloat(document.getElementById('pr-hora').value) || null
-  };
-  if (!body.cod_decio || !body.descricao) { toast('Código décio e descrição são obrigatórios.','danger'); return; }
-
-  let r;
-  if (editId) r = await api('/api/prod-produtos/'+editId, 'PUT', body);
-  else r = await api('/api/prod-produtos', 'POST', body);
-
-  if (r && r.error) { toast(r.error, 'danger'); return; }
-  toast(editId ? 'Produto atualizado!' : 'Produto cadastrado!');
-  cancelarProduto();
-  await loadAll();
-}
-
-function editarProduto(id){
-  const p = produtos.find(x => x.id===id);
-  if (!p) return;
-  document.getElementById('prod-edit-id').value = p.id;
-  document.getElementById('pr-decio').value = p.cod_decio || '';
-  document.getElementById('pr-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('pr-desc').value = p.descricao || '';
-  document.getElementById('pr-cat').value = p.categoria || '';
-  document.getElementById('pr-valor').value = p.valor || '';
-  document.getElementById('pr-min').value = p.minutos_reportados || '';
-  document.getElementById('pr-hora').value = p.hora_reportado || '';
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
-
-function cancelarProduto(){
-  document.getElementById('prod-edit-id').value = '';
-  ['pr-decio','pr-intelbras','pr-desc','pr-valor','pr-min','pr-hora'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('pr-cat').value = '';
-}
-
-async function delProduto(id){
-  const p = produtos.find(x => x.id===id);
-  if (!p) return;
-  if (!confirm('Excluir o produto "'+p.descricao+'"?\n\nIsso não afeta planos já cadastrados, mas o autocomplete deixará de sugeri-lo.')) return;
-  await api('/api/prod-produtos/'+id, 'DELETE');
-  toast('Produto excluído.','info');
-  await loadAll();
-}
-
-async function importarSeed(){
-  if (!confirm('Importar os 65 produtos da planilha inicial?\n\nProdutos com o mesmo código décio que já existirem serão ignorados (não há duplicação).')) return;
-  const btn = document.getElementById('btn-seed');
-  btn.disabled = true; btn.textContent = '⏳ Importando...';
-  try {
-    const r = await api('/api/prod-produtos/seed', 'POST', {});
-    if (r && r.success) {
-      toast('✅ '+r.inseridos+' inseridos · '+r.ignorados+' já existiam','success');
-    } else {
-      toast('Erro ao importar: '+(r && r.error || 'desconhecido'),'danger');
-    }
-  } catch(e){
-    toast('Erro: '+e.message,'danger');
-  }
-  btn.disabled = false; btn.textContent = '📥 Importar Banco Inicial (65 itens)';
-  await loadAll();
-}
-
-/* ══════════ Dashboard / Gráficos ══════════ */
-function renderDashboard(){
-  if (!planos.length) return;
-  const labels=[], metas=[], realizados=[], pcts=[];
-  planos.forEach(p => {
-    labels.push(p.cod_decio || p.codigo);
-    metas.push(p.meta_mensal);
-    const st = calcStatus(p);
-    realizados.push(st.realizado);
-    pcts.push(st.pct);
-  });
-
-  const ctx1 = document.getElementById('chart-meta-real').getContext('2d');
-  if (chartMetaReal) chartMetaReal.destroy();
-  chartMetaReal = new Chart(ctx1, {
+// =================== DASHBOARD CHARTS ===================
+function renderDashboard() {
+  // Gráfico de barras: Meta vs Realizado
+  const ctx1 = document.getElementById('chartBar');
+  if (chartBarObj) chartBarObj.destroy();
+  if (!ctx1) return;
+  const top = planos.slice(0, 12);
+  chartBarObj = new Chart(ctx1, {
     type:'bar',
-    data:{ labels, datasets:[
-      { label:'Meta', data:metas, backgroundColor:'rgba(234,179,8,.5)', borderColor:'#eab308', borderWidth:2 },
-      { label:'Realizado', data:realizados, backgroundColor:'rgba(34,197,94,.5)', borderColor:'#22c55e', borderWidth:2 }
-    ]},
-    options:{ responsive:true, plugins:{ title:{ display:true, text:'Meta vs Realizado por Produto', color:'#f1f5f9', font:{size:14,weight:'bold'} }, legend:{ labels:{color:'#94a3b8'} } }, scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(71,85,105,.3)'} }, y:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(71,85,105,.3)'} } } }
+    data:{
+      labels: top.map(p => p.cod_decio || p.produto || '-'),
+      datasets:[
+        { label:'Meta', data: top.map(p => parseFloat(p.meta)||0), backgroundColor:'#58a6ff' },
+        { label:'Realizado', data: top.map(p => parseFloat(p.realizado)||0), backgroundColor:'#3fb950' }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#e6edf3' } } }, scales:{ x:{ ticks:{ color:'#8b98a5' } }, y:{ ticks:{ color:'#8b98a5' } } } }
   });
 
-  const ctx2 = document.getElementById('chart-pct').getContext('2d');
-  if (chartPct) chartPct.destroy();
-  const cores = ['#3b82f6','#8b5cf6','#f43f5e','#22c55e','#eab308','#f97316','#06b6d4','#ec4899'];
-  chartPct = new Chart(ctx2, {
-    type:'doughnut',
-    data:{ labels:labels.map((l,i) => l+' ('+pcts[i]+'%)'), datasets:[{ data:pcts, backgroundColor:cores.slice(0,labels.length), borderWidth:0 }] },
-    options:{ responsive:true, plugins:{ title:{ display:true, text:'% Atendimento por Produto', color:'#f1f5f9', font:{size:14,weight:'bold'} }, legend:{ position:'bottom', labels:{ color:'#94a3b8', font:{size:11} } } } }
+  // Gráfico linha: Acumulado mensal
+  const ctx2 = document.getElementById('chartLine');
+  if (chartLineObj) chartLineObj.destroy();
+  if (!ctx2) return;
+  const porDia = {};
+  apontamentosDet.forEach(a => {
+    const d = String(a.data_execucao).substring(0,10);
+    porDia[d] = (porDia[d]||0) + (parseFloat(a.realizado)||0);
   });
-
-  renderChartAcumulado();
-}
-
-function renderChartAcumulado(){
-  const mes = getMes();
-  if (!mes || !planos.length) return;
-  const datasSet = {};
-  apontamentos.forEach(a => { if (a.data) datasSet[isoDate(a.data)] = true; });
-  const datas = Object.keys(datasSet).sort();
-  if (!datas.length) return;
-
-  const acum=[], metaAcum=[];
-  let totalMeta=0; planos.forEach(p => totalMeta+=(p.meta_mensal||0));
-  const uteis = diasUteisNoMes(mes);
-  const metaDiaria = Math.ceil(totalMeta/Math.max(uteis,1));
-
-  let somaAcum=0;
-  datas.forEach((d,i) => {
-    let somaHoje=0;
-    apontamentos.forEach(a => { if (a.data && isoDate(a.data)===d) somaHoje+=a.qtd_realizada; });
-    somaAcum += somaHoje;
-    acum.push(somaAcum);
-    metaAcum.push(metaDiaria*(i+1));
-  });
-
-  const ctx3 = document.getElementById('chart-acumulado').getContext('2d');
-  if (chartAcum) chartAcum.destroy();
-  chartAcum = new Chart(ctx3, {
+  const dias = Object.keys(porDia).sort();
+  let acc = 0;
+  const acumulado = dias.map(d => { acc += porDia[d]; return acc; });
+  chartLineObj = new Chart(ctx2, {
     type:'line',
-    data:{ labels:datas.map(d => fmtDate(d)), datasets:[
-      { label:'Meta Acumulada', data:metaAcum, borderColor:'#eab308', borderDash:[6,4], tension:.3, fill:false, pointRadius:3 },
-      { label:'Realizado Acumulado', data:acum, borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.1)', tension:.3, fill:true, pointRadius:4 }
-    ]},
-    options:{ responsive:true, plugins:{ title:{ display:true, text:'Produção Diária Acumulada', color:'#f1f5f9', font:{size:14,weight:'bold'} }, legend:{ labels:{color:'#94a3b8'} } }, scales:{ x:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(71,85,105,.3)'} }, y:{ ticks:{color:'#94a3b8'}, grid:{color:'rgba(71,85,105,.3)'} } } }
+    data:{ labels: dias.map(fmtData), datasets:[{ label:'Acumulado', data: acumulado, borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.2)', tension:.3, fill:true }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#e6edf3' } } }, scales:{ x:{ ticks:{ color:'#8b98a5' } }, y:{ ticks:{ color:'#8b98a5' } } } }
   });
 }
 
-/* ══════════ Init ══════════ */
-async function init(){
-  updateClock();
-  await loadUser();
+// =================== INIT ===================
+function init() {
   const hoje = new Date();
-  const mesAtual = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
-  document.getElementById('filtro-mes').value = mesAtual;
-  document.getElementById('p-data-limite').value = getHoje();
-  document.getElementById('apontar-data').value = getHoje();
-  document.getElementById('filtro-mes').addEventListener('change', loadAll);
-  document.getElementById('apontar-data').addEventListener('change', renderApontar);
-  await loadAll();
+  document.getElementById('filtro-mes').value = hoje.toISOString().substring(0,7);
+  document.getElementById('a-data').value = hoje.toISOString().substring(0,10);
+  loadUser();
+  loadAll();
+  // Fechar autocomplete ao clicar fora
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.autocomplete')) {
+      document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('show'));
+    }
+  });
 }
-window.onload = init;
+init();
 </script>
 </body>
 </html>
