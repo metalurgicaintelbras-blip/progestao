@@ -249,15 +249,31 @@ async function initDB() {
     `);
 
     // ============ AJUSTES EM TABELAS EXISTENTES ============
-
-    // prod_planos: novas colunas
+    // 🔧 IMPORTANTE: garante que TODAS as colunas existem em prod_planos
+    // (necessário para bancos antigos que foram criados sem essas colunas)
     await client.query(`
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS mes VARCHAR(7);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta NUMERIC(12,2) DEFAULT 0;
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS observacoes TEXT;
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'em_andamento';
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS realizado NUMERIC(12,2) DEFAULT 0;
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+    `);
+
+    // 🔧 Garante colunas em prod_produtos também
+    await client.query(`
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS valor NUMERIC(12,2) DEFAULT 0;
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS minutos_reportados NUMERIC(10,2) DEFAULT 0;
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(10,4) DEFAULT 0;
+      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
     `);
 
     // Migração: para planos antigos sem data_limite, define o último dia do mês
