@@ -7,13 +7,11 @@ const { requireAuth } = require('../middleware/auth');
 // HELPERS
 // =====================================================
 
-// Retorna o mês (YYYY-MM) de uma data
 function mesDaData(dataISO) {
   if (!dataISO) return null;
-  return String(dataISO).substring(0, 7); // "YYYY-MM-DD" -> "YYYY-MM"
+  return String(dataISO).substring(0, 7);
 }
 
-// Valida string de exatos N dígitos numéricos
 function validarDigitos(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim();
@@ -21,7 +19,6 @@ function validarDigitos(valor, qtd) {
   return re.test(s);
 }
 
-// Recalcula e atualiza o status do plano (chamado após mudanças no realizado)
 async function atualizarStatusPlano(planoId, client) {
   const db = client || pool;
   const r = await db.query('SELECT meta, realizado, data_limite FROM prod_planos WHERE id=$1', [planoId]);
@@ -38,8 +35,16 @@ async function atualizarStatusPlano(planoId, client) {
   await db.query('UPDATE prod_planos SET status=$1 WHERE id=$2', [status, planoId]);
 }
 
+// Garante que a coluna produto exista (para evitar quebras)
+async function garantirColunaProduto() {
+  try {
+    await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300)');
+  } catch(e) { /* silencioso */ }
+}
+garantirColunaProduto();
+
 // =====================================================
-// PROD-PLANOS  (planos mensais)
+// PROD-PLANOS
 // =====================================================
 
 router.get('/prod-planos', requireAuth, async (req, res) => {
@@ -127,13 +132,13 @@ router.delete('/prod-planos/:id', requireAuth, async (req, res) => {
 });
 
 // =====================================================
-// PROD-APONTAMENTOS  (apontamentos simples - mantidos por compatibilidade)
+// PROD-APONTAMENTOS (simples) — SEM JOIN COM PRODUTO
 // =====================================================
 
 router.get('/prod-apontamentos', requireAuth, async (req, res) => {
   try {
     const { plano_id, mes } = req.query;
-    let q = `SELECT a.*, p.mes, p.produto, p.cod_decio, p.cod_intelbras
+    let q = `SELECT a.*, p.mes, p.cod_decio, p.cod_intelbras, p.descricao
              FROM prod_apontamentos a LEFT JOIN prod_planos p ON p.id = a.plano_id`;
     const params = [];
     const where = [];
@@ -176,7 +181,7 @@ router.delete('/prod-apontamentos/:id', requireAuth, async (req, res) => {
 });
 
 // =====================================================
-// PROD-APONTAMENTOS-DETALHADOS  (novo: detalhado com OP, séries, etc)
+// PROD-APONTAMENTOS-DETALHADOS
 // =====================================================
 
 router.get('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
@@ -222,7 +227,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
       meta, realizado, hora_reportada_total, observacoes
     } = req.body;
 
-    // Validações
     if (!data_execucao) return res.status(400).json({ error: 'Data de execução obrigatória' });
     if (!turno) return res.status(400).json({ error: 'Turno obrigatório' });
     if (!celula) return res.status(400).json({ error: 'Célula obrigatória' });
@@ -233,7 +237,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Tenta localizar o plano correspondente (mesmo cod_decio e mesmo mês da data)
     const mes = mesDaData(data_execucao);
     const planoRes = await client.query(
       'SELECT id FROM prod_planos WHERE cod_decio=$1 AND mes=$2 LIMIT 1',
@@ -241,7 +244,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
     );
     const planoId = planoRes.rows.length ? planoRes.rows[0].id : null;
 
-    // Insere o apontamento detalhado
     const r = await client.query(
       `INSERT INTO prod_apontamentos_detalhados
        (data_execucao, turno, celula, num_op, serie_inicial, serie_final,
@@ -257,7 +259,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
       ]
     );
 
-    // Se encontrou plano, soma o realizado e atualiza status
     if (planoId) {
       await client.query(
         'UPDATE prod_planos SET realizado = COALESCE(realizado,0) + $1 WHERE id=$2',
@@ -281,7 +282,6 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // Busca o apontamento para saber se está vinculado a um plano e quanto subtrair
     const ap = await client.query('SELECT * FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
     if (!ap.rows.length) {
       await client.query('ROLLBACK');
