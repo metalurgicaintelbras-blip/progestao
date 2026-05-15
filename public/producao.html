@@ -148,6 +148,11 @@ table tr:hover{background:var(--panel2)}
             <label>Data *</label>
             <input type="date" id="p-data-limite">
           </div>
+          <div class="form-group">
+            <label>N° OP (opcional, 8 dígitos)</label>
+            <input type="text" id="p-num-op" maxlength="8" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="Ex: 12345678">
+            <small class="hint">Pode deixar em branco e preencher depois</small>
+          </div>
           <div class="form-group autocomplete">
             <label>Código Décio *</label>
             <input type="text" id="p-cod-decio" oninput="autocompletePlano(this.value)" autocomplete="off">
@@ -176,7 +181,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">📋 Produtos do Mês</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Data</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data</th><th>N° OP</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="tb-planos"></tbody>
           </table>
         </div>
@@ -323,7 +328,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">📜 Histórico Geral de Planos</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Data</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th></tr></thead>
+            <thead><tr><th>Data</th><th>N° OP</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th></tr></thead>
             <tbody id="tb-historico"></tbody>
           </table>
         </div>
@@ -393,7 +398,7 @@ function toast(msg, type = 'ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = type === 'error' ? 'show error' : type === 'warn' ? 'show warn' : 'show';
-  setTimeout(() => t.className = '', 3500);
+  setTimeout(() => t.className = '', 4500);
 }
 
 // =================== CLOCK ===================
@@ -455,9 +460,8 @@ function calcStatus(plano) {
   return 'em_andamento';
 }
 
-// =================== VALIDAÇÃO DE DÍGITOS / CARACTERES ===================
+// =================== VALIDAÇÃO ===================
 function validarDigitos(input, qtd) {
-  // N° OP: apenas números. Séries: alfanumérico (aceita letras + números)
   if (input.id === 'a-num-op') {
     input.value = input.value.replace(/\D/g, '');
   } else {
@@ -581,6 +585,7 @@ function calcularHoraTotal() {
 // =================== PLANO MENSAL: CRUD ===================
 async function salvarPlano() {
   const data_limite = document.getElementById('p-data-limite').value;
+  const num_op = document.getElementById('p-num-op').value.trim();
   const cod_decio = document.getElementById('p-cod-decio').value.trim();
   const cod_intelbras = document.getElementById('p-cod-intelbras').value.trim();
   const descricao = document.getElementById('p-descricao').value.trim();
@@ -588,13 +593,15 @@ async function salvarPlano() {
   if (!data_limite) return toast('Informe a data', 'error');
   if (!cod_decio) return toast('Informe o código Décio', 'error');
   if (meta <= 0) return toast('Informe uma meta válida', 'error');
+  if (num_op && !/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos numéricos (ou deixe em branco)', 'error');
   const editId = document.getElementById('plano-edit-id').value;
   try {
+    const body = { data_limite, cod_decio, cod_intelbras, descricao, meta, num_op: num_op || null };
     if (editId) {
-      await api('/prod-planos/' + editId, { method:'PUT', body:{ data_limite, cod_decio, cod_intelbras, descricao, meta } });
+      await api('/prod-planos/' + editId, { method:'PUT', body });
       toast('Plano atualizado!');
     } else {
-      await api('/prod-planos', { method:'POST', body:{ data_limite, cod_decio, cod_intelbras, descricao, meta } });
+      await api('/prod-planos', { method:'POST', body });
       toast('Plano salvo!');
     }
     limparPlano();
@@ -604,6 +611,7 @@ async function salvarPlano() {
 function limparPlano() {
   document.getElementById('plano-edit-id').value = '';
   document.getElementById('p-data-limite').value = '';
+  document.getElementById('p-num-op').value = '';
   document.getElementById('p-cod-decio').value = '';
   document.getElementById('p-cod-intelbras').value = '';
   document.getElementById('p-descricao').value = '';
@@ -614,6 +622,7 @@ function editarPlano(id) {
   if (!p) return;
   document.getElementById('plano-edit-id').value = p.id;
   document.getElementById('p-data-limite').value = p.data_limite ? String(p.data_limite).substring(0,10) : '';
+  document.getElementById('p-num-op').value = p.num_op || '';
   document.getElementById('p-cod-decio').value = p.cod_decio || '';
   document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
   document.getElementById('p-descricao').value = p.descricao || '';
@@ -627,7 +636,7 @@ async function excluirPlano(id) {
 }
 function renderPlanos() {
   const tb = document.getElementById('tb-planos');
-  if (!planos.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano cadastrado.</td></tr>'; return; }
+  if (!planos.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano cadastrado.</td></tr>'; return; }
   tb.innerHTML = planos.map(p => {
     const meta = parseFloat(p.meta)||0;
     const real = parseFloat(p.realizado)||0;
@@ -635,6 +644,7 @@ function renderPlanos() {
     const status = calcStatus(p);
     return `<tr>
       <td>${fmtData(p.data_limite)}</td>
+      <td>${p.num_op ? '<strong>'+p.num_op+'</strong>' : '<span style="color:var(--text2)">-</span>'}</td>
       <td><strong>${p.cod_decio||'-'}</strong></td>
       <td>${p.cod_intelbras||'-'}</td>
       <td>${p.descricao||p.produto||'-'}</td>
@@ -688,11 +698,7 @@ async function salvarApontamentoDetalhado() {
              cod_decio, cod_intelbras, descricao, categoria, meta, realizado,
              hora_reportada_total, observacoes }
     });
-    if (res.plano_encontrado) {
-      toast('✅ Apontamento salvo e somado ao plano mensal!');
-    } else {
-      toast('⚠️ Apontamento salvo, mas sem plano mensal correspondente para esse Décio/mês', 'warn');
-    }
+    toast('✅ Apontamento salvo e somado ao plano da OP ' + num_op + '!');
     limparApontamento();
     loadAll();
   } catch(e) {
@@ -778,7 +784,7 @@ function exportarApontamentosCSV() {
 // =================== HISTÓRICO ===================
 function renderHistorico() {
   const tb = document.getElementById('tb-historico');
-  if (!planos.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano.</td></tr>'; return; }
+  if (!planos.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano.</td></tr>'; return; }
   tb.innerHTML = planos.map(p => {
     const meta = parseFloat(p.meta)||0;
     const real = parseFloat(p.realizado)||0;
@@ -786,6 +792,7 @@ function renderHistorico() {
     const status = calcStatus(p);
     return `<tr>
       <td>${fmtData(p.data_limite)}</td>
+      <td>${p.num_op||'-'}</td>
       <td>${p.cod_decio||'-'}</td>
       <td>${p.cod_intelbras||'-'}</td>
       <td>${p.descricao||p.produto||'-'}</td>
