@@ -407,11 +407,13 @@ updateClock();
 // =================== AUTH ===================
 async function loadUser() {
   try {
-    const u = await api('/auth/me');
+    const u = await api('/me');
     document.getElementById('user-name').textContent = u.nome || u.username || 'Usuário';
-  } catch(e) { window.location.href = '/login'; }
+  } catch(e) {
+    document.getElementById('user-name').textContent = 'Usuário';
+  }
 }
-async function logout() { await fetch('/api/auth/logout', { method:'POST' }); window.location.href = '/login'; }
+async function logout() { await fetch('/api/logout', { method:'POST' }); window.location.href = '/login'; }
 
 // =================== TABS ===================
 function showTab(name, ev) {
@@ -436,12 +438,10 @@ function badgeStatus(s) {
 
 // =================== VALIDAÇÃO DE DÍGITOS ===================
 function validarDigitos(input, qtd) {
-  // Permite só números
   input.value = input.value.replace(/\D/g, '');
   const ok = input.value.length === qtd;
   input.classList.toggle('valid', ok);
   input.classList.toggle('invalid', input.value.length > 0 && !ok);
-  // Atualiza hint
   let hintId = '';
   if (input.id === 'a-num-op') hintId = 'hint-op';
   else if (input.id === 'a-serie-ini') hintId = 'hint-sini';
@@ -459,9 +459,9 @@ async function loadAll() {
   const mes = document.getElementById('filtro-mes').value;
   try {
     const url = mes ? '/prod-planos?mes=' + mes : '/prod-planos';
-    planos = await api(url);
-    apontamentos = await api('/prod-apontamentos' + (mes ? '?mes=' + mes : ''));
-    apontamentosDet = await api('/prod-apontamentos-detalhados' + (mes ? '?mes=' + mes : ''));
+    planos = await api(url).catch(()=>[]);
+    apontamentos = await api('/prod-apontamentos' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
+    apontamentosDet = await api('/prod-apontamentos-detalhados' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
     produtos = await api('/prod-produtos').catch(()=>[]);
     renderKPIs();
     renderPlanos();
@@ -638,7 +638,6 @@ async function salvarApontamentoDetalhado() {
   const hora_reportada_total = horaRep * realizado;
   const observacoes = document.getElementById('a-obs').value.trim();
 
-  // Validações
   if (!data_execucao) return toast('Informe a data de execução', 'error');
   if (!turno) return toast('Selecione o turno', 'error');
   if (!celula) return toast('Selecione a célula', 'error');
@@ -840,7 +839,6 @@ function renderProdutos() {
 
 // =================== DASHBOARD CHARTS ===================
 function renderDashboard() {
-  // Gráfico de barras: Meta vs Realizado
   const ctx1 = document.getElementById('chartBar');
   if (chartBarObj) chartBarObj.destroy();
   if (!ctx1) return;
@@ -857,7 +855,6 @@ function renderDashboard() {
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:'#e6edf3' } } }, scales:{ x:{ ticks:{ color:'#8b98a5' } }, y:{ ticks:{ color:'#8b98a5' } } } }
   });
 
-  // Gráfico linha: Acumulado mensal
   const ctx2 = document.getElementById('chartLine');
   if (chartLineObj) chartLineObj.destroy();
   if (!ctx2) return;
@@ -883,7 +880,6 @@ function init() {
   document.getElementById('a-data').value = hoje.toISOString().substring(0,10);
   loadUser();
   loadAll();
-  // Fechar autocomplete ao clicar fora
   document.addEventListener('click', e => {
     if (!e.target.closest('.autocomplete')) {
       document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('show'));
