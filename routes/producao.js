@@ -12,7 +12,6 @@ function mesDaData(dataISO) {
   return String(dataISO).substring(0, 7);
 }
 
-// Valida string composta apenas por dígitos numéricos (ex: N° OP)
 function validarDigitos(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim();
@@ -20,7 +19,6 @@ function validarDigitos(valor, qtd) {
   return re.test(s);
 }
 
-// Valida string alfanumérica (letras + números) — usada para séries
 function validarAlfanumerico(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim().toUpperCase();
@@ -44,13 +42,18 @@ async function atualizarStatusPlano(planoId, client) {
   await db.query('UPDATE prod_planos SET status=$1 WHERE id=$2', [status, planoId]);
 }
 
-// Garante que a coluna produto exista (para evitar quebras)
 async function garantirColunaProduto() {
   try {
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300)');
   } catch(e) { /* silencioso */ }
 }
+async function garantirColunaDistribuicao() {
+  try {
+    await pool.query('ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS distribuicao JSONB');
+  } catch(e) { /* silencioso */ }
+}
 garantirColunaProduto();
+garantirColunaDistribuicao();
 
 // =====================================================
 // PROD-PLANOS
@@ -141,7 +144,7 @@ router.delete('/prod-planos/:id', requireAuth, async (req, res) => {
 });
 
 // =====================================================
-// PROD-APONTAMENTOS (simples) — SEM JOIN COM PRODUTO
+// PROD-APONTAMENTOS (simples)
 // =====================================================
 
 router.get('/prod-apontamentos', requireAuth, async (req, res) => {
@@ -227,6 +230,7 @@ router.get('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) =>
   }
 });
 
+// 🔧 POST com NOVA LÓGICA DE DISTRIBUIÇÃO EM CASCATA POR DATA
 router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -236,7 +240,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
       meta, realizado, hora_reportada_total, observacoes
     } = req.body;
 
-    // Normaliza séries para MAIÚSCULAS
     if (serie_inicial) serie_inicial = String(serie_inicial).trim().toUpperCase();
     if (serie_final) serie_final = String(serie_final).trim().toUpperCase();
 
@@ -250,38 +253,78 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
 
     await client.query('BEGIN');
 
-    const mes = mesDaData(data_execucao);
-    const planoRes = await client.query(
-      'SELECT id FROM prod_planos WHERE cod_decio=$1 AND mes=$2 LIMIT 1',
-      [cod_decio, mes]
+    // ============ NOVA LÓGICA: DISTRIBUIÇÃO EM CASCATA ============
+    // Busca todos os planos do mesmo cod_decio com data_limite >= data_execucao,
+    // ordenados pela data mais próxima primeiro.
+    const planosRes = await client.query(
+      `SELECT id, meta, realizado, data_limite
+       FROM prod_planos
+       WHERE cod_decio = $1 AND data_limite >= $2
+       ORDER BY data_limite ASC, id ASC`,
+      [cod_decio, data_execucao]
     );
-    const planoId = planoRes.rows.length ? planoRes.rows[0].id : null;
 
+    const planosDisponiveis = planosRes.rows;
+    let restante = parseFloat(realizado) || 0;
+    const distribuicao = []; // [{plano_id, quantidade}]
+
+    if (planosDisponiveis.length > 0 && restante > 0) {
+      for (let i = 0; i < planosDisponiveis.length; i++) {
+        const p = planosDisponiveis[i];
+        const metaP = parseFloat(p.meta) || 0;
+        const realP = parseFloat(p.realizado) || 0;
+        const espaco = Math.max(metaP - realP, 0); // quanto ainda cabe nesse plano
+
+        const ehUltimo = (i === planosDisponiveis.length - 1);
+
+        let quantidade;
+        if (ehUltimo) {
+          // Último plano: joga tudo que sobrou (mesmo que passe da meta)
+          quantidade = restante;
+        } else {
+          // Planos intermediários: preenche só até a meta
+          quantidade = Math.min(espaco, restante);
+        }
+
+        if (quantidade > 0) {
+          await client.query(
+            'UPDATE prod_planos SET realizado = COALESCE(realizado,0) + $1 WHERE id=$2',
+            [quantidade, p.id]
+          );
+          await atualizarStatusPlano(p.id, client);
+          distribuicao.push({ plano_id: p.id, quantidade });
+          restante -= quantidade;
+        }
+
+        if (restante <= 0) break;
+      }
+    }
+
+    // plano_id principal: primeiro plano que recebeu produção (para referência)
+    const planoIdPrincipal = distribuicao.length > 0 ? distribuicao[0].plano_id : null;
+
+    // Insere o apontamento com a distribuição registrada
     const r = await client.query(
       `INSERT INTO prod_apontamentos_detalhados
        (data_execucao, turno, celula, num_op, serie_inicial, serie_final,
         cod_decio, cod_intelbras, descricao, categoria,
-        meta, realizado, hora_reportada_total, observacoes, plano_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        meta, realizado, hora_reportada_total, observacoes, plano_id, distribuicao)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING *`,
       [
         data_execucao, turno, celula, num_op, serie_inicial, serie_final,
         cod_decio, cod_intelbras || null, descricao || null, categoria || null,
         meta || 0, realizado || 0, hora_reportada_total || 0,
-        observacoes || null, planoId
+        observacoes || null, planoIdPrincipal, JSON.stringify(distribuicao)
       ]
     );
 
-    if (planoId) {
-      await client.query(
-        'UPDATE prod_planos SET realizado = COALESCE(realizado,0) + $1 WHERE id=$2',
-        [parseFloat(realizado) || 0, planoId]
-      );
-      await atualizarStatusPlano(planoId, client);
-    }
-
     await client.query('COMMIT');
-    res.json({ ...r.rows[0], plano_encontrado: !!planoId });
+    res.json({
+      ...r.rows[0],
+      plano_encontrado: distribuicao.length > 0,
+      distribuicao_aplicada: distribuicao
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('POST /prod-apontamentos-detalhados', err);
@@ -291,6 +334,7 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   }
 });
 
+// 🔧 DELETE: agora usa a distribuição salva para subtrair de cada plano
 router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -301,13 +345,30 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
       return res.status(404).json({ error: 'Apontamento não encontrado' });
     }
     const a = ap.rows[0];
-    if (a.plano_id) {
+
+    // Se tem distribuição registrada, usa ela (subtrai de cada plano)
+    let distribuicao = a.distribuicao;
+    if (typeof distribuicao === 'string') {
+      try { distribuicao = JSON.parse(distribuicao); } catch(e) { distribuicao = null; }
+    }
+
+    if (Array.isArray(distribuicao) && distribuicao.length > 0) {
+      for (const item of distribuicao) {
+        await client.query(
+          'UPDATE prod_planos SET realizado = GREATEST(COALESCE(realizado,0) - $1, 0) WHERE id=$2',
+          [parseFloat(item.quantidade) || 0, item.plano_id]
+        );
+        await atualizarStatusPlano(item.plano_id, client);
+      }
+    } else if (a.plano_id) {
+      // Fallback: comportamento antigo (apontamentos antigos sem distribuição)
       await client.query(
         'UPDATE prod_planos SET realizado = GREATEST(COALESCE(realizado,0) - $1, 0) WHERE id=$2',
         [parseFloat(a.realizado) || 0, a.plano_id]
       );
       await atualizarStatusPlano(a.plano_id, client);
     }
+
     await client.query('DELETE FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
     await client.query('COMMIT');
     res.json({ ok: true });
