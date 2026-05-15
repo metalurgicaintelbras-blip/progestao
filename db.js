@@ -9,8 +9,8 @@ const pool = new Pool({
 async function initDB() {
   const client = await pool.connect();
   try {
+    // ============ TABELAS BASE ============
     await client.query(`
-
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(100) UNIQUE NOT NULL,
@@ -23,136 +23,117 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS colaboradores (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(200) NOT NULL,
-        mat VARCHAR(50),
+        matricula VARCHAR(50),
+        setor VARCHAR(100),
         cargo VARCHAR(100),
-        setor VARCHAR(100) DEFAULT 'Montagem',
-        turno VARCHAR(50),
-        status VARCHAR(30) DEFAULT 'Ativo',
-        dt_admissao DATE,
-        dt_nascimento DATE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        ativo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
       );
-
-      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS dt_admissao DATE;
-      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS dt_nascimento DATE;
 
       CREATE TABLE IF NOT EXISTS ferramentas (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(200) NOT NULL,
-        cod VARCHAR(100) NOT NULL,
-        cat VARCHAR(100),
-        loc VARCHAR(200),
-        status VARCHAR(30) DEFAULT 'Disponível',
-        cal DATE,
-        prev DATE,
-        obs TEXT,
+        codigo VARCHAR(100),
+        categoria VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'disponivel',
+        localizacao VARCHAR(200),
+        observacoes TEXT,
         foto TEXT,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS emprestimos (
         id SERIAL PRIMARY KEY,
         ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        dt TIMESTAMP NOT NULL,
-        dev_dt TIMESTAMP,
-        devolvido BOOLEAN DEFAULT FALSE,
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data_emprestimo TIMESTAMP DEFAULT NOW(),
+        data_devolucao TIMESTAMP,
+        observacoes TEXT,
+        status VARCHAR(50) DEFAULT 'ativo'
       );
 
       CREATE TABLE IF NOT EXISTS manutencoes (
         id SERIAL PRIMARY KEY,
         ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        tipo VARCHAR(50) NOT NULL,
-        responsavel_id INTEGER REFERENCES colaboradores(id) ON DELETE SET NULL,
-        env DATE NOT NULL,
-        ret DATE,
-        descricao TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        tipo VARCHAR(50),
+        descricao TEXT,
+        data TIMESTAMP DEFAULT NOW(),
+        custo NUMERIC(10,2)
       );
 
       CREATE TABLE IF NOT EXISTS checklist_ferramentas (
         id SERIAL PRIMARY KEY,
         ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        checked BOOLEAN DEFAULT FALSE,
-        obs TEXT,
-        data DATE DEFAULT CURRENT_DATE,
-        updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(ferramenta_id, data)
+        data TIMESTAMP DEFAULT NOW(),
+        status VARCHAR(50),
+        observacoes TEXT,
+        responsavel VARCHAR(200)
       );
 
       CREATE TABLE IF NOT EXISTS epis (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(200) NOT NULL,
-        dur_qtd INTEGER,
-        dur_tipo VARCHAR(20),
-        descricao TEXT,
+        ca VARCHAR(50),
+        validade DATE,
+        categoria VARCHAR(100),
         foto TEXT,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        observacoes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS epi_entregas (
         id SERIAL PRIMARY KEY,
         epi_id INTEGER REFERENCES epis(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        qtd INTEGER DEFAULT 1,
-        dt TIMESTAMP NOT NULL,
-        validade DATE,
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data TIMESTAMP DEFAULT NOW(),
+        quantidade INTEGER DEFAULT 1,
         motivo VARCHAR(100),
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        observacoes TEXT
       );
 
       CREATE TABLE IF NOT EXISTS epi_checklists (
         id SERIAL PRIMARY KEY,
-        data DATE NOT NULL,
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data DATE,
+        hora TIME,
         turno VARCHAR(50),
-        total INTEGER DEFAULT 0,
-        conformes INTEGER DEFAULT 0,
-        irregulares INTEGER DEFAULT 0,
-        pct INTEGER DEFAULT 0,
-        registros JSONB DEFAULT '[]',
+        status VARCHAR(50),
+        epis_irregulares TEXT,
+        obs TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS bh_lancamentos (
         id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        tipo VARCHAR(20) NOT NULL,
-        minutos INTEGER NOT NULL,
-        data DATE NOT NULL,
-        motivo VARCHAR(100),
-        justificativa TEXT,
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data DATE,
+        horas NUMERIC(5,2),
+        tipo VARCHAR(50),
+        descricao TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS bh_convites (
         id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        data DATE NOT NULL
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data DATE,
+        status VARCHAR(50),
+        observacoes TEXT
       );
 
       CREATE TABLE IF NOT EXISTS bh_atrasos (
         id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        data DATE NOT NULL,
-        minutos INTEGER DEFAULT 0,
-        justificativa TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        data DATE,
+        minutos INTEGER,
+        motivo TEXT
       );
 
       CREATE TABLE IF NOT EXISTS bh_eventos (
         id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        tipo VARCHAR(50) NOT NULL,
-        data DATE NOT NULL,
-        descricao TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        titulo VARCHAR(200),
+        data DATE,
+        descricao TEXT
       );
 
       CREATE TABLE IF NOT EXISTS treinamentos (
@@ -160,154 +141,102 @@ async function initDB() {
         nome VARCHAR(200) NOT NULL,
         descricao TEXT,
         carga_horaria INTEGER,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        validade_meses INTEGER,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS tr_registros (
         id SERIAL PRIMARY KEY,
         treinamento_id INTEGER REFERENCES treinamentos(id) ON DELETE CASCADE,
-        data DATE NOT NULL,
+        data DATE,
         instrutor VARCHAR(200),
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        local VARCHAR(200),
+        observacoes TEXT
       );
 
       CREATE TABLE IF NOT EXISTS tr_presencas (
         id SERIAL PRIMARY KEY,
         registro_id INTEGER REFERENCES tr_registros(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id) ON DELETE CASCADE,
-        presente BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT NOW()
+        colaborador_id INTEGER REFERENCES colaboradores(id),
+        presente BOOLEAN DEFAULT true
       );
 
       CREATE TABLE IF NOT EXISTS tr_agenda (
         id SERIAL PRIMARY KEY,
-        treinamento_id INTEGER REFERENCES treinamentos(id) ON DELETE CASCADE,
-        data DATE NOT NULL,
-        hora TIME,
-        local VARCHAR(200),
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        treinamento_id INTEGER REFERENCES treinamentos(id),
+        data DATE,
+        observacoes TEXT
       );
 
       CREATE TABLE IF NOT EXISTS db_setores (
         id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
+        nome VARCHAR(200) NOT NULL,
+        descricao TEXT
       );
 
       CREATE TABLE IF NOT EXISTS db_registros (
         id SERIAL PRIMARY KEY,
-        tipo VARCHAR(20) DEFAULT 'pendencia',
-        data DATE NOT NULL,
-        hora TIME,
-        turno VARCHAR(30),
-        categoria VARCHAR(100),
-        prioridade VARCHAR(30),
-        status VARCHAR(30) DEFAULT 'Pendente',
-        descricao TEXT NOT NULL,
-        acao TEXT,
-        envolvidos JSONB DEFAULT '[]',
-        foto TEXT,
-        fotos JSONB DEFAULT '[]',
-        previsao_conclusao DATE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        setor_id INTEGER REFERENCES db_setores(id),
+        data DATE,
+        turno VARCHAR(50),
+        responsavel VARCHAR(200),
+        ocorrencias TEXT,
+        fotos TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
-
-      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS foto TEXT;
-      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS fotos JSONB DEFAULT '[]';
-      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'pendencia';
-      ALTER TABLE db_registros ADD COLUMN IF NOT EXISTS previsao_conclusao DATE;
-      UPDATE db_registros SET tipo='pendencia' WHERE tipo IS NULL OR tipo='';
 
       CREATE TABLE IF NOT EXISTS db_resumos (
         id SERIAL PRIMARY KEY,
-        data DATE NOT NULL,
-        turno VARCHAR(30),
-        texto TEXT NOT NULL,
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        mes VARCHAR(7),
+        conteudo TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS cl_atividades (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(200) NOT NULL,
-        freq VARCHAR(30) NOT NULL,
-        inicio DATE NOT NULL,
-        status VARCHAR(30) DEFAULT 'Ativa',
         descricao TEXT,
-        horario TIME,
-        horario2 TIME,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        frequencia VARCHAR(50)
       );
-
-      ALTER TABLE cl_atividades ADD COLUMN IF NOT EXISTS horario TIME;
-      ALTER TABLE cl_atividades ADD COLUMN IF NOT EXISTS horario2 TIME;
 
       CREATE TABLE IF NOT EXISTS cl_execucoes (
         id SERIAL PRIMARY KEY,
         atividade_id INTEGER REFERENCES cl_atividades(id) ON DELETE CASCADE,
-        data DATE NOT NULL,
+        data DATE,
+        status VARCHAR(50),
+        responsavel VARCHAR(200),
+        observacoes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS prod_planos (
+        id SERIAL PRIMARY KEY,
+        mes VARCHAR(7),
+        produto VARCHAR(200),
+        meta NUMERIC(12,2) DEFAULT 0,
+        observacoes TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
-      /* ====== PRODUÇÃO ====== */
+      CREATE TABLE IF NOT EXISTS prod_apontamentos (
+        id SERIAL PRIMARY KEY,
+        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE CASCADE,
+        data DATE,
+        quantidade NUMERIC(12,2),
+        observacoes TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
 
       CREATE TABLE IF NOT EXISTS prod_produtos (
         id SERIAL PRIMARY KEY,
         cod_decio VARCHAR(50) UNIQUE NOT NULL,
         cod_intelbras VARCHAR(50),
-        descricao VARCHAR(255) NOT NULL,
+        descricao VARCHAR(300),
         categoria VARCHAR(100),
-        valor NUMERIC(12,2),
-        minutos_reportados NUMERIC(10,3),
-        hora_reportado NUMERIC(10,6),
-        ativo BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_prod_produtos_decio ON prod_produtos(cod_decio);
-      CREATE INDEX IF NOT EXISTS idx_prod_produtos_intelbras ON prod_produtos(cod_intelbras);
-
-      CREATE TABLE IF NOT EXISTS prod_planos (
-        id SERIAL PRIMARY KEY,
-        mes VARCHAR(7) NOT NULL,
-        codigo VARCHAR(50) NOT NULL,
-        descricao VARCHAR(255) NOT NULL,
-        meta_mensal INTEGER DEFAULT 0,
-        obs TEXT,
-        cod_decio VARCHAR(50),
-        cod_intelbras VARCHAR(50),
-        status VARCHAR(30) DEFAULT 'Em andamento',
-        data_limite DATE,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Em andamento';
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
-
-      /* Define data_limite = último dia do mês para planos antigos que ainda não tinham data */
-      UPDATE prod_planos
-      SET data_limite = (DATE_TRUNC('month', TO_DATE(mes || '-01','YYYY-MM-DD')) + INTERVAL '1 month - 1 day')::date
-      WHERE data_limite IS NULL AND mes IS NOT NULL;
-
-      CREATE TABLE IF NOT EXISTS prod_apontamentos (
-        id SERIAL PRIMARY KEY,
-        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE CASCADE,
-        data DATE NOT NULL,
-        qtd_realizada INTEGER DEFAULT 0,
-        atingiu_meta BOOLEAN DEFAULT TRUE,
-        justificativa TEXT,
-        created_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(plano_id, data)
+        valor NUMERIC(12,2) DEFAULT 0,
+        minutos_reportados NUMERIC(10,2) DEFAULT 0,
+        hora_reportado NUMERIC(10,4) DEFAULT 0,
+        ativo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS "session" (
@@ -316,10 +245,56 @@ async function initDB() {
         "expire" TIMESTAMP(6) NOT NULL,
         PRIMARY KEY ("sid")
       );
-
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
-
     `);
+
+    // ============ AJUSTES EM TABELAS EXISTENTES ============
+
+    // prod_planos: novas colunas
+    await client.query(`
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(50);
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS realizado NUMERIC(12,2) DEFAULT 0;
+    `);
+
+    // Migração: para planos antigos sem data_limite, define o último dia do mês
+    await client.query(`
+      UPDATE prod_planos
+      SET data_limite = (date_trunc('month', to_date(mes || '-01', 'YYYY-MM-DD')) + interval '1 month - 1 day')::date
+      WHERE data_limite IS NULL AND mes IS NOT NULL;
+    `);
+
+    // ============ NOVA TABELA: APONTAMENTOS DETALHADOS ============
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS prod_apontamentos_detalhados (
+        id SERIAL PRIMARY KEY,
+        data_execucao DATE NOT NULL,
+        turno VARCHAR(10) NOT NULL,
+        celula VARCHAR(50) NOT NULL,
+        num_op VARCHAR(8) NOT NULL,
+        serie_inicial VARCHAR(13) NOT NULL,
+        serie_final VARCHAR(13) NOT NULL,
+        cod_decio VARCHAR(50) NOT NULL,
+        cod_intelbras VARCHAR(50),
+        descricao VARCHAR(300),
+        categoria VARCHAR(100),
+        meta NUMERIC(12,2) DEFAULT 0,
+        realizado NUMERIC(12,2) DEFAULT 0,
+        hora_reportada_total NUMERIC(12,4) DEFAULT 0,
+        observacoes TEXT,
+        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_apont_det_data ON prod_apontamentos_detalhados(data_execucao);
+      CREATE INDEX IF NOT EXISTS idx_apont_det_decio ON prod_apontamentos_detalhados(cod_decio);
+      CREATE INDEX IF NOT EXISTS idx_apont_det_op ON prod_apontamentos_detalhados(num_op);
+      CREATE INDEX IF NOT EXISTS idx_apont_det_plano ON prod_apontamentos_detalhados(plano_id);
+    `);
+
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database:', err);
