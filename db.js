@@ -249,8 +249,6 @@ async function initDB() {
     `);
 
     // ============ AJUSTES EM TABELAS EXISTENTES ============
-    // 🔧 IMPORTANTE: garante que TODAS as colunas existem em prod_planos
-    // (necessário para bancos antigos que foram criados sem essas colunas)
     await client.query(`
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS mes VARCHAR(7);
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300);
@@ -263,9 +261,14 @@ async function initDB() {
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS realizado NUMERIC(12,2) DEFAULT 0;
       ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS num_op VARCHAR(8);
     `);
 
-    // 🔧 Garante colunas em prod_produtos também
+    // Índice para acelerar busca por OP
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_prod_planos_num_op ON prod_planos(num_op);
+    `);
+
     await client.query(`
       ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
       ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
@@ -276,7 +279,6 @@ async function initDB() {
       ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
     `);
 
-    // Migração: para planos antigos sem data_limite, define o último dia do mês
     await client.query(`
       UPDATE prod_planos
       SET data_limite = (date_trunc('month', to_date(mes || '-01', 'YYYY-MM-DD')) + interval '1 month - 1 day')::date
