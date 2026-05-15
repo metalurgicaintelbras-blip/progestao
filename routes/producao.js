@@ -12,10 +12,19 @@ function mesDaData(dataISO) {
   return String(dataISO).substring(0, 7);
 }
 
+// Valida string composta apenas por dígitos numéricos (ex: N° OP)
 function validarDigitos(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim();
   const re = new RegExp(`^\\d{${qtd}}$`);
+  return re.test(s);
+}
+
+// Valida string alfanumérica (letras + números) — usada para séries
+function validarAlfanumerico(valor, qtd) {
+  if (!valor) return false;
+  const s = String(valor).trim().toUpperCase();
+  const re = new RegExp(`^[A-Z0-9]{${qtd}}$`);
   return re.test(s);
 }
 
@@ -221,18 +230,22 @@ router.get('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) =>
 router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
-    const {
+    let {
       data_execucao, turno, celula, num_op, serie_inicial, serie_final,
       cod_decio, cod_intelbras, descricao, categoria,
       meta, realizado, hora_reportada_total, observacoes
     } = req.body;
 
+    // Normaliza séries para MAIÚSCULAS
+    if (serie_inicial) serie_inicial = String(serie_inicial).trim().toUpperCase();
+    if (serie_final) serie_final = String(serie_final).trim().toUpperCase();
+
     if (!data_execucao) return res.status(400).json({ error: 'Data de execução obrigatória' });
     if (!turno) return res.status(400).json({ error: 'Turno obrigatório' });
     if (!celula) return res.status(400).json({ error: 'Célula obrigatória' });
     if (!validarDigitos(num_op, 8)) return res.status(400).json({ error: 'N° OP deve ter exatos 8 dígitos numéricos' });
-    if (!validarDigitos(serie_inicial, 13)) return res.status(400).json({ error: 'N° Série Inicial deve ter exatos 13 dígitos numéricos' });
-    if (!validarDigitos(serie_final, 13)) return res.status(400).json({ error: 'N° Série Final deve ter exatos 13 dígitos numéricos' });
+    if (!validarAlfanumerico(serie_inicial, 13)) return res.status(400).json({ error: 'N° Série Inicial deve ter exatos 13 caracteres (letras/números)' });
+    if (!validarAlfanumerico(serie_final, 13)) return res.status(400).json({ error: 'N° Série Final deve ter exatos 13 caracteres (letras/números)' });
     if (!cod_decio) return res.status(400).json({ error: 'Código Décio obrigatório' });
 
     await client.query('BEGIN');
