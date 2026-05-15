@@ -145,7 +145,7 @@ table tr:hover{background:var(--panel2)}
         <input type="hidden" id="plano-edit-id">
         <div class="form-row">
           <div class="form-group">
-            <label>Data Limite *</label>
+            <label>Data *</label>
             <input type="date" id="p-data-limite">
           </div>
           <div class="form-group autocomplete">
@@ -176,7 +176,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">📋 Produtos do Mês</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Data Limite</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="tb-planos"></tbody>
           </table>
         </div>
@@ -323,7 +323,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">📜 Histórico Geral de Planos</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Data Limite</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th></tr></thead>
+            <thead><tr><th>Data</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th></tr></thead>
             <tbody id="tb-historico"></tbody>
           </table>
         </div>
@@ -428,12 +428,33 @@ function showTab(name, ev) {
 }
 
 // =================== HELPERS ===================
-function fmtData(d) { if (!d) return '-'; return new Date(d).toLocaleDateString('pt-BR'); }
+// 🔧 CORRIGIDO: fmtData sem bug de fuso horário
+function fmtData(d) {
+  if (!d) return '-';
+  const s = String(d).substring(0,10);
+  const [ano, mes, dia] = s.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
 function fmtNum(n) { return Number(n||0).toLocaleString('pt-BR', { maximumFractionDigits:2 }); }
 function badgeStatus(s) {
   if (s === 'concluido') return '<span class="badge green">✅ Concluído</span>';
   if (s === 'atrasado') return '<span class="badge red">⚠️ Atrasado</span>';
   return '<span class="badge blue">🔄 Em Andamento</span>';
+}
+
+// 🔧 NOVO: calcula status no frontend para garantir consistência
+function calcStatus(plano) {
+  const meta = Number(plano.meta) || 0;
+  const realizado = Number(plano.realizado) || 0;
+  const pct = meta > 0 ? (realizado / meta) * 100 : 0;
+  if (pct >= 100) return 'concluido';
+  if (plano.data_limite) {
+    const dataLimiteStr = String(plano.data_limite).substring(0,10);
+    const hoje = new Date();
+    const hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+    if (dataLimiteStr < hojeStr) return 'atrasado';
+  }
+  return 'em_andamento';
 }
 
 // =================== VALIDAÇÃO DE DÍGITOS ===================
@@ -479,7 +500,8 @@ function renderKPIs() {
   const meta = planos.reduce((s,p) => s + (parseFloat(p.meta)||0), 0);
   const real = planos.reduce((s,p) => s + (parseFloat(p.realizado)||0), 0);
   const pct = meta > 0 ? (real/meta)*100 : 0;
-  const atrasados = planos.filter(p => p.status === 'atrasado').length;
+  // 🔧 Usa calcStatus para contar atrasados corretamente
+  const atrasados = planos.filter(p => calcStatus(p) === 'atrasado').length;
   document.getElementById('kpi-meta').textContent = fmtNum(meta);
   document.getElementById('kpi-realizado').textContent = fmtNum(real);
   document.getElementById('kpi-pct').textContent = pct.toFixed(1) + '%';
@@ -556,7 +578,7 @@ async function salvarPlano() {
   const cod_intelbras = document.getElementById('p-cod-intelbras').value.trim();
   const descricao = document.getElementById('p-descricao').value.trim();
   const meta = parseFloat(document.getElementById('p-meta').value || 0);
-  if (!data_limite) return toast('Informe a data limite', 'error');
+  if (!data_limite) return toast('Informe a data', 'error');
   if (!cod_decio) return toast('Informe o código Décio', 'error');
   if (meta <= 0) return toast('Informe uma meta válida', 'error');
   const editId = document.getElementById('plano-edit-id').value;
@@ -603,6 +625,8 @@ function renderPlanos() {
     const meta = parseFloat(p.meta)||0;
     const real = parseFloat(p.realizado)||0;
     const pct = meta > 0 ? (real/meta)*100 : 0;
+    // 🔧 Usa calcStatus para mostrar status correto
+    const status = calcStatus(p);
     return `<tr>
       <td>${fmtData(p.data_limite)}</td>
       <td><strong>${p.cod_decio||'-'}</strong></td>
@@ -611,7 +635,7 @@ function renderPlanos() {
       <td>${fmtNum(meta)}</td>
       <td>${fmtNum(real)}</td>
       <td>${pct.toFixed(1)}%</td>
-      <td>${badgeStatus(p.status)}</td>
+      <td>${badgeStatus(status)}</td>
       <td>
         <button class="btn-sm btn-blue" onclick="editarPlano(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
         <button class="btn-sm btn-red" onclick="excluirPlano(${p.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
@@ -753,6 +777,8 @@ function renderHistorico() {
     const meta = parseFloat(p.meta)||0;
     const real = parseFloat(p.realizado)||0;
     const pct = meta > 0 ? (real/meta)*100 : 0;
+    // 🔧 Usa calcStatus aqui também
+    const status = calcStatus(p);
     return `<tr>
       <td>${fmtData(p.data_limite)}</td>
       <td>${p.cod_decio||'-'}</td>
@@ -761,7 +787,7 @@ function renderHistorico() {
       <td>${fmtNum(meta)}</td>
       <td>${fmtNum(real)}</td>
       <td>${pct.toFixed(1)}%</td>
-      <td>${badgeStatus(p.status)}</td>
+      <td>${badgeStatus(status)}</td>
     </tr>`;
   }).join('');
 }
