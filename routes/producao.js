@@ -12,7 +12,6 @@ function mesDaData(dataISO) {
   return String(dataISO).substring(0, 7);
 }
 
-// Valida string composta apenas por dígitos numéricos (ex: N° OP)
 function validarDigitos(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim();
@@ -20,7 +19,6 @@ function validarDigitos(valor, qtd) {
   return re.test(s);
 }
 
-// Valida string alfanumérica (letras + números) — usada para séries
 function validarAlfanumerico(valor, qtd) {
   if (!valor) return false;
   const s = String(valor).trim().toUpperCase();
@@ -44,13 +42,18 @@ async function atualizarStatusPlano(planoId, client) {
   await db.query('UPDATE prod_planos SET status=$1 WHERE id=$2', [status, planoId]);
 }
 
-async function garantirColunaProduto() {
+async function garantirColunas() {
   try {
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300)');
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS num_op VARCHAR(8)');
+    // 🆕 Apontamentos em 2 etapas
+    await pool.query("ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS status_apontamento VARCHAR(20) DEFAULT 'finalizado'");
+    await pool.query('ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(12,4) DEFAULT 0');
+    // Tornar série final opcional no banco
+    await pool.query('ALTER TABLE prod_apontamentos_detalhados ALTER COLUMN serie_final DROP NOT NULL').catch(()=>{});
   } catch(e) { /* silencioso */ }
 }
-garantirColunaProduto();
+garantirColunas();
 
 // =====================================================
 // PROD-PLANOS
@@ -88,7 +91,6 @@ router.post('/prod-planos', requireAuth, async (req, res) => {
     if (!data_limite) return res.status(400).json({ error: 'Data limite obrigatória' });
     if (!cod_decio) return res.status(400).json({ error: 'Código Décio obrigatório' });
 
-    // Valida num_op se fornecido (opcional, mas se vier precisa ter 8 dígitos)
     let opFinal = null;
     if (num_op && String(num_op).trim() !== '') {
       if (!validarDigitos(num_op, 8)) {
@@ -117,12 +119,11 @@ router.put('/prod-planos/:id', requireAuth, async (req, res) => {
   try {
     const { data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op } = req.body;
 
-    // Valida num_op se fornecido
     let opFinal;
     if (num_op === undefined || num_op === null) {
-      opFinal = undefined; // não mexe
+      opFinal = undefined;
     } else if (String(num_op).trim() === '') {
-      opFinal = null; // limpa a OP
+      opFinal = null;
     } else {
       if (!validarDigitos(num_op, 8)) {
         return res.status(400).json({ error: 'N° OP deve ter exatos 8 dígitos numéricos' });
@@ -172,7 +173,7 @@ router.delete('/prod-planos/:id', requireAuth, async (req, res) => {
 });
 
 // =====================================================
-// PROD-APONTAMENTOS (simples)
+// PROD-APONTAMENTOS (simples, mantido para compat.)
 // =====================================================
 
 router.get('/prod-apontamentos', requireAuth, async (req, res) => {
@@ -226,7 +227,7 @@ router.delete('/prod-apontamentos/:id', requireAuth, async (req, res) => {
 
 router.get('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   try {
-    const { data_ini, data_fim, turno, celula, num_op, cod_decio, mes } = req.query;
+    const { data_ini, data_fim, turno, celula, num_op, cod_decio, mes, status_apontamento } = req.query;
     const params = [];
     const where = [];
     if (data_ini) { params.push(data_ini); where.push(`data_execucao >= $${params.length}`); }
@@ -235,6 +236,7 @@ router.get('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
     if (celula) { params.push(celula); where.push(`celula = $${params.length}`); }
     if (num_op) { params.push(num_op); where.push(`num_op = $${params.length}`); }
     if (cod_decio) { params.push(cod_decio); where.push(`cod_decio = $${params.length}`); }
+    if (status_apontamento) { params.push(status_apontamento); where.push(`status_apontamento = $${params.length}`); }
     if (mes) { params.push(mes); where.push(`to_char(data_execucao,'YYYY-MM') = $${params.length}`); }
     let q = 'SELECT * FROM prod_apontamentos_detalhados';
     if (where.length) q += ' WHERE ' + where.join(' AND ');
@@ -258,7 +260,110 @@ router.get('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) =>
   }
 });
 
-// 🔧 POST: vincula o apontamento ao plano com mesma OP
+// 🆕 INICIAR PRODUÇÃO (1ª etapa) — não soma no plano ainda
+router.post('/prod-apontamentos-detalhados/iniciar', requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    let {
+      data_execucao, turno, celula, num_op, serie_inicial,
+      cod_decio, cod_intelbras, descricao, categoria,
+      meta, hora_reportado, observacoes
+    } = req.body;
+
+    if (serie_inicial) serie_inicial = String(serie_inicial).trim().toUpperCase();
+
+    if (!data_execucao) return res.status(400).json({ error: 'Data de execução obrigatória' });
+    if (!turno) return res.status(400).json({ error: 'Turno obrigatório' });
+    if (!celula) return res.status(400).json({ error: 'Célula obrigatória' });
+    if (!validarDigitos(num_op, 8)) return res.status(400).json({ error: 'N° OP deve ter exatos 8 dígitos numéricos' });
+    if (!validarAlfanumerico(serie_inicial, 13)) return res.status(400).json({ error: 'N° Série Inicial deve ter exatos 13 caracteres (letras/números)' });
+    if (!cod_decio) return res.status(400).json({ error: 'Código Décio obrigatório' });
+
+    const planoRes = await client.query('SELECT id FROM prod_planos WHERE num_op = $1 LIMIT 1', [num_op]);
+    if (!planoRes.rows.length) {
+      return res.status(400).json({
+        error: `OP ${num_op} não cadastrada no plano mensal. Cadastre o plano com essa OP antes de iniciar a produção.`
+      });
+    }
+    const planoId = planoRes.rows[0].id;
+
+    const r = await client.query(
+      `INSERT INTO prod_apontamentos_detalhados
+       (data_execucao, turno, celula, num_op, serie_inicial, serie_final,
+        cod_decio, cod_intelbras, descricao, categoria,
+        meta, realizado, hora_reportada_total, hora_reportado, observacoes, plano_id, status_apontamento)
+       VALUES ($1,$2,$3,$4,$5,NULL,$6,$7,$8,$9,$10,0,0,$11,$12,$13,'em_andamento')
+       RETURNING *`,
+      [
+        data_execucao, turno, celula, num_op, serie_inicial,
+        cod_decio, cod_intelbras || null, descricao || null, categoria || null,
+        meta || 0, hora_reportado || 0, observacoes || null, planoId
+      ]
+    );
+
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('POST /prod-apontamentos-detalhados/iniciar', err);
+    res.status(500).json({ error: 'Erro ao iniciar apontamento: ' + err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 🆕 FINALIZAR PRODUÇÃO (2ª etapa) — agora sim soma no plano
+router.post('/prod-apontamentos-detalhados/:id/finalizar', requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    let { serie_final, realizado, hora_reportada_total, observacoes } = req.body;
+    if (serie_final) serie_final = String(serie_final).trim().toUpperCase();
+
+    if (!validarAlfanumerico(serie_final, 13)) return res.status(400).json({ error: 'N° Série Final deve ter exatos 13 caracteres (letras/números)' });
+    realizado = parseFloat(realizado) || 0;
+    if (realizado <= 0) return res.status(400).json({ error: 'Informe a quantidade realizada (maior que zero)' });
+
+    await client.query('BEGIN');
+
+    const ap = await client.query('SELECT * FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
+    if (!ap.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Apontamento não encontrado' });
+    }
+    const a = ap.rows[0];
+    if (a.status_apontamento === 'finalizado') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Este apontamento já foi finalizado' });
+    }
+
+    await client.query(
+      `UPDATE prod_apontamentos_detalhados
+       SET serie_final=$1, realizado=$2, hora_reportada_total=$3,
+           observacoes=COALESCE($4, observacoes),
+           status_apontamento='finalizado'
+       WHERE id=$5`,
+      [serie_final, realizado, hora_reportada_total || 0, observacoes || null, req.params.id]
+    );
+
+    if (a.plano_id) {
+      await client.query(
+        'UPDATE prod_planos SET realizado = COALESCE(realizado,0) + $1 WHERE id=$2',
+        [realizado, a.plano_id]
+      );
+      await atualizarStatusPlano(a.plano_id, client);
+    }
+
+    await client.query('COMMIT');
+    const r = await pool.query('SELECT * FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('POST /prod-apontamentos-detalhados/:id/finalizar', err);
+    res.status(500).json({ error: 'Erro ao finalizar apontamento: ' + err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// POST tradicional (mantido para compatibilidade — cria já finalizado)
 router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -279,28 +384,19 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
     if (!validarAlfanumerico(serie_final, 13)) return res.status(400).json({ error: 'N° Série Final deve ter exatos 13 caracteres (letras/números)' });
     if (!cod_decio) return res.status(400).json({ error: 'Código Décio obrigatório' });
 
-    // 🔍 Busca o plano pela OP (vinculação direta por número da ordem de produção)
-    const planoRes = await client.query(
-      'SELECT id FROM prod_planos WHERE num_op = $1 LIMIT 1',
-      [num_op]
-    );
-
+    const planoRes = await client.query('SELECT id FROM prod_planos WHERE num_op = $1 LIMIT 1', [num_op]);
     if (!planoRes.rows.length) {
-      return res.status(400).json({
-        error: `OP ${num_op} não cadastrada no plano mensal. Cadastre o plano com essa OP antes de fazer o apontamento.`
-      });
+      return res.status(400).json({ error: `OP ${num_op} não cadastrada no plano mensal.` });
     }
-
     const planoId = planoRes.rows[0].id;
 
     await client.query('BEGIN');
-
     const r = await client.query(
       `INSERT INTO prod_apontamentos_detalhados
        (data_execucao, turno, celula, num_op, serie_inicial, serie_final,
         cod_decio, cod_intelbras, descricao, categoria,
-        meta, realizado, hora_reportada_total, observacoes, plano_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        meta, realizado, hora_reportada_total, observacoes, plano_id, status_apontamento)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'finalizado')
        RETURNING *`,
       [
         data_execucao, turno, celula, num_op, serie_inicial, serie_final,
@@ -310,7 +406,6 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
       ]
     );
 
-    // Soma o realizado no plano vinculado pela OP
     await client.query(
       'UPDATE prod_planos SET realizado = COALESCE(realizado,0) + $1 WHERE id=$2',
       [parseFloat(realizado) || 0, planoId]
@@ -338,7 +433,8 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
       return res.status(404).json({ error: 'Apontamento não encontrado' });
     }
     const a = ap.rows[0];
-    if (a.plano_id) {
+    // Só subtrai se estava finalizado (em andamento não somou ainda)
+    if (a.plano_id && a.status_apontamento !== 'em_andamento') {
       await client.query(
         'UPDATE prod_planos SET realizado = GREATEST(COALESCE(realizado,0) - $1, 0) WHERE id=$2',
         [parseFloat(a.realizado) || 0, a.plano_id]
