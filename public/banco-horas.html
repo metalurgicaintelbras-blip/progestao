@@ -44,6 +44,7 @@
     <div class="kpi"><div class="num" id="k-lancamentos" style="color:var(--accent)">0</div><div class="lbl">Lançamentos</div></div>
     <div class="kpi"><div class="num" id="k-positivo" style="color:var(--green)">0h</div><div class="lbl">Saldo Positivo</div></div>
     <div class="kpi"><div class="num" id="k-negativo" style="color:var(--red)">0h</div><div class="lbl">Saldo Negativo</div></div>
+    <div class="kpi"><div class="num" id="k-descontar" style="color:var(--accent2)">0h</div><div class="lbl">A Descontar</div></div>
     <div class="kpi"><div class="num" id="k-colabs" style="color:var(--accent2)">0</div><div class="lbl">Colaboradores</div></div>
   </div>
 
@@ -65,7 +66,11 @@
     <h3>Novo Lançamento</h3>
     <div class="form-grid" style="margin-top:14px">
       <div class="form-group"><label>Colaborador *</label><select id="n-colab"></select></div>
-      <div class="form-group"><label>Tipo *</label><select id="n-tipo"><option value="Crédito">Crédito (+)</option><option value="Débito">Débito (-)</option></select></div>
+      <div class="form-group"><label>Tipo *</label><select id="n-tipo">
+        <option value="Crédito">Crédito (+)</option>
+        <option value="Débito">Débito (-)</option>
+        <option value="Descontar">Descontar (=)</option>
+      </select></div>
       <div class="form-group"><label>Minutos *</label><input id="n-min" type="number" min="1"></div>
       <div class="form-group"><label>Data *</label><input id="n-data" type="date"></div>
       <div class="form-group"><label>Motivo</label><input id="n-motivo"></div>
@@ -94,8 +99,8 @@
   <!-- SALDO POR COLABORADOR -->
   <div class="section" id="sec-saldo">
     <h3>💰 Saldo por Colaborador</h3>
-    <p style="font-size:.8rem;color:var(--text2);margin-top:6px">Clique no nome do colaborador para ver o histórico mensal</p>
-    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Colaborador</th><th>Turno</th><th>Créditos</th><th>Débitos</th><th>Saldo</th></tr></thead><tbody id="tb-saldo"></tbody></table></div>
+    <p style="font-size:.8rem;color:var(--text2);margin-top:6px">Clique no nome do colaborador para ver o histórico mensal. A coluna <strong style="color:var(--accent2)">Descontar</strong> é apenas informativa e não afeta o saldo.</p>
+    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Colaborador</th><th>Turno</th><th>Créditos</th><th>Débitos</th><th>Descontar</th><th>Saldo</th></tr></thead><tbody id="tb-saldo"></tbody></table></div>
   </div>
 
 </div></div>
@@ -109,7 +114,11 @@
   <input type="hidden" id="aj-id">
   <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
     <div class="form-group"><label>Colaborador *</label><select id="aj-colab"></select></div>
-    <div class="form-group"><label>Tipo *</label><select id="aj-tipo"><option value="Crédito">Crédito (+)</option><option value="Débito">Débito (-)</option></select></div>
+    <div class="form-group"><label>Tipo *</label><select id="aj-tipo">
+      <option value="Crédito">Crédito (+)</option>
+      <option value="Débito">Débito (-)</option>
+      <option value="Descontar">Descontar (=)</option>
+    </select></div>
     <div class="form-group"><label>Minutos *</label><input id="aj-min" type="number" min="1"></div>
     <div class="form-group"><label>Data *</label><input id="aj-data" type="date"></div>
     <div class="form-group" style="grid-column:1/-1"><label>Motivo</label><input id="aj-motivo"></div>
@@ -153,7 +162,7 @@
   <div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModalHist()">Fechar</button></div>
 </div></div>
 
-<!-- MODAL HISTÓRICO CONVITES (por colaborador, sem filtro de mês) -->
+<!-- MODAL HISTÓRICO CONVITES -->
 <div class="modal-overlay" id="modal-hist-conv"><div class="modal lg">
   <h3 id="hist-conv-titulo">Convites</h3>
   <div class="hist-summary" id="hist-conv-summary"></div>
@@ -175,6 +184,14 @@ const api={
   async del(u){const r=await fetch(u,{method:'DELETE'});if(r.status===401)return location.href='/login';return r.json()}
 };
 function toast(m,t='success'){const e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3000)}
+
+/* ===== HELPERS DE TIPO ===== */
+function badgeTipo(tipo){
+  if(tipo==='Crédito')return'badge-green';
+  if(tipo==='Débito')return'badge-red';
+  if(tipo==='Descontar')return'badge-purple';
+  return'badge-blue';
+}
 
 /* ===== FORMATAÇÃO DE DATA À PROVA DE FUSO HORÁRIO ===== */
 function fmt(d){
@@ -220,10 +237,15 @@ async function loadAll(){
 
 function updateKPIs(){
   document.getElementById('k-lancamentos').textContent=lancamentos.length;
-  let pos=0,neg=0;
-  lancamentos.forEach(l=>{if(l.tipo==='Crédito')pos+=l.minutos;else neg+=l.minutos});
+  let pos=0,neg=0,desc=0;
+  lancamentos.forEach(l=>{
+    if(l.tipo==='Crédito')pos+=l.minutos;
+    else if(l.tipo==='Débito')neg+=l.minutos;
+    else if(l.tipo==='Descontar')desc+=l.minutos;
+  });
   document.getElementById('k-positivo').textContent=minToH(pos);
   document.getElementById('k-negativo').textContent=minToH(neg);
+  document.getElementById('k-descontar').textContent=minToH(desc);
   document.getElementById('k-colabs').textContent=colabs.length;
 }
 
@@ -234,10 +256,9 @@ function renderLanc(){
   const tb=document.getElementById('tb-lanc');
   if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum lançamento</td></tr>';return}
   tb.innerHTML=list.map(l=>{
-    const badge=l.tipo==='Crédito'?'badge-green':'badge-red';
     return `<tr>
       <td>${l.colab_nome||'-'}</td>
-      <td><span class="badge ${badge}">${l.tipo}</span></td>
+      <td><span class="badge ${badgeTipo(l.tipo)}">${l.tipo}</span></td>
       <td>${l.minutos} min (${minToH(l.minutos)})</td>
       <td>${fmt(l.data)}</td>
       <td>${l.motivo||'-'}</td>
@@ -360,13 +381,11 @@ async function salvarAjusteConv(){
 function abrirHistoricoConv(colabId, nome){
   document.getElementById('hist-conv-titulo').textContent='📩 Convites — '+nome;
 
-  // ordena por data do convite (mais recente primeiro)
   const list=convites
     .filter(c=>c.colaborador_id===colabId)
     .slice()
     .sort((a,b)=>isoDate(b.data).localeCompare(isoDate(a.data)));
 
-  // resumo
   const tot=list.length;
   const aceitos=list.filter(c=>c.resposta==='Aceito').length;
   const recusados=list.filter(c=>c.resposta==='Recusado').length;
@@ -402,18 +421,24 @@ function fecharModalHistConv(){document.getElementById('modal-hist-conv').classL
 function renderSaldo(){
   const tb=document.getElementById('tb-saldo');
   const map={};
-  colabs.forEach(c=>map[c.id]={id:c.id,nome:c.nome,turno:c.turno||'-',cred:0,deb:0});
-  lancamentos.forEach(l=>{if(!map[l.colaborador_id])return;if(l.tipo==='Crédito')map[l.colaborador_id].cred+=l.minutos;else map[l.colaborador_id].deb+=l.minutos});
+  colabs.forEach(c=>map[c.id]={id:c.id,nome:c.nome,turno:c.turno||'-',cred:0,deb:0,desc:0});
+  lancamentos.forEach(l=>{
+    if(!map[l.colaborador_id])return;
+    if(l.tipo==='Crédito')map[l.colaborador_id].cred+=l.minutos;
+    else if(l.tipo==='Débito')map[l.colaborador_id].deb+=l.minutos;
+    else if(l.tipo==='Descontar')map[l.colaborador_id].desc+=l.minutos;
+  });
   const rows=Object.values(map).sort((a,b)=>a.nome.localeCompare(b.nome));
-  if(!rows.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
   tb.innerHTML=rows.map(r=>{
-    const saldo=r.cred-r.deb;
+    const saldo=r.cred-r.deb; // Descontar NÃO entra no saldo
     const badge=saldo>0?'badge-green':saldo<0?'badge-red':'badge-blue';
     return `<tr>
       <td><span class="link-name" onclick="abrirHistorico(${r.id},'${r.nome.replace(/'/g,"\\'")}')">${r.nome}</span></td>
       <td>${r.turno}</td>
       <td><span class="badge badge-green">${minToH(r.cred)}</span></td>
       <td><span class="badge badge-red">${minToH(r.deb)}</span></td>
+      <td><span class="badge badge-purple">${minToH(r.desc)}</span></td>
       <td><span class="badge ${badge}">${minToH(saldo)}</span></td>
     </tr>`;
   }).join('');
@@ -451,6 +476,7 @@ function renderHistMes(){
   const mes=document.getElementById('hist-mes').value;
   if(!mes||!histColabId)return;
 
+  // Acumulado considera só Crédito - Débito (ignora Descontar)
   const todos=lancamentos
     .filter(l=>l.colaborador_id===histColabId)
     .slice()
@@ -458,15 +484,22 @@ function renderHistMes(){
 
   let acc=0;
   const enriched=todos.map(l=>{
-    const v=l.tipo==='Crédito'?l.minutos:-l.minutos;
+    let v=0;
+    if(l.tipo==='Crédito')v=l.minutos;
+    else if(l.tipo==='Débito')v=-l.minutos;
+    // Descontar não altera o acumulado
     acc+=v;
     return {...l, acumulado:acc};
   });
 
   const list=enriched.filter(l=>isoMes(l.data)===mes);
 
-  let cred=0,deb=0;
-  list.forEach(l=>{if(l.tipo==='Crédito')cred+=l.minutos;else deb+=l.minutos});
+  let cred=0,deb=0,desc=0;
+  list.forEach(l=>{
+    if(l.tipo==='Crédito')cred+=l.minutos;
+    else if(l.tipo==='Débito')deb+=l.minutos;
+    else if(l.tipo==='Descontar')desc+=l.minutos;
+  });
   const saldoMes=cred-deb;
   const saldoTotal=enriched.length?enriched[enriched.length-1].acumulado:0;
 
@@ -474,6 +507,7 @@ function renderHistMes(){
     <div class="hs-item"><div class="hs-num" style="color:var(--accent)">${list.length}</div><div class="hs-lbl">Lançamentos no mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--green)">${minToH(cred)}</div><div class="hs-lbl">Créditos do mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--red)">${minToH(deb)}</div><div class="hs-lbl">Débitos do mês</div></div>
+    <div class="hs-item"><div class="hs-num" style="color:var(--accent2)">${minToH(desc)}</div><div class="hs-lbl">A descontar</div></div>
     <div class="hs-item"><div class="hs-num" style="color:${saldoMes>=0?'var(--green)':'var(--red)'}">${minToH(saldoMes)}</div><div class="hs-lbl">Saldo do mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:${saldoTotal>=0?'var(--green)':'var(--red)'}">${minToH(saldoTotal)}</div><div class="hs-lbl">Saldo acumulado</div></div>
   `;
@@ -484,15 +518,15 @@ function renderHistMes(){
     return;
   }
   tb.innerHTML=list.map(l=>{
-    const badge=l.tipo==='Crédito'?'badge-green':'badge-red';
     const accBadge=l.acumulado>0?'badge-green':l.acumulado<0?'badge-red':'badge-blue';
+    const accText=l.tipo==='Descontar'?'—':minToH(l.acumulado);
     return `<tr>
       <td>${fmt(l.data)}</td>
-      <td><span class="badge ${badge}">${l.tipo}</span></td>
+      <td><span class="badge ${badgeTipo(l.tipo)}">${l.tipo}</span></td>
       <td>${l.minutos} (${minToH(l.minutos)})</td>
       <td>${l.motivo||'-'}</td>
       <td style="max-width:240px;white-space:normal">${l.justificativa||'-'}</td>
-      <td><span class="badge ${accBadge}">${minToH(l.acumulado)}</span></td>
+      <td><span class="badge ${l.tipo==='Descontar'?'badge-purple':accBadge}">${accText}</span></td>
     </tr>`;
   }).join('');
 }
