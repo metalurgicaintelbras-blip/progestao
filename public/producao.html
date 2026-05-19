@@ -131,20 +131,26 @@ table tr:hover{background:var(--panel2)}
               <option value="Parede">Parede</option>
             </select>
           </div>
-          <div class="form-group" id="dash-detalhe-wrap" style="display:none">
-            <label>Detalhamento (Parede)</label>
-            <select id="dash-detalhe" onchange="renderDashboard()">
+          <div class="form-group" id="dash-turno-wrap" style="display:none">
+            <label>Turno (Parede)</label>
+            <select id="dash-turno" onchange="onChangeTurno()">
               <option value="total">Total</option>
-              <option value="turno1">Turno 1</option>
-              <option value="turno2">Turno 2</option>
-              <option value="celula1">Célula 01</option>
-              <option value="celula2">Célula 02</option>
-              <option value="celula3">Célula 03</option>
-              <option value="celula4">Célula 04</option>
+              <option value="1">Turno 1</option>
+              <option value="2">Turno 2</option>
+            </select>
+          </div>
+          <div class="form-group" id="dash-celula-wrap" style="display:none">
+            <label>Célula</label>
+            <select id="dash-celula" onchange="renderDashboard()">
+              <option value="total">Total</option>
+              <option value="Célula 01">Célula 01</option>
+              <option value="Célula 02">Célula 02</option>
+              <option value="Célula 03">Célula 03</option>
+              <option value="Célula 04">Célula 04</option>
             </select>
           </div>
           <div style="font-size:11px;color:var(--text2);max-width:260px;line-height:1.4">
-            <strong>Meta diária</strong> = soma das metas dos planos com data daquele dia (filtradas).<br>
+            <strong>Meta diária</strong> = soma das metas dos planos do dia.<br>
             <strong>% = Realizado ÷ Meta × 100</strong>
           </div>
         </div>
@@ -158,6 +164,11 @@ table tr:hover{background:var(--panel2)}
       <div class="card">
         <div class="card-title">⏱️ Hora Reportada Diária (%) — Meta vs Realizado</div>
         <canvas id="chartHoras" style="max-height:320px"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 Acumulado Mensal (%) — Σ Realizado ÷ Σ Meta</div>
+        <canvas id="chartAcumulado" style="max-height:320px"></canvas>
       </div>
 
     </div>
@@ -418,11 +429,59 @@ table tr:hover{background:var(--panel2)}
   </div>
 </div>
 
-<div id="toast"></div>
-
+<!-- MODAL AJUSTAR APONTAMENTO -->
+<div class="modal-bg" id="modal-ajustar">
+  <div class="modal" style="max-width:680px">
+    <h3>✏️ Ajustar Apontamento</h3>
+    <div class="info-box">
+      Ao salvar, o valor antigo de <strong>Realizado</strong> será subtraído do plano vinculado e o novo valor somado. O status do plano é recalculado.
+    </div>
+    <input type="hidden" id="aj-id">
+    <input type="hidden" id="aj-realizado-old">
+    <input type="hidden" id="aj-plano-id">
+    <div class="form-row">
+      <div class="form-group"><label>Data *</label><input type="date" id="aj-data"></div>
+      <div class="form-group"><label>Turno *</label>
+        <select id="aj-turno"><option value="1">1º Turno</option><option value="2">2º Turno</option></select>
+      </div>
+      <div class="form-group"><label>Célula *</label>
+        <select id="aj-celula">
+          <option value="Célula 01">Célula 01</option><option value="Célula 02">Célula 02</option>
+          <option value="Célula 03">Célula 03</option><option value="Célula 04">Célula 04</option>
+          <option value="Hora Extra">Hora Extra</option><option value="Previsão Falta">Previsão Falta</option>
+        </select>
+      </div>
+      <div class="form-group"><label>N° OP (8 dígitos)</label><input type="text" id="aj-num-op" maxlength="8" readonly></div>
+      <div class="form-group"><label>Série Inicial</label><input type="text" id="aj-serie-ini" maxlength="13"></div>
+      <div class="form-group"><label>Série Final</label><input type="text" id="aj-serie-fim" maxlength="13"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Cód. Décio</label><input type="text" id="aj-cod-decio" readonly></div>
+      <div class="form-group"><label>Descrição</label><input type="text" id="aj-descricao" readonly></div>
+      <div class="form-group"><label>Categoria</label>
+        <select id="aj-categoria">
+          <option value="">--</option><option>Parede</option><option>Piso</option>
+          <option>Acessórios</option><option>Luiz</option><option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Meta</label><input type="number" id="aj-meta" step="0.01" min="0"></div>
+      <div class="form-group"><label>Realizado *</label><input type="number" id="aj-realizado" step="0.01" min="0"></div>
+      <div class="form-group"><label>Hora Reportada Total</label><input type="number" id="aj-hora-total" step="0.0001" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1"><label>Observações</label><textarea id="aj-obs"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn-sm btn-ghost" onclick="fecharModalAjustar()">Cancelar</button>
+      <button class="btn-sm btn-accent" onclick="salvarAjusteApontamento()">💾 Salvar Ajustes</button>
+    </div>
+  </div>
+</div>
 <script>
 let planos = [], apontamentos = [], apontamentosDet = [], produtos = [];
-let chartProdObj = null, chartHoraObj = null;
+const _charts = {};
 
 async function api(url, opts = {}) {
   opts.headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
@@ -541,6 +600,7 @@ async function loadAll() {
   }
 }
 
+// ============ AUTOCOMPLETE ============
 function autocompletePlano(q) {
   const list = document.getElementById('plano-ac-list');
   if (!q || q.length < 1) { list.classList.remove('show'); return; }
@@ -594,12 +654,15 @@ function selecionarProdutoApont(decio) {
 }
 
 function calcularHoraTotalFin() {
-  const hora = parseFloat(document.getElementById('fin-hora-rep').value || 0);
+  const id = document.getElementById('fin-id').value;
+  const ap = apontamentosDet.find(x => String(x.id) === String(id));
+  const hr = ap ? (parseFloat(ap.hora_reportado) || 0) : 0;
   const real = parseFloat(document.getElementById('fin-realizado').value || 0);
-  const total = hora * real;
+  const total = hr * real;
   document.getElementById('fin-hora-total').value = total.toFixed(4) + ' h';
 }
 
+// ============ PLANO MENSAL ============
 async function salvarPlano() {
   const data_limite = document.getElementById('p-data-limite').value;
   const num_op = document.getElementById('p-num-op').value.trim();
@@ -677,6 +740,7 @@ function renderPlanos() {
   }).join('');
 }
 
+// ============ APONTAMENTO ============
 async function iniciarApontamento() {
   const data_execucao = document.getElementById('a-data').value;
   const turno = document.getElementById('a-turno').value;
@@ -689,57 +753,46 @@ async function iniciarApontamento() {
   const categoria = document.getElementById('a-categoria').value;
   const meta = parseFloat(document.getElementById('a-meta').value || 0);
   const observacoes = document.getElementById('a-obs').value.trim();
-  const horaRep = parseFloat(document.getElementById('a-cod-decio').dataset.horaRep || 0);
-  if (!data_execucao) return toast('Informe a data de execução', 'error');
+  const hora_reportado = parseFloat(document.getElementById('a-cod-decio').dataset.horaRep || 0);
+
+  if (!data_execucao) return toast('Informe a data', 'error');
   if (!turno) return toast('Selecione o turno', 'error');
   if (!celula) return toast('Selecione a célula', 'error');
-  if (!/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos numéricos', 'error');
-  if (!/^[A-Z0-9]{13}$/.test(serie_inicial)) return toast('Série Inicial deve ter exatos 13 caracteres (letras/números)', 'error');
+  if (!/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos', 'error');
+  if (!/^[A-Z0-9]{13}$/.test(serie_inicial)) return toast('Série Inicial deve ter 13 caracteres', 'error');
   if (!cod_decio) return toast('Informe o código Décio', 'error');
-  const btn = document.getElementById('btn-iniciar-apont');
-  btn.disabled = true; btn.textContent = 'Iniciando...';
+
   try {
     await api('/prod-apontamentos-detalhados/iniciar', {
       method:'POST',
       body:{ data_execucao, turno, celula, num_op, serie_inicial,
              cod_decio, cod_intelbras, descricao, categoria,
-             meta, hora_reportado: horaRep, observacoes }
+             meta, hora_reportado, observacoes }
     });
-    toast('🚀 Produção iniciada para a OP ' + num_op + '!');
+    toast('🚀 Produção iniciada! Finalize depois para somar no plano.');
     limparApontamento();
     loadAll();
   } catch(e) { toast('Erro: ' + e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = '🚀 Iniciar Produção'; }
 }
-
 function limparApontamento() {
-  ['a-data','a-turno','a-celula','a-num-op','a-serie-ini',
-   'a-cod-decio','a-cod-intelbras','a-descricao','a-categoria',
-   'a-meta','a-obs'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('a-cod-decio').dataset.horaRep = 0;
-  document.querySelectorAll('#sec-apontar input').forEach(i => i.classList.remove('valid','invalid'));
-  document.getElementById('hint-op').textContent = 'Digite 8 dígitos numéricos';
-  document.getElementById('hint-sini').textContent = 'Digite 13 caracteres (letras/números)';
-  ['hint-op','hint-sini'].forEach(id => document.getElementById(id).classList.remove('error'));
-  document.getElementById('a-data').value = new Date().toISOString().substring(0,10);
+  ['a-data','a-turno','a-celula','a-num-op','a-serie-ini','a-cod-decio','a-cod-intelbras','a-descricao','a-categoria','a-meta','a-obs']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.querySelectorAll('#sec-apontar .form-group input').forEach(i => i.classList.remove('valid','invalid'));
 }
 
 function renderApontamentosAndamento() {
   const tb = document.getElementById('tb-apont-andamento');
   const lista = apontamentosDet.filter(a => a.status_apontamento === 'em_andamento');
   document.getElementById('qtd-andamento').textContent = `(${lista.length})`;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Nenhum apontamento em andamento. 🎉</td></tr>'; return; }
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Nenhum apontamento em andamento.</td></tr>'; return; }
   tb.innerHTML = lista.map(a => `<tr>
     <td>${fmtData(a.data_execucao)}</td>
-    <td>${a.turno}º</td>
+    <td>${a.turno||'-'}º</td>
     <td>${a.celula||'-'}</td>
     <td><strong>${a.num_op||'-'}</strong></td>
     <td>${a.serie_inicial||'-'}</td>
-    <td><strong>${a.cod_decio||'-'}</strong></td>
-    <td title="${a.descricao||''}">${(a.descricao||'-').substring(0,30)}${(a.descricao||'').length>30?'...':''}</td>
+    <td>${a.cod_decio||'-'}</td>
+    <td>${a.descricao||'-'}</td>
     <td>${fmtNum(a.meta)}</td>
     <td>
       <button class="btn-sm btn-accent" onclick="abrirModalFinalizar(${a.id})" style="padding:4px 10px;font-size:11px">✅ Finalizar</button>
@@ -756,165 +809,214 @@ function abrirModalFinalizar(id) {
   document.getElementById('fin-realizado').value = '';
   document.getElementById('fin-hora-total').value = '';
   document.getElementById('fin-obs').value = a.observacoes || '';
-  let horaRep = parseFloat(a.hora_reportado || 0);
-  if (!horaRep) {
-    const prod = produtos.find(x => x.cod_decio === a.cod_decio);
-    if (prod) horaRep = parseFloat(prod.hora_reportado || 0);
-  }
-  let hidden = document.getElementById('fin-hora-rep');
-  if (!hidden) {
-    hidden = document.createElement('input');
-    hidden.type = 'hidden'; hidden.id = 'fin-hora-rep';
-    document.body.appendChild(hidden);
-  }
-  hidden.value = horaRep;
   document.getElementById('info-finalizar').innerHTML =
-    `<strong>OP ${a.num_op}</strong> | ${a.cod_decio} - ${a.descricao||'-'}<br>` +
-    `Data: ${fmtData(a.data_execucao)} | Turno: ${a.turno}º | Célula: ${a.celula} | Série Inicial: ${a.serie_inicial}`;
-  document.getElementById('hint-fin-sfim').textContent = 'Digite 13 caracteres (letras/números)';
-  document.getElementById('hint-fin-sfim').classList.remove('error');
-  document.getElementById('fin-serie-fim').classList.remove('valid','invalid');
+    `<strong>OP ${a.num_op}</strong> — ${a.cod_decio} ${a.descricao||''}<br>
+     Data: ${fmtData(a.data_execucao)} | Turno ${a.turno} | ${a.celula} | Série Ini: ${a.serie_inicial}`;
   document.getElementById('modal-finalizar').classList.add('show');
 }
-
 function fecharModalFinalizar() {
   document.getElementById('modal-finalizar').classList.remove('show');
 }
-
 async function confirmarFinalizacao() {
   const id = document.getElementById('fin-id').value;
-  const serie_final = document.getElementById('fin-serie-fim').value;
+  const serie_final = document.getElementById('fin-serie-fim').value.trim().toUpperCase();
   const realizado = parseFloat(document.getElementById('fin-realizado').value || 0);
   const observacoes = document.getElementById('fin-obs').value.trim();
-  const horaRep = parseFloat(document.getElementById('fin-hora-rep')?.value || 0);
-  const hora_reportada_total = horaRep * realizado;
-  if (!/^[A-Z0-9]{13}$/.test(serie_final)) return toast('Série Final deve ter exatos 13 caracteres', 'error');
-  if (realizado <= 0) return toast('Informe a quantidade realizada (maior que zero)', 'error');
-  const btn = document.getElementById('btn-confirmar-fin');
-  btn.disabled = true; btn.textContent = 'Salvando...';
+  const ap = apontamentosDet.find(x => String(x.id) === String(id));
+  const hr = ap ? (parseFloat(ap.hora_reportado) || 0) : 0;
+  const hora_reportada_total = hr * realizado;
+
+  if (!/^[A-Z0-9]{13}$/.test(serie_final)) return toast('Série Final deve ter 13 caracteres', 'error');
+  if (realizado <= 0) return toast('Informe o realizado (maior que zero)', 'error');
+
   try {
-    await api('/prod-apontamentos-detalhados/' + id + '/finalizar', {
+    await api(`/prod-apontamentos-detalhados/${id}/finalizar`, {
       method:'POST',
       body:{ serie_final, realizado, hora_reportada_total, observacoes }
     });
-    toast('✅ Apontamento finalizado e somado no plano!');
+    toast('✅ Finalizado e somado no plano!');
     fecharModalFinalizar();
     loadAll();
   } catch(e) { toast('Erro: ' + e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = '💾 Finalizar e Somar no Plano'; }
 }
 
 async function excluirApontamentoDet(id) {
-  if (!confirm('Excluir este apontamento? Se já estava finalizado, o realizado será subtraído do plano.')) return;
+  if (!confirm('Excluir este apontamento? Se estiver finalizado, o realizado será subtraído do plano.')) return;
   try { await api('/prod-apontamentos-detalhados/' + id, { method:'DELETE' }); toast('Apontamento excluído'); loadAll(); }
   catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
 
+// ============ AJUSTAR APONTAMENTO ============
+function ajustarApontamentoDet(id) {
+  const a = apontamentosDet.find(x => x.id === id);
+  if (!a) return toast('Apontamento não encontrado', 'error');
+  document.getElementById('aj-id').value = a.id;
+  document.getElementById('aj-realizado-old').value = a.realizado || 0;
+  document.getElementById('aj-plano-id').value = a.plano_id || '';
+  document.getElementById('aj-data').value = a.data_execucao ? String(a.data_execucao).substring(0,10) : '';
+  document.getElementById('aj-turno').value = a.turno || '1';
+  document.getElementById('aj-celula').value = a.celula || 'Célula 01';
+  document.getElementById('aj-num-op').value = a.num_op || '';
+  document.getElementById('aj-serie-ini').value = a.serie_inicial || '';
+  document.getElementById('aj-serie-fim').value = a.serie_final || '';
+  document.getElementById('aj-cod-decio').value = a.cod_decio || '';
+  document.getElementById('aj-descricao').value = a.descricao || '';
+  document.getElementById('aj-categoria').value = a.categoria || '';
+  document.getElementById('aj-meta').value = a.meta || 0;
+  document.getElementById('aj-realizado').value = a.realizado || 0;
+  document.getElementById('aj-hora-total').value = a.hora_reportada_total || 0;
+  document.getElementById('aj-obs').value = a.observacoes || '';
+  document.getElementById('modal-ajustar').classList.add('show');
+}
+function fecharModalAjustar() {
+  document.getElementById('modal-ajustar').classList.remove('show');
+}
+async function salvarAjusteApontamento() {
+  const id = document.getElementById('aj-id').value;
+  const serie_ini = document.getElementById('aj-serie-ini').value.trim().toUpperCase();
+  const serie_fim = document.getElementById('aj-serie-fim').value.trim().toUpperCase();
+  const body = {
+    data_execucao: document.getElementById('aj-data').value,
+    turno: document.getElementById('aj-turno').value,
+    celula: document.getElementById('aj-celula').value,
+    serie_inicial: serie_ini,
+    serie_final: serie_fim,
+    categoria: document.getElementById('aj-categoria').value || null,
+    meta: parseFloat(document.getElementById('aj-meta').value) || 0,
+    realizado: parseFloat(document.getElementById('aj-realizado').value) || 0,
+    hora_reportada_total: parseFloat(document.getElementById('aj-hora-total').value) || 0,
+    observacoes: document.getElementById('aj-obs').value || null
+  };
+  if (!body.data_execucao) return toast('Informe a data', 'error');
+  if (serie_ini && !/^[A-Z0-9]{13}$/.test(serie_ini)) return toast('Série Inicial inválida (13 caracteres)', 'error');
+  if (serie_fim && !/^[A-Z0-9]{13}$/.test(serie_fim)) return toast('Série Final inválida (13 caracteres)', 'error');
+  if (body.realizado < 0) return toast('Realizado não pode ser negativo', 'error');
+  try {
+    await api('/prod-apontamentos-detalhados/' + id, { method: 'PUT', body });
+    toast('Apontamento ajustado!');
+    fecharModalAjustar();
+    loadAll();
+  } catch(e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+}
+
 function renderApontamentosDet() {
   const tb = document.getElementById('tb-apont-det');
-  let lista = apontamentosDet.filter(a => a.status_apontamento !== 'em_andamento');
-  const dIni = document.getElementById('f-data-ini').value;
-  const dFim = document.getElementById('f-data-fim').value;
-  const turno = document.getElementById('f-turno').value;
-  const celula = document.getElementById('f-celula').value;
-  const op = document.getElementById('f-op').value.trim().toLowerCase();
-  const decio = document.getElementById('f-decio').value.trim().toLowerCase();
-  if (dIni) lista = lista.filter(a => String(a.data_execucao).substring(0,10) >= dIni);
-  if (dFim) lista = lista.filter(a => String(a.data_execucao).substring(0,10) <= dFim);
-  if (turno) lista = lista.filter(a => a.turno === turno);
-  if (celula) lista = lista.filter(a => a.celula === celula);
-  if (op) lista = lista.filter(a => (a.num_op||'').toLowerCase().includes(op));
-  if (decio) lista = lista.filter(a => (a.cod_decio||'').toLowerCase().includes(decio));
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Nenhum apontamento finalizado.</td></tr>'; return; }
+  const di = document.getElementById('f-data-ini').value;
+  const df = document.getElementById('f-data-fim').value;
+  const ft = document.getElementById('f-turno').value;
+  const fc = document.getElementById('f-celula').value;
+  const fop = document.getElementById('f-op').value.trim();
+  const fd = document.getElementById('f-decio').value.trim().toLowerCase();
+  let lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
+  if (di) lista = lista.filter(a => String(a.data_execucao).substring(0,10) >= di);
+  if (df) lista = lista.filter(a => String(a.data_execucao).substring(0,10) <= df);
+  if (ft) lista = lista.filter(a => String(a.turno) === ft);
+  if (fc) lista = lista.filter(a => a.celula === fc);
+  if (fop) lista = lista.filter(a => (a.num_op||'').includes(fop));
+  if (fd) lista = lista.filter(a => (a.cod_decio||'').toLowerCase().includes(fd));
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Nenhum apontamento encontrado.</td></tr>'; return; }
   tb.innerHTML = lista.map(a => `<tr>
     <td>${fmtData(a.data_execucao)}</td>
-    <td>${a.turno}º</td>
+    <td>${a.turno||'-'}º</td>
     <td>${a.celula||'-'}</td>
     <td><strong>${a.num_op||'-'}</strong></td>
     <td>${a.serie_inicial||'-'}</td>
     <td>${a.serie_final||'-'}</td>
-    <td><strong>${a.cod_decio||'-'}</strong></td>
+    <td>${a.cod_decio||'-'}</td>
     <td>${a.cod_intelbras||'-'}</td>
-    <td title="${a.descricao||''}">${(a.descricao||'-').substring(0,30)}${(a.descricao||'').length>30?'...':''}</td>
+    <td>${a.descricao||'-'}</td>
     <td>${a.categoria||'-'}</td>
     <td>${fmtNum(a.meta)}</td>
     <td>${fmtNum(a.realizado)}</td>
-    <td>${fmtNum(a.hora_reportada_total)} h</td>
-    <td title="${a.observacoes||''}">${(a.observacoes||'-').substring(0,20)}${(a.observacoes||'').length>20?'...':''}</td>
-    <td><button class="btn-sm btn-red" onclick="excluirApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px">🗑️</button></td>
+    <td>${fmtNum(a.hora_reportada_total)}</td>
+    <td>${(a.observacoes||'').substring(0,30)}</td>
+    <td>
+      <button class="btn-sm btn-orange" onclick="ajustarApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px" title="Ajustar">✏️</button>
+      <button class="btn-sm btn-red" onclick="excluirApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px" title="Excluir">🗑️</button>
+    </td>
   </tr>`).join('');
 }
 
 function exportarApontamentosCSV() {
-  const lista = apontamentosDet.filter(a => a.status_apontamento !== 'em_andamento');
+  const lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
   if (!lista.length) return toast('Nada para exportar', 'warn');
-  const headers = ['Data','Turno','Célula','N° OP','Série Inicial','Série Final','Cód. Décio','Cód. Intelbras','Descrição','Categoria','Meta','Realizado','Hora Total','Observações'];
+  const head = ['Data','Turno','Célula','N° OP','Série Ini','Série Fim','Cód. Décio','Cód. Intel.','Descrição','Categoria','Meta','Realizado','Hora Total','Obs.'];
   const rows = lista.map(a => [
-    fmtData(a.data_execucao), a.turno+'º', a.celula||'', a.num_op||'', a.serie_inicial||'', a.serie_final||'',
-    a.cod_decio||'', a.cod_intelbras||'', (a.descricao||'').replace(/[\r\n;]/g,' '), a.categoria||'',
+    fmtData(a.data_execucao), a.turno||'', a.celula||'', a.num_op||'', a.serie_inicial||'', a.serie_final||'',
+    a.cod_decio||'', a.cod_intelbras||'', a.descricao||'', a.categoria||'',
     a.meta||0, a.realizado||0, a.hora_reportada_total||0, (a.observacoes||'').replace(/[\r\n;]/g,' ')
   ]);
-  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
+  const csv = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `apontamentos_${new Date().toISOString().substring(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-  toast('CSV exportado!');
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `apontamentos_${new Date().toISOString().substring(0,10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
+// ============ PRODUTOS ============
 async function salvarProduto() {
   const cod_decio = document.getElementById('prod-decio').value.trim();
-  const cod_intelbras = document.getElementById('prod-intelbras').value.trim();
-  const descricao = document.getElementById('prod-desc').value.trim();
-  const categoria = document.getElementById('prod-cat').value;
-  const valor = parseFloat(document.getElementById('prod-valor').value || 0);
-  const minutos_reportados = parseFloat(document.getElementById('prod-min').value || 0);
-  const hora_reportado = parseFloat(document.getElementById('prod-hora').value || 0);
   if (!cod_decio) return toast('Informe o código Décio', 'error');
+  const body = {
+    cod_decio,
+    cod_intelbras: document.getElementById('prod-intelbras').value.trim() || null,
+    descricao: document.getElementById('prod-desc').value.trim() || null,
+    categoria: document.getElementById('prod-cat').value || null,
+    valor: parseFloat(document.getElementById('prod-valor').value) || 0,
+    min_reportado: parseFloat(document.getElementById('prod-min').value) || 0,
+    hora_reportado: parseFloat(document.getElementById('prod-hora').value) || 0
+  };
   const editId = document.getElementById('prod-edit-id').value;
   try {
     if (editId) {
-      await api('/prod-produtos/' + editId, { method:'PUT', body:{ cod_decio, cod_intelbras, descricao, categoria, valor, minutos_reportados, hora_reportado } });
+      await api('/prod-produtos/' + editId, { method:'PUT', body });
       toast('Produto atualizado!');
     } else {
-      await api('/prod-produtos', { method:'POST', body:{ cod_decio, cod_intelbras, descricao, categoria, valor, minutos_reportados, hora_reportado } });
-      toast('Produto criado!');
+      await api('/prod-produtos', { method:'POST', body });
+      toast('Produto salvo!');
     }
     limparProduto();
-    produtos = await api('/prod-produtos').catch(()=>[]);
-    renderProdutos();
+    loadAll();
   } catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
 function limparProduto() {
-  ['prod-edit-id','prod-decio','prod-intelbras','prod-desc','prod-cat','prod-valor','prod-min','prod-hora'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  ['prod-edit-id','prod-decio','prod-intelbras','prod-desc','prod-cat','prod-valor','prod-min','prod-hora']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 function editarProduto(id) {
-  const p = produtos.find(x => x.id === id); if (!p) return;
+  const p = produtos.find(x => x.id === id);
+  if (!p) return;
   document.getElementById('prod-edit-id').value = p.id;
   document.getElementById('prod-decio').value = p.cod_decio || '';
   document.getElementById('prod-intelbras').value = p.cod_intelbras || '';
   document.getElementById('prod-desc').value = p.descricao || '';
   document.getElementById('prod-cat').value = p.categoria || '';
   document.getElementById('prod-valor').value = p.valor || '';
-  document.getElementById('prod-min').value = p.minutos_reportados || '';
+  document.getElementById('prod-min').value = p.min_reportado || '';
   document.getElementById('prod-hora').value = p.hora_reportado || '';
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 async function excluirProduto(id) {
   if (!confirm('Excluir este produto?')) return;
-  try { await api('/prod-produtos/' + id, { method:'DELETE' }); toast('Produto excluído'); produtos = await api('/prod-produtos').catch(()=>[]); renderProdutos(); }
+  try { await api('/prod-produtos/' + id, { method:'DELETE' }); toast('Produto excluído'); loadAll(); }
   catch(e) { toast('Erro: ' + e.message, 'error'); }
 }
 function renderProdutos() {
   const tb = document.getElementById('tb-produtos');
-  const q = (document.getElementById('prod-busca')?.value || '').toLowerCase();
-  let lista = [...produtos];
-  if (q) lista = lista.filter(p =>
-    (p.cod_decio||'').toLowerCase().includes(q) ||
-    (p.cod_intelbras||'').toLowerCase().includes(q) ||
-    (p.descricao||'').toLowerCase().includes(q));
+  const busca = (document.getElementById('prod-busca').value || '').toLowerCase();
+  let lista = produtos.slice();
+  if (busca) {
+    lista = lista.filter(p =>
+      (p.cod_decio||'').toLowerCase().includes(busca) ||
+      (p.cod_intelbras||'').toLowerCase().includes(busca) ||
+      (p.descricao||'').toLowerCase().includes(busca)
+    );
+  }
   document.getElementById('prod-total').textContent = lista.length;
   if (!lista.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum produto.</td></tr>'; return; }
   tb.innerHTML = lista.map(p => `<tr>
@@ -923,7 +1025,7 @@ function renderProdutos() {
     <td>${p.descricao||'-'}</td>
     <td>${p.categoria||'-'}</td>
     <td>${fmtNum(p.valor)}</td>
-    <td>${fmtNum(p.minutos_reportados)}</td>
+    <td>${fmtNum(p.min_reportado)}</td>
     <td>${fmtNum(p.hora_reportado)}</td>
     <td>
       <button class="btn-sm btn-blue" onclick="editarProduto(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
@@ -932,233 +1034,162 @@ function renderProdutos() {
   </tr>`).join('');
 }
 
-/* ============================================================
-   DASHBOARD - Gráficos diários (Meta 100% vs Realizado %)
-   ============================================================ */
-
+// ============ DASHBOARD — FILTROS ============
 function onChangeCategoria() {
   const cat = document.getElementById('dash-categoria').value;
-  document.getElementById('dash-detalhe-wrap').style.display = (cat === 'Parede') ? 'flex' : 'none';
+  const turnoWrap = document.getElementById('dash-turno-wrap');
+  const celWrap = document.getElementById('dash-celula-wrap');
+  if (cat === 'Parede') {
+    turnoWrap.style.display = '';
+    document.getElementById('dash-turno').value = 'total';
+    document.getElementById('dash-celula').value = 'total';
+    celWrap.style.display = 'none';
+  } else {
+    turnoWrap.style.display = 'none';
+    celWrap.style.display = 'none';
+  }
   renderDashboard();
 }
 
-// Pega categoria de um apontamento (usa do produto se o apontamento não tiver)
-function getCategoriaApont(a) {
-  if (a.categoria) return a.categoria;
-  const p = produtos.find(x => x.cod_decio === a.cod_decio);
-  return p ? (p.categoria || '') : '';
-}
-// Categoria do plano - via produto cadastrado pelo cod_decio
-function getCategoriaPlano(p) {
-  const prod = produtos.find(x => x.cod_decio === p.cod_decio);
-  return prod ? (prod.categoria || '') : '';
-}
-// hora_reportado do produto vinculado a um plano (pra calcular meta-hora do dia)
-function getHoraReportadoPlano(p) {
-  const prod = produtos.find(x => x.cod_decio === p.cod_decio);
-  return prod ? (parseFloat(prod.hora_reportado) || 0) : 0;
+function onChangeTurno() {
+  const turno = document.getElementById('dash-turno').value;
+  const celWrap = document.getElementById('dash-celula-wrap');
+  if (turno === '1' || turno === '2') {
+    celWrap.style.display = '';
+    document.getElementById('dash-celula').value = 'total';
+  } else {
+    celWrap.style.display = 'none';
+  }
+  renderDashboard();
 }
 
-function aplicarFiltroCategoria(item, isApont) {
+function codigosDaCategoria(cat) {
+  return new Set(produtos.filter(p => (p.categoria||'') === cat).map(p => p.cod_decio));
+}
+
+function filtrarApontamentosDash() {
   const cat = document.getElementById('dash-categoria').value;
-  const det = document.getElementById('dash-detalhe').value;
-  const categoria = isApont ? getCategoriaApont(item) : getCategoriaPlano(item);
-
-  if (cat === 'total') return true;
-  if (cat === 'Piso') return categoria === 'Piso';
-  if (cat === 'Parede') {
-    if (categoria !== 'Parede') return false;
-    if (!isApont) return true; // plano não tem turno/célula — não filtra por detalhe
-    // Detalhamento — só aplica em apontamentos
-    if (det === 'total') return true;
-    if (det === 'turno1') return String(item.turno) === '1';
-    if (det === 'turno2') return String(item.turno) === '2';
-    if (det === 'celula1') return item.celula === 'Célula 01';
-    if (det === 'celula2') return item.celula === 'Célula 02';
-    if (det === 'celula3') return item.celula === 'Célula 03';
-    if (det === 'celula4') return item.celula === 'Célula 04';
-    return true;
+  const turno = document.getElementById('dash-turno') ? document.getElementById('dash-turno').value : 'total';
+  const celula = document.getElementById('dash-celula') ? document.getElementById('dash-celula').value : 'total';
+  let lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
+  if (cat !== 'total') {
+    lista = lista.filter(a => (a.categoria||'') === cat);
   }
-  return true;
+  if (cat === 'Parede' && turno !== 'total') {
+    lista = lista.filter(a => String(a.turno) === String(turno));
+    if (celula !== 'total') {
+      lista = lista.filter(a => (a.celula||'') === celula);
+    }
+  }
+  return lista;
 }
 
-function getDiasDoMes() {
-  const mesStr = document.getElementById('filtro-mes').value;
-  if (!mesStr) {
-    const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const m = hoje.getMonth() + 1;
-    const ultimo = new Date(ano, m, 0).getDate();
-    return { ano, mes: m, ultimo };
+function filtrarPlanosDash() {
+  const cat = document.getElementById('dash-categoria').value;
+  let lista = planos.slice();
+  if (cat !== 'total') {
+    const codsCat = codigosDaCategoria(cat);
+    lista = lista.filter(p => codsCat.has(p.cod_decio));
   }
-  const [ano, mes] = mesStr.split('-').map(Number);
-  const ultimo = new Date(ano, mes, 0).getDate();
-  return { ano, mes, ultimo };
+  return lista;
 }
 
 function renderDashboard() {
-  const { ano, mes, ultimo } = getDiasDoMes();
+  if (!document.getElementById('sec-dashboard').classList.contains('show')) return;
+  const mesFiltro = document.getElementById('filtro-mes').value;
+  if (!mesFiltro) return;
+
+  const [ano, mes] = mesFiltro.split('-').map(Number);
+  const diasNoMes = new Date(ano, mes, 0).getDate();
   const labels = [];
-  for (let d = 1; d <= ultimo; d++) labels.push(String(d).padStart(2,'0'));
+  for (let d = 1; d <= diasNoMes; d++) labels.push(String(d).padStart(2,'0'));
 
-  // -------- Gráfico 1: Produção (Quantidade) --------
-  // Por dia: meta = soma das metas dos planos com data_limite naquele dia (com filtro)
-  //          realizado = soma de realizado dos apontamentos finalizados nesse dia (com filtro)
-  const pctProd = [];
-  // -------- Gráfico 2: Hora Reportada --------
-  // Por dia: meta_h = soma de (meta_plano × hora_reportado_produto) dos planos do dia
-  //          realizado_h = soma de hora_reportada_total dos apontamentos finalizados do dia
-  const pctHoras = [];
+  const planosF = filtrarPlanosDash();
+  const apontF = filtrarApontamentosDash();
 
-  const planosFiltrados = planos.filter(p => aplicarFiltroCategoria(p, false));
-  const apontFinalizados = apontamentosDet.filter(a => a.status_apontamento !== 'em_andamento' && aplicarFiltroCategoria(a, true));
+  const metaDia = new Array(diasNoMes).fill(0);
+  const metaHoraDia = new Array(diasNoMes).fill(0);
+  planosF.forEach(p => {
+    if (!p.data_limite) return;
+    const s = String(p.data_limite).substring(0,10);
+    const [a,m,d] = s.split('-').map(Number);
+    if (a === ano && m === mes && d >= 1 && d <= diasNoMes) {
+      const m_plano = parseFloat(p.meta) || 0;
+      metaDia[d-1] += m_plano;
+      const prod = produtos.find(x => x.cod_decio === p.cod_decio);
+      const hr = prod ? (parseFloat(prod.hora_reportado)||0) : 0;
+      metaHoraDia[d-1] += m_plano * hr;
+    }
+  });
 
-  for (let dia = 1; dia <= ultimo; dia++) {
-    const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+  const realDia = new Array(diasNoMes).fill(0);
+  const horaDia = new Array(diasNoMes).fill(0);
+  apontF.forEach(a => {
+    if (!a.data_execucao) return;
+    const s = String(a.data_execucao).substring(0,10);
+    const [ya,ym,yd] = s.split('-').map(Number);
+    if (ya === ano && ym === mes && yd >= 1 && yd <= diasNoMes) {
+      realDia[yd-1] += parseFloat(a.realizado) || 0;
+      horaDia[yd-1] += parseFloat(a.hora_reportada_total) || 0;
+    }
+  });
 
-    // Meta de produção do dia
-    let metaDia = 0;
-    let metaHorasDia = 0;
-    planosFiltrados.forEach(p => {
-      const dl = String(p.data_limite||'').substring(0,10);
-      if (dl === dataStr) {
-        const m = parseFloat(p.meta) || 0;
-        metaDia += m;
-        metaHorasDia += m * getHoraReportadoPlano(p);
-      }
-    });
+  const pctProd = metaDia.map((m,i) => m > 0 ? (realDia[i]/m)*100 : null);
+  const pctHora = metaHoraDia.map((m,i) => m > 0 ? (horaDia[i]/m)*100 : null);
 
-    // Realizado do dia
-    let realDia = 0;
-    let realHorasDia = 0;
-    apontFinalizados.forEach(a => {
-      const da = String(a.data_execucao||'').substring(0,10);
-      if (da === dataStr) {
-        realDia += parseFloat(a.realizado) || 0;
-        realHorasDia += parseFloat(a.hora_reportada_total) || 0;
-      }
-    });
-
-    pctProd.push(metaDia > 0 ? (realDia / metaDia) * 100 : null);
-    pctHoras.push(metaHorasDia > 0 ? (realHorasDia / metaHorasDia) * 100 : null);
+  const pctAcum = [];
+  let accMeta = 0, accReal = 0;
+  for (let i = 0; i < diasNoMes; i++) {
+    accMeta += metaDia[i];
+    accReal += realDia[i];
+    pctAcum.push(accMeta > 0 ? (accReal/accMeta)*100 : null);
   }
 
-  const metaConst = labels.map(() => 100);
+  desenharGraficoLinha('chartProducao', '_prod', labels, pctProd, 'Produção Diária');
+  desenharGraficoLinha('chartHoras', '_hora', labels, pctHora, 'Hora Reportada Diária');
+  desenharGraficoLinha('chartAcumulado', '_acum', labels, pctAcum, 'Acumulado Mensal');
+}
 
-  const baseOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { labels: { color: '#e6edf3' } },
-      tooltip: {
-        callbacks: {
-          label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y === null ? 'sem meta' : ctx.parsed.y.toFixed(1) + '%'}`
-        }
-      }
+function desenharGraficoLinha(canvasId, key, labels, dados, titulo) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  if (_charts[key]) { _charts[key].destroy(); _charts[key] = null; }
+  const metaLinha = labels.map(() => 100);
+  _charts[key] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Meta (100%)', data: metaLinha, borderColor: '#f0883e', backgroundColor: 'rgba(240,136,62,0.1)', borderWidth: 2, borderDash: [6,4], pointRadius: 0, tension: 0 },
+        { label: titulo + ' (%)', data: dados, borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.15)', borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#58a6ff', tension: 0.25, spanGaps: true }
+      ]
     },
-    scales: {
-      x: { ticks: { color: '#8b98a5' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-      y: {
-        ticks: { color: '#8b98a5', callback: v => v + '%' },
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        suggestedMin: 0,
-        suggestedMax: 120
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#e6edf3', font: { size: 11 } } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y == null ? '-' : c.parsed.y.toFixed(1) + '%'}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#8b98a5' }, grid: { color: '#2d4055' } },
+        y: { beginAtZero: true, ticks: { color: '#8b98a5', callback: v => v + '%' }, grid: { color: '#2d4055' } }
       }
     }
-  };
-
-  // ===== Gráfico 1 =====
-  const ctx1 = document.getElementById('chartProducao');
-  if (chartProdObj) chartProdObj.destroy();
-  if (ctx1) {
-    chartProdObj = new Chart(ctx1, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Meta (100%)',
-            data: metaConst,
-            borderColor: '#f0883e',
-            backgroundColor: 'rgba(240,136,62,0.1)',
-            borderWidth: 2,
-            borderDash: [6,4],
-            pointRadius: 0,
-            tension: 0
-          },
-          {
-            label: 'Realizado (%)',
-            data: pctProd,
-            borderColor: '#58a6ff',
-            backgroundColor: 'rgba(88,166,255,0.15)',
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#58a6ff',
-            tension: 0.25,
-            fill: true,
-            spanGaps: true
-          }
-        ]
-      },
-      options: baseOpts
-    });
-  }
-
-  // ===== Gráfico 2 =====
-  const ctx2 = document.getElementById('chartHoras');
-  if (chartHoraObj) chartHoraObj.destroy();
-  if (ctx2) {
-    chartHoraObj = new Chart(ctx2, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Meta (100%)',
-            data: metaConst,
-            borderColor: '#f0883e',
-            backgroundColor: 'rgba(240,136,62,0.1)',
-            borderWidth: 2,
-            borderDash: [6,4],
-            pointRadius: 0,
-            tension: 0
-          },
-          {
-            label: 'Realizado (%)',
-            data: pctHoras,
-            borderColor: '#58a6ff',
-            backgroundColor: 'rgba(88,166,255,0.15)',
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#58a6ff',
-            tension: 0.25,
-            fill: true,
-            spanGaps: true
-          }
-        ]
-      },
-      options: baseOpts
-    });
-  }
+  });
 }
 
-function init() {
+// ============ INIT ============
+(async function init() {
   const hoje = new Date();
-  document.getElementById('filtro-mes').value = hoje.toISOString().substring(0,7);
+  const mes = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0');
+  document.getElementById('filtro-mes').value = mes;
   document.getElementById('a-data').value = hoje.toISOString().substring(0,10);
-  loadUser();
-  loadAll();
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.autocomplete')) {
-      document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('show'));
-    }
-  });
-  document.getElementById('modal-finalizar').addEventListener('click', e => {
-    if (e.target.id === 'modal-finalizar') fecharModalFinalizar();
-  });
-}
-init();
+  await loadUser();
+  await loadAll();
+})();
 </script>
+
 </body>
 </html>
+
+<div id="toast"></div>
