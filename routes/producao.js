@@ -46,10 +46,8 @@ async function garantirColunas() {
   try {
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300)');
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS num_op VARCHAR(8)');
-    // 🆕 Apontamentos em 2 etapas
     await pool.query("ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS status_apontamento VARCHAR(20) DEFAULT 'finalizado'");
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(12,4) DEFAULT 0');
-    // Tornar série final opcional no banco
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ALTER COLUMN serie_final DROP NOT NULL').catch(()=>{});
   } catch(e) { /* silencioso */ }
 }
@@ -260,7 +258,7 @@ router.get('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) =>
   }
 });
 
-// 🆕 INICIAR PRODUÇÃO (1ª etapa) — não soma no plano ainda
+// INICIAR PRODUÇÃO (1ª etapa) — não soma no plano ainda
 router.post('/prod-apontamentos-detalhados/iniciar', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -310,7 +308,7 @@ router.post('/prod-apontamentos-detalhados/iniciar', requireAuth, async (req, re
   }
 });
 
-// 🆕 FINALIZAR PRODUÇÃO (2ª etapa) — agora sim soma no plano
+// FINALIZAR PRODUÇÃO (2ª etapa) — soma no plano
 router.post('/prod-apontamentos-detalhados/:id/finalizar', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -423,6 +421,79 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   }
 });
 
+// 🆕 PUT — Ajustar apontamento detalhado (recalcula plano)
+router.put('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    let {
+      data_execucao, turno, celula, serie_inicial, serie_final,
+      categoria, meta, realizado, hora_reportada_total, observacoes
+    } = req.body;
+
+    if (serie_inicial) serie_inicial = String(serie_inicial).trim().toUpperCase();
+    if (serie_final) serie_final = String(serie_final).trim().toUpperCase();
+
+    if (serie_inicial && !validarAlfanumerico(serie_inicial, 13)) {
+      return res.status(400).json({ error: 'Série Inicial inválida (13 caracteres)' });
+    }
+    if (serie_final && !validarAlfanumerico(serie_final, 13)) {
+      return res.status(400).json({ error: 'Série Final inválida (13 caracteres)' });
+    }
+
+    await client.query('BEGIN');
+
+    const atual = await client.query('SELECT * FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
+    if (!atual.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Apontamento não encontrado' });
+    }
+    const old = atual.rows[0];
+    const realizadoNovo = parseFloat(realizado) || 0;
+    const realizadoAntigo = parseFloat(old.realizado) || 0;
+    const diff = realizadoNovo - realizadoAntigo;
+
+    await client.query(
+      `UPDATE prod_apontamentos_detalhados SET
+         data_execucao = COALESCE($1, data_execucao),
+         turno = COALESCE($2, turno),
+         celula = COALESCE($3, celula),
+         serie_inicial = COALESCE($4, serie_inicial),
+         serie_final = $5,
+         categoria = $6,
+         meta = $7,
+         realizado = $8,
+         hora_reportada_total = $9,
+         observacoes = $10
+       WHERE id = $11`,
+      [
+        data_execucao || null, turno || null, celula || null,
+        serie_inicial || null, serie_final || null,
+        categoria || null, meta || 0, realizadoNovo,
+        hora_reportada_total || 0, observacoes || null,
+        req.params.id
+      ]
+    );
+
+    if (old.plano_id && old.status_apontamento !== 'em_andamento' && diff !== 0) {
+      await client.query(
+        'UPDATE prod_planos SET realizado = GREATEST(COALESCE(realizado,0) + $1, 0) WHERE id=$2',
+        [diff, old.plano_id]
+      );
+      await atualizarStatusPlano(old.plano_id, client);
+    }
+
+    await client.query('COMMIT');
+    const r = await pool.query('SELECT * FROM prod_apontamentos_detalhados WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('PUT /prod-apontamentos-detalhados/:id', err);
+    res.status(500).json({ error: 'Erro ao ajustar apontamento: ' + err.message });
+  } finally {
+    client.release();
+  }
+});
+
 router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -433,7 +504,6 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
       return res.status(404).json({ error: 'Apontamento não encontrado' });
     }
     const a = ap.rows[0];
-    // Só subtrai se estava finalizado (em andamento não somou ainda)
     if (a.plano_id && a.status_apontamento !== 'em_andamento') {
       await client.query(
         'UPDATE prod_planos SET realizado = GREATEST(COALESCE(realizado,0) - $1, 0) WHERE id=$2',
