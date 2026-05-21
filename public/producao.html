@@ -591,12 +591,32 @@ async function logout(){
 // TABS
 // =========================================================
 function showTab(tab, ev){
-  // mapeia nomes antigos → nomes novos (compatibilidade)
-  const alias = {
-    'planos': 'plano',
-    'apontar': 'apontamento',
-    'apontamentos': 'apontamento'
-  };
+  // Esconde todas as seções
+  document.querySelectorAll('.section').forEach(s=>{
+    s.classList.remove('show');
+    s.style.display = 'none';
+  });
+
+  // Mostra a seção pedida (ID = sec-<tab>)
+  const sec = document.getElementById('sec-' + tab);
+  if (sec){
+    sec.classList.add('show');
+    sec.style.display = 'block';
+  } else {
+    console.warn('Seção não encontrada: sec-' + tab);
+  }
+
+  // Marca o botão ativo
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+
+  // Renderiza conteúdo dinâmico
+  try {
+    if (tab==='dashboard') renderDashboard();
+    if (tab==='config' && typeof renderOverrides==='function') renderOverrides();
+  } catch(e){ console.error('Erro ao renderizar aba', tab, e); }
+};
+
   const nome = alias[tab] || tab;
 
   // tenta esconder seções de TODOS os formatos possíveis
