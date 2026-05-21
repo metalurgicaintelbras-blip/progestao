@@ -590,19 +590,44 @@ async function logout(){
 // =========================================================
 // TABS
 // =========================================================
-function showTab(tab){
-  document.querySelectorAll('.tab-content').forEach(s=>s.style.display='none');
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const sec = document.getElementById('tab-'+tab);
-  if (sec) sec.style.display='block';
-  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-  if (btn) btn.classList.add('active');
-  try {
-    if (tab==='dashboard') renderDashboard();
-    if (tab==='config') renderOverrides();
-  } catch(e) {
-    console.error('Erro ao renderizar aba', tab, e);
+function showTab(tab, ev){
+  // mapeia nomes antigos → nomes novos (compatibilidade)
+  const alias = {
+    'planos': 'plano',
+    'apontar': 'apontamento',
+    'apontamentos': 'apontamento'
+  };
+  const nome = alias[tab] || tab;
+
+  // tenta esconder seções de TODOS os formatos possíveis
+  document.querySelectorAll('.tab-content, .tab-pane, .aba').forEach(s=>s.style.display='none');
+
+  // esconde por id também (formatos antigos sem classe)
+  ['dashboard','plano','planos','apontamento','apontar','apontamentos','produtos','config','tab-dashboard','tab-plano','tab-apontamento','tab-produtos','tab-config']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display='none'; });
+
+  // tenta mostrar a seção pedida (com e sem prefixo tab-)
+  const candidatos = [nome, 'tab-'+nome, tab, 'tab-'+tab];
+  let mostrou = false;
+  for (const id of candidatos){
+    const el = document.getElementById(id);
+    if (el){ el.style.display = 'block'; mostrou = true; break; }
   }
+  if (!mostrou) console.warn('Aba não encontrada:', tab);
+
+  // marca o botão ativo (suporta classe tab-btn ou tab)
+  document.querySelectorAll('.tab-btn, .tab').forEach(b=>b.classList.remove('active'));
+  if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
+  else {
+    const btn = document.querySelector(`.tab-btn[data-tab="${tab}"], .tab[data-tab="${tab}"]`);
+    if (btn) btn.classList.add('active');
+  }
+
+  // renderiza conteúdo da aba
+  try {
+    if (nome==='dashboard') renderDashboard();
+    if (nome==='config') renderOverrides();
+  } catch(e) { console.error('Erro ao renderizar aba', tab, e); }
 }
 
 // =========================================================
