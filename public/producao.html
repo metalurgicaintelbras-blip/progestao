@@ -77,6 +77,8 @@ table tr:hover{background:var(--panel2)}
 .modal .info-box strong{color:var(--blue)}
 .dash-filters{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;background:var(--panel2);padding:12px 14px;border-radius:6px;margin-bottom:14px}
 .dash-filters .form-group{min-width:180px}
+.dist-meta{background:#0d1419;border:1px dashed var(--border);border-radius:6px;padding:12px;margin-top:10px}
+.dist-meta .form-row{margin-bottom:6px}
 @media(max-width:768px){.sidebar{width:60px}.sidebar a{padding:10px;text-align:center;font-size:10px}}
 </style>
 </head>
@@ -115,6 +117,7 @@ table tr:hover{background:var(--panel2)}
       <button class="tab" onclick="showTab('planos',event)">📋 Plano Mensal</button>
       <button class="tab" onclick="showTab('apontar',event)">✏️ Apontamento Diário</button>
       <button class="tab" onclick="showTab('produtos',event)">🗂️ Produtos</button>
+      <button class="tab" onclick="showTab('config',event)">⚙️ Config</button>
     </div>
 
     <!-- ============ DASHBOARD ============ -->
@@ -145,14 +148,12 @@ table tr:hover{background:var(--panel2)}
               <option value="total">Total</option>
               <option value="Célula 01">Célula 01</option>
               <option value="Célula 02">Célula 02</option>
-              <option value="Célula 03">Célula 03</option>
-              <option value="Célula 04">Célula 04</option>
             </select>
           </div>
-          <div style="font-size:11px;color:var(--text2);max-width:260px;line-height:1.4">
-            <strong>Meta diária (qtd)</strong> = soma das metas dos planos do dia.<br>
-            <strong>Meta hora</strong> = Σ pessoas × horas (fixo).<br>
-            <strong>% = Realizado ÷ Meta × 100</strong>
+          <div style="font-size:11px;color:var(--text2);max-width:280px;line-height:1.4">
+            <strong>Meta qtd</strong>: filtrada por turno/célula via campos do plano.<br>
+            <strong>Meta hora</strong>: pessoas × horas (com override quando houver).<br>
+            <strong>Dias sem plano</strong> não aparecem.
           </div>
         </div>
       </div>
@@ -163,7 +164,7 @@ table tr:hover{background:var(--panel2)}
       </div>
 
       <div class="card">
-        <div class="card-title">⏱️ Hora Reportada Diária (%) — Meta vs Realizado</div>
+        <div class="card-title">⏱️ Hora Reportada Diária (horas) — Meta vs Realizado</div>
         <canvas id="chartHoras" style="max-height:320px"></canvas>
       </div>
 
@@ -173,7 +174,7 @@ table tr:hover{background:var(--panel2)}
       </div>
 
       <div class="card">
-        <div class="card-title">⏰ Hora Reportada Acumulada Mensal (%) — Σ Horas Reais ÷ Σ Meta Horas</div>
+        <div class="card-title">⏰ Hora Acumulada Mensal (horas) — Σ Horas Reais vs Σ Meta Horas</div>
         <canvas id="chartHorasAcum" style="max-height:320px"></canvas>
       </div>
 
@@ -208,13 +209,40 @@ table tr:hover{background:var(--panel2)}
             <input type="text" id="p-descricao" readonly>
           </div>
           <div class="form-group">
-            <label>Meta Mensal *</label>
-            <input type="number" id="p-meta" step="0.01" min="0">
+            <label>Categoria (produto)</label>
+            <input type="text" id="p-categoria" readonly>
+          </div>
+          <div class="form-group">
+            <label>Meta Mensal Total *</label>
+            <input type="number" id="p-meta" step="0.01" min="0" oninput="atualizarSomaDistribuicao()">
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+
+        <!-- Distribuição por turno/célula -->
+        <div id="p-distribuicao-wrap" class="dist-meta" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <strong style="font-size:12px;color:var(--blue)">📊 Distribuição da meta por turno e célula</strong>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" class="btn-sm btn-ghost" onclick="distribuirIgualmente()" style="padding:4px 10px;font-size:11px">Dividir igualmente</button>
+              <button type="button" class="btn-sm btn-ghost" onclick="distribuirPorHoras()" style="padding:4px 10px;font-size:11px">Distribuir por horas (21/21/19,5/19,5)</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>T1 Célula 01</label><input type="number" id="p-meta-t1c01" step="0.01" min="0" oninput="atualizarSomaDistribuicao()"></div>
+            <div class="form-group"><label>T1 Célula 02</label><input type="number" id="p-meta-t1c02" step="0.01" min="0" oninput="atualizarSomaDistribuicao()"></div>
+            <div class="form-group"><label>T2 Célula 01</label><input type="number" id="p-meta-t2c01" step="0.01" min="0" oninput="atualizarSomaDistribuicao()"></div>
+            <div class="form-group"><label>T2 Célula 02</label><input type="number" id="p-meta-t2c02" step="0.01" min="0" oninput="atualizarSomaDistribuicao()"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text2)">
+            Soma distribuída: <strong id="p-dist-soma">0</strong> | Meta total: <strong id="p-dist-total">0</strong>
+            <span id="p-dist-aviso" style="margin-left:8px"></span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
           <button class="btn-sm btn-accent" onclick="salvarPlano()">💾 Salvar Plano</button>
           <button class="btn-sm btn-ghost" onclick="limparPlano()">Cancelar</button>
+          <button class="btn-sm btn-blue" id="btn-toggle-dist" onclick="toggleDistribuicaoManual()" style="display:none">📊 Mostrar/Ocultar distribuição</button>
         </div>
       </div>
 
@@ -222,7 +250,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">📋 Produtos do Mês</div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Data</th><th>N° OP</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Meta</th><th>Realizado</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data</th><th>N° OP</th><th>Cód. Décio</th><th>Cód. Intelbras</th><th>Descrição</th><th>Cat.</th><th>Meta</th><th>T1-C01</th><th>T1-C02</th><th>T2-C01</th><th>T2-C02</th><th>Realiz.</th><th>%</th><th>Status</th><th>Ações</th></tr></thead>
             <tbody id="tb-planos"></tbody>
           </table>
         </div>
@@ -237,28 +265,16 @@ table tr:hover{background:var(--panel2)}
           Preencha os campos do <strong style="color:var(--blue)">início</strong> da produção. Série Final e Realizado serão preenchidos depois ao finalizar.
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Data de Execução *</label>
-            <input type="date" id="a-data">
+          <div class="form-group"><label>Data de Execução *</label><input type="date" id="a-data"></div>
+          <div class="form-group"><label>Turno *</label>
+            <select id="a-turno"><option value="">Selecione...</option><option value="1">1º Turno</option><option value="2">2º Turno</option></select>
           </div>
-          <div class="form-group">
-            <label>Turno *</label>
-            <select id="a-turno">
-              <option value="">Selecione...</option>
-              <option value="1">1º Turno</option>
-              <option value="2">2º Turno</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Célula *</label>
+          <div class="form-group"><label>Célula *</label>
             <select id="a-celula">
               <option value="">Selecione...</option>
-              <option value="Célula 01">Célula 01</option>
-              <option value="Célula 02">Célula 02</option>
-              <option value="Célula 03">Célula 03</option>
-              <option value="Célula 04">Célula 04</option>
-              <option value="Hora Extra">Hora Extra</option>
-              <option value="Previsão Falta">Previsão Falta</option>
+              <option value="Célula 01">Célula 01</option><option value="Célula 02">Célula 02</option>
+              <option value="Célula 03">Célula 03</option><option value="Célula 04">Célula 04</option>
+              <option value="Hora Extra">Hora Extra</option><option value="Previsão Falta">Previsão Falta</option>
             </select>
           </div>
           <div class="form-group">
@@ -279,36 +295,19 @@ table tr:hover{background:var(--panel2)}
             <input type="text" id="a-cod-decio" oninput="autocompleteApont(this.value)" autocomplete="off">
             <div class="autocomplete-list" id="apont-ac-list"></div>
           </div>
-          <div class="form-group">
-            <label>Código Intelbras</label>
-            <input type="text" id="a-cod-intelbras" readonly>
-          </div>
-          <div class="form-group">
-            <label>Descrição</label>
-            <input type="text" id="a-descricao" readonly>
-          </div>
-          <div class="form-group">
-            <label>Categoria (editável)</label>
+          <div class="form-group"><label>Código Intelbras</label><input type="text" id="a-cod-intelbras" readonly></div>
+          <div class="form-group"><label>Descrição</label><input type="text" id="a-descricao" readonly></div>
+          <div class="form-group"><label>Categoria (editável)</label>
             <select id="a-categoria">
               <option value="">Selecione...</option>
-              <option>Parede</option>
-              <option>Piso</option>
-              <option>Acessórios</option>
-              <option>Luiz</option>
-              <option>Outro</option>
+              <option>Parede</option><option>Piso</option><option>Acessórios</option><option>Luiz</option><option>Outro</option>
             </select>
           </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group">
-            <label>Meta (opcional)</label>
-            <input type="number" id="a-meta" step="0.01" min="0" placeholder="Pode preencher depois">
-          </div>
-          <div class="form-group" style="grid-column:span 2">
-            <label>Observações</label>
-            <textarea id="a-obs" placeholder="Observações sobre o início da produção..."></textarea>
-          </div>
+          <div class="form-group"><label>Meta (opcional)</label><input type="number" id="a-meta" step="0.01" min="0" placeholder="Pode preencher depois"></div>
+          <div class="form-group" style="grid-column:span 2"><label>Observações</label><textarea id="a-obs"></textarea></div>
         </div>
 
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -321,10 +320,7 @@ table tr:hover{background:var(--panel2)}
         <div class="card-title">🔄 Apontamentos em Andamento <span id="qtd-andamento" style="margin-left:6px;color:var(--text2);font-weight:500">(0)</span></div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr>
-              <th>Data</th><th>Turno</th><th>Célula</th><th>N° OP</th><th>Série Ini</th>
-              <th>Cód. Décio</th><th>Descrição</th><th>Meta</th><th>Ações</th>
-            </tr></thead>
+            <thead><tr><th>Data</th><th>Turno</th><th>Célula</th><th>N° OP</th><th>Série Ini</th><th>Cód. Décio</th><th>Descrição</th><th>Meta</th><th>Ações</th></tr></thead>
             <tbody id="tb-apont-andamento"></tbody>
           </table>
         </div>
@@ -352,11 +348,7 @@ table tr:hover{background:var(--panel2)}
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr>
-              <th>Data</th><th>Turno</th><th>Célula</th><th>N° OP</th><th>Série Ini</th><th>Série Fim</th>
-              <th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Categoria</th>
-              <th>Meta</th><th>Realizado</th><th>Hora Total</th><th>Obs.</th><th>Ações</th>
-            </tr></thead>
+            <thead><tr><th>Data</th><th>Turno</th><th>Célula</th><th>N° OP</th><th>Série Ini</th><th>Série Fim</th><th>Cód. Décio</th><th>Cód. Intel.</th><th>Descrição</th><th>Categoria</th><th>Meta</th><th>Realizado</th><th>Hora Total</th><th>Obs.</th><th>Ações</th></tr></thead>
             <tbody id="tb-apont-det"></tbody>
           </table>
         </div>
@@ -398,6 +390,60 @@ table tr:hover{background:var(--panel2)}
       </div>
     </div>
 
+    <!-- ============ CONFIG ============ -->
+    <div class="section" id="sec-config">
+      <div class="card">
+        <div class="card-title">⚙️ Configuração de Meta de Horas (fixa)</div>
+        <div style="background:var(--panel2);border-left:3px solid var(--blue);padding:10px 12px;margin-bottom:14px;font-size:12px;border-radius:4px;color:var(--text2)">
+          Quantidade de pessoas × horas/pessoa por categoria, turno e célula. Edite e clique em 💾 para atualizar.
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Categoria</th><th>Turno</th><th>Célula</th><th>Pessoas</th><th>Horas/Pessoa</th><th>Total (h)</th><th>Ações</th></tr></thead>
+            <tbody id="tb-meta-config"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📅 Override de Meta-Hora por dia (eventos, meio expediente etc.)</div>
+        <div style="background:var(--panel2);border-left:3px solid var(--orange);padding:10px 12px;margin-bottom:14px;font-size:12px;border-radius:4px;color:var(--text2)">
+          Use isto quando a meta de horas de um dia específico for diferente do padrão (ex.: meio expediente, evento, treinamento). O valor digitado em <strong>Horas</strong> substitui o cálculo fixo para aquele dia/categoria/turno/célula.
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Data *</label><input type="date" id="ov-data"></div>
+          <div class="form-group"><label>Categoria *</label>
+            <select id="ov-categoria" onchange="onChangeOvCategoria()">
+              <option value="">Selecione...</option>
+              <option>Piso</option><option>Parede</option>
+            </select>
+          </div>
+          <div class="form-group" id="ov-turno-wrap" style="display:none"><label>Turno</label>
+            <select id="ov-turno">
+              <option value="">Todos</option><option value="1">Turno 1</option><option value="2">Turno 2</option>
+            </select>
+          </div>
+          <div class="form-group" id="ov-celula-wrap" style="display:none"><label>Célula</label>
+            <select id="ov-celula">
+              <option value="">Todas</option><option>Célula 01</option><option>Célula 02</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Horas (meta do dia) *</label><input type="number" id="ov-horas" step="0.01" min="0" placeholder="Ex: 21"></div>
+          <div class="form-group"><label>Motivo</label><input type="text" id="ov-motivo" placeholder="Ex: Treinamento, evento, meio expediente"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn-sm btn-accent" onclick="salvarOverride()">💾 Adicionar / Atualizar Override</button>
+          <button class="btn-sm btn-ghost" onclick="limparOverride()">Limpar</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Data</th><th>Categoria</th><th>Turno</th><th>Célula</th><th>Horas</th><th>Motivo</th><th>Ações</th></tr></thead>
+            <tbody id="tb-overrides"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -413,20 +459,11 @@ table tr:hover{background:var(--panel2)}
         <input type="text" id="fin-serie-fim" maxlength="13" oninput="validarDigitos(this,13)">
         <small class="hint" id="hint-fin-sfim">Digite 13 caracteres (letras/números)</small>
       </div>
-      <div class="form-group">
-        <label>Realizado *</label>
-        <input type="number" id="fin-realizado" step="0.01" min="0" oninput="calcularHoraTotalFin()">
-      </div>
-      <div class="form-group">
-        <label>Hora Reportada Total</label>
-        <input type="text" id="fin-hora-total" readonly>
-      </div>
+      <div class="form-group"><label>Realizado *</label><input type="number" id="fin-realizado" step="0.01" min="0" oninput="calcularHoraTotalFin()"></div>
+      <div class="form-group"><label>Hora Reportada Total</label><input type="text" id="fin-hora-total" readonly></div>
     </div>
     <div class="form-row">
-      <div class="form-group" style="grid-column:1/-1">
-        <label>Observações (opcional)</label>
-        <textarea id="fin-obs"></textarea>
-      </div>
+      <div class="form-group" style="grid-column:1/-1"><label>Observações (opcional)</label><textarea id="fin-obs"></textarea></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn-sm btn-ghost" onclick="fecharModalFinalizar()">Cancelar</button>
@@ -440,7 +477,7 @@ table tr:hover{background:var(--panel2)}
   <div class="modal" style="max-width:680px">
     <h3>✏️ Ajustar Apontamento</h3>
     <div class="info-box">
-      Ao salvar, o valor antigo de <strong>Realizado</strong> será subtraído do plano vinculado e o novo valor somado. O status do plano é recalculado.
+      Ao salvar, o valor antigo de <strong>Realizado</strong> será subtraído do plano vinculado e o novo valor somado.
     </div>
     <input type="hidden" id="aj-id">
     <input type="hidden" id="aj-realizado-old">
@@ -488,760 +525,683 @@ table tr:hover{background:var(--panel2)}
 
 <div id="toast"></div>
 <script>
-let planos = [], apontamentos = [], apontamentosDet = [], produtos = [];
+// =========================================================
+// CONFIG GLOBAL
+// =========================================================
+const API = '';
+let planos = [];
+let apontamentos = [];
+let apontamentosDet = [];
+let produtos = [];
 let metaHorasConfig = [];
-const _charts = {};
+let metaHorasOverride = [];
+let usuarioLogado = null;
+let chartProducao = null, chartHoras = null, chartAcumulado = null, chartHorasAcum = null;
+let mesAtual = (new Date()).toISOString().substring(0,7);
 
-async function api(url, opts = {}) {
-  opts.headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
-  if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
-  const r = await fetch('/api' + url, opts);
-  if (!r.ok) {
-    let msg = 'Erro na requisição';
-    try { const j = await r.json(); msg = j.error || msg; } catch(e){}
-    throw new Error(msg);
-  }
-  return r.json();
+// =========================================================
+// HELPERS
+// =========================================================
+async function api(path, opts={}) {
+  const r = await fetch(API + path, { credentials:'include', headers:{'Content-Type':'application/json'}, ...opts });
+  if (!r.ok) { const t = await r.text().catch(()=>''); throw new Error(t || r.statusText); }
+  const ct = r.headers.get('content-type') || '';
+  return ct.includes('application/json') ? r.json() : r.text();
 }
-
-function toast(msg, type = 'ok') {
+function toast(msg, tipo='ok') {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = type === 'error' ? 'show error' : type === 'warn' ? 'show warn' : 'show';
-  setTimeout(() => t.className = '', 4500);
+  t.textContent = msg; t.className = 'toast ' + tipo; t.style.display='block';
+  setTimeout(()=>{ t.style.display='none'; }, 3000);
 }
+function fmtData(d){ if(!d) return ''; const x = new Date(d); return x.toLocaleDateString('pt-BR'); }
+function fmtDataISO(d){ if(!d) return ''; return String(d).substring(0,10); }
+function fmtNum(n, casas=2){ const v = parseFloat(n)||0; return v.toLocaleString('pt-BR',{minimumFractionDigits:casas, maximumFractionDigits:casas}); }
+function pad2(n){ return String(n).padStart(2,'0'); }
 
-function updateClock() {
+// =========================================================
+// CLOCK + USER
+// =========================================================
+function tickClock(){
+  const el = document.getElementById('clock');
+  if (!el) return;
   const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  el.textContent = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR');
 }
-setInterval(updateClock, 30000);
-updateClock();
+setInterval(tickClock, 1000); tickClock();
 
-async function loadUser() {
-  try {
+async function loadUser(){
+  try{
     const u = await api('/me');
-    document.getElementById('user-name').textContent = u.nome || u.username || 'Usuário';
-  } catch(e) {
-    document.getElementById('user-name').textContent = 'Usuário';
-  }
+    usuarioLogado = u;
+    const el = document.getElementById('userName');
+    if (el) el.textContent = u.nome || u.email || 'Usuário';
+  }catch(e){ console.warn('user', e.message); }
 }
-async function logout() { await fetch('/api/logout', { method:'POST' }); window.location.href = '/login'; }
-
-function showTab(name, ev) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('show'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('sec-' + name).classList.add('show');
-  if (ev) ev.target.classList.add('active');
-  if (name === 'produtos') renderProdutos();
-  if (name === 'apontar') { renderApontamentosDet(); renderApontamentosAndamento(); }
-  if (name === 'dashboard') renderDashboard();
+async function logout(){
+  try{ await api('/logout', {method:'POST'}); }catch(e){}
+  location.href = '/login.html';
 }
 
-function fmtData(d) {
-  if (!d) return '-';
-  const s = String(d).substring(0,10);
-  const [ano, mes, dia] = s.split('-');
-  return `${dia}/${mes}/${ano}`;
-}
-function fmtNum(n) { return Number(n||0).toLocaleString('pt-BR', { maximumFractionDigits:2 }); }
-function badgeStatus(s) {
-  if (s === 'concluido') return '<span class="badge green">✅ Concluído</span>';
-  if (s === 'atrasado') return '<span class="badge red">⚠️ Atrasado</span>';
-  return '<span class="badge blue">🔄 Em Andamento</span>';
-}
-
-function calcStatus(plano) {
-  const meta = Number(plano.meta) || 0;
-  const realizado = Number(plano.realizado) || 0;
-  const pct = meta > 0 ? (realizado / meta) * 100 : 0;
-  if (pct >= 100) return 'concluido';
-  if (plano.data_limite) {
-    const dataLimiteStr = String(plano.data_limite).substring(0,10);
-    const hoje = new Date();
-    const hojeStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
-    if (dataLimiteStr < hojeStr) return 'atrasado';
-  }
-  return 'em_andamento';
+// =========================================================
+// TABS
+// =========================================================
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(s=>s.style.display='none');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const sec = document.getElementById('tab-'+tab);
+  if (sec) sec.style.display='block';
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.classList.add('active');
+  if (tab==='dashboard') renderDashboard();
+  if (tab==='config') renderOverrides();
 }
 
-function validarDigitos(input, qtd) {
-  if (input.id === 'a-num-op') {
-    input.value = input.value.replace(/\D/g, '');
-  } else {
-    input.value = input.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  }
-  const ok = input.value.length === qtd;
-  input.classList.toggle('valid', ok);
-  input.classList.toggle('invalid', input.value.length > 0 && !ok);
-  let hintId = '';
-  if (input.id === 'a-num-op') hintId = 'hint-op';
-  else if (input.id === 'a-serie-ini') hintId = 'hint-sini';
-  else if (input.id === 'fin-serie-fim') hintId = 'hint-fin-sfim';
-  if (hintId) {
-    const h = document.getElementById(hintId);
-    if (ok) { h.textContent = '✓ OK'; h.classList.remove('error'); }
-    else if (input.value.length === 0) {
-      h.textContent = input.id === 'a-num-op'
-        ? `Digite ${qtd} dígitos numéricos`
-        : `Digite ${qtd} caracteres (letras/números)`;
-      h.classList.remove('error');
-    }
-    else { h.textContent = `Faltam ${qtd - input.value.length} caractere(s)`; h.classList.add('error'); }
-  }
+// =========================================================
+// LOAD ALL
+// =========================================================
+async function loadAll(){
+  try{
+    const [pl, ap, apd, pr, mhc, mho] = await Promise.all([
+      api('/prod-planos?mes='+mesAtual),
+      api('/prod-apontamentos?mes='+mesAtual),
+      api('/prod-apontamentos-detalhados?mes='+mesAtual),
+      api('/prod-produtos'),
+      api('/prod-meta-horas-config'),
+      api('/prod-meta-horas-override?mes='+mesAtual)
+    ]);
+    planos = pl || []; apontamentos = ap || []; apontamentosDet = apd || [];
+    produtos = pr || []; metaHorasConfig = mhc || []; metaHorasOverride = mho || [];
+    renderPlanos(); renderApontamentosDet(); renderProdutos(); renderDashboard();
+  }catch(e){ toast('Erro ao carregar: '+e.message, 'err'); }
 }
 
-async function loadAll() {
-  const mes = document.getElementById('filtro-mes').value;
-  try {
-    const url = mes ? '/prod-planos?mes=' + mes : '/prod-planos';
-    planos = await api(url).catch(()=>[]);
-    apontamentos = await api('/prod-apontamentos' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
-    apontamentosDet = await api('/prod-apontamentos-detalhados' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
-    produtos = await api('/prod-produtos').catch(()=>[]);
-    metaHorasConfig = await api('/prod-meta-horas-config').catch(()=>[]);
-    renderPlanos();
-    renderDashboard();
-    renderApontamentosDet();
-    renderApontamentosAndamento();
-  } catch(e) {
-    console.error(e);
-    toast('Erro ao carregar dados: ' + e.message, 'error');
-  }
+function onMesChange(){
+  const inp = document.getElementById('filtroMes');
+  if (inp && inp.value) { mesAtual = inp.value; loadAll(); }
 }
 
-// ============ AUTOCOMPLETE ============
-function autocompletePlano(q) {
-  const list = document.getElementById('plano-ac-list');
-  if (!q || q.length < 1) { list.classList.remove('show'); return; }
-  const ql = q.toLowerCase();
-  const matches = produtos.filter(p =>
-    (p.cod_decio||'').toLowerCase().includes(ql) ||
-    (p.cod_intelbras||'').toLowerCase().includes(ql) ||
-    (p.descricao||'').toLowerCase().includes(ql)
-  ).slice(0,10);
-  if (!matches.length) { list.classList.remove('show'); return; }
-  list.innerHTML = matches.map(p =>
-    `<div class="autocomplete-item" onclick="selecionarProdutoPlano('${p.cod_decio}')">
-      <strong>${p.cod_decio}</strong> | ${p.cod_intelbras||'-'} | ${p.descricao||'-'}
-    </div>`).join('');
-  list.classList.add('show');
-}
-function selecionarProdutoPlano(decio) {
-  const p = produtos.find(x => x.cod_decio === decio);
-  if (!p) return;
-  document.getElementById('p-cod-decio').value = p.cod_decio;
-  document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('p-descricao').value = p.descricao || '';
-  document.getElementById('plano-ac-list').classList.remove('show');
+// =========================================================
+// PLANO MENSAL
+// =========================================================
+function toggleDistribuicaoParede(){
+  const cat = (document.getElementById('planoCategoria')||{}).value || '';
+  const box = document.getElementById('boxDistribuicaoParede');
+  if (!box) return;
+  box.style.display = (cat === 'Parede') ? 'block' : 'none';
 }
 
-function autocompleteApont(q) {
-  const list = document.getElementById('apont-ac-list');
-  if (!q || q.length < 1) { list.classList.remove('show'); return; }
-  const ql = q.toLowerCase();
-  const matches = produtos.filter(p =>
-    (p.cod_decio||'').toLowerCase().includes(ql) ||
-    (p.cod_intelbras||'').toLowerCase().includes(ql) ||
-    (p.descricao||'').toLowerCase().includes(ql)
-  ).slice(0,10);
-  if (!matches.length) { list.classList.remove('show'); return; }
-  list.innerHTML = matches.map(p =>
-    `<div class="autocomplete-item" onclick="selecionarProdutoApont('${p.cod_decio}')">
-      <strong>${p.cod_decio}</strong> | ${p.cod_intelbras||'-'} | ${p.descricao||'-'}
-    </div>`).join('');
-  list.classList.add('show');
-}
-function selecionarProdutoApont(decio) {
-  const p = produtos.find(x => x.cod_decio === decio);
-  if (!p) return;
-  document.getElementById('a-cod-decio').value = p.cod_decio;
-  document.getElementById('a-cod-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('a-descricao').value = p.descricao || '';
-  document.getElementById('a-categoria').value = p.categoria || '';
-  document.getElementById('a-cod-decio').dataset.horaRep = p.hora_reportado || 0;
-  document.getElementById('apont-ac-list').classList.remove('show');
-}
-
-function calcularHoraTotalFin() {
-  const id = document.getElementById('fin-id').value;
-  const ap = apontamentosDet.find(x => String(x.id) === String(id));
-  const hr = ap ? (parseFloat(ap.hora_reportado) || 0) : 0;
-  const real = parseFloat(document.getElementById('fin-realizado').value || 0);
-  const total = hr * real;
-  document.getElementById('fin-hora-total').value = total.toFixed(4) + ' h';
+async function salvarPlano(){
+  const data = document.getElementById('planoData').value;
+  const numOp = (document.getElementById('planoNumOp').value||'').trim();
+  const codDecio = (document.getElementById('planoCodDecio').value||'').trim().toUpperCase();
+  const codIntel = (document.getElementById('planoCodIntel').value||'').trim().toUpperCase();
+  const produto = (document.getElementById('planoProduto').value||'').trim();
+  const meta = parseFloat(document.getElementById('planoMeta').value)||0;
+  const categoria = (document.getElementById('planoCategoria')||{}).value || '';
+  const mt1c01 = parseFloat((document.getElementById('planoMetaT1C01')||{}).value)||0;
+  const mt1c02 = parseFloat((document.getElementById('planoMetaT1C02')||{}).value)||0;
+  const mt2c01 = parseFloat((document.getElementById('planoMetaT2C01')||{}).value)||0;
+  const mt2c02 = parseFloat((document.getElementById('planoMetaT2C02')||{}).value)||0;
+  if (!data){ toast('Informe a data limite','err'); return; }
+  if (!/^\d{8}$/.test(numOp)){ toast('N° OP deve ter 8 dígitos','err'); return; }
+  if (!codDecio){ toast('Informe o código Décio','err'); return; }
+  if (meta<=0){ toast('Informe a meta mensal','err'); return; }
+  const body = {
+    data_limite:data, num_op:numOp, cod_decio:codDecio, cod_intelbras:codIntel,
+    produto, meta, categoria,
+    meta_t1_c01:mt1c01, meta_t1_c02:mt1c02, meta_t2_c01:mt2c01, meta_t2_c02:mt2c02
+  };
+  try{
+    const editId = document.getElementById('planoEditId').value;
+    if (editId){ await api('/prod-planos/'+editId, {method:'PUT', body:JSON.stringify(body)}); toast('Plano atualizado'); }
+    else { await api('/prod-planos', {method:'POST', body:JSON.stringify(body)}); toast('Plano criado'); }
+    cancelarPlano(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 
-// ============ PLANO MENSAL ============
-async function salvarPlano() {
-  const data_limite = document.getElementById('p-data-limite').value;
-  const num_op = document.getElementById('p-num-op').value.trim();
-  const cod_decio = document.getElementById('p-cod-decio').value.trim();
-  const cod_intelbras = document.getElementById('p-cod-intelbras').value.trim();
-  const descricao = document.getElementById('p-descricao').value.trim();
-  const meta = parseFloat(document.getElementById('p-meta').value || 0);
-  if (!data_limite) return toast('Informe a data', 'error');
-  if (!cod_decio) return toast('Informe o código Décio', 'error');
-  if (meta <= 0) return toast('Informe uma meta válida', 'error');
-  if (num_op && !/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos numéricos (ou deixe em branco)', 'error');
-  const editId = document.getElementById('plano-edit-id').value;
-  try {
-    const body = { data_limite, cod_decio, cod_intelbras, descricao, meta, num_op: num_op || null };
-    if (editId) {
-      await api('/prod-planos/' + editId, { method:'PUT', body });
-      toast('Plano atualizado!');
-    } else {
-      await api('/prod-planos', { method:'POST', body });
-      toast('Plano salvo!');
-    }
-    limparPlano();
-    loadAll();
-  } catch(e) { toast('Erro: ' + e.message, 'error'); }
+function cancelarPlano(){
+  ['planoData','planoNumOp','planoCodDecio','planoCodIntel','planoProduto','planoMeta',
+   'planoMetaT1C01','planoMetaT1C02','planoMetaT2C01','planoMetaT2C02','planoEditId']
+   .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const cat=document.getElementById('planoCategoria'); if(cat) cat.value='';
+  toggleDistribuicaoParede();
 }
-function limparPlano() {
-  document.getElementById('plano-edit-id').value = '';
-  document.getElementById('p-data-limite').value = '';
-  document.getElementById('p-num-op').value = '';
-  document.getElementById('p-cod-decio').value = '';
-  document.getElementById('p-cod-intelbras').value = '';
-  document.getElementById('p-descricao').value = '';
-  document.getElementById('p-meta').value = '';
+
+async function editarPlano(id){
+  try{
+    const p = await api('/prod-planos/'+id);
+    document.getElementById('planoEditId').value = p.id;
+    document.getElementById('planoData').value = fmtDataISO(p.data_limite);
+    document.getElementById('planoNumOp').value = p.num_op||'';
+    document.getElementById('planoCodDecio').value = p.cod_decio||'';
+    document.getElementById('planoCodIntel').value = p.cod_intelbras||'';
+    document.getElementById('planoProduto').value = p.produto||'';
+    document.getElementById('planoMeta').value = p.meta||0;
+    const cat=document.getElementById('planoCategoria'); if(cat) cat.value=p.categoria||'';
+    document.getElementById('planoMetaT1C01').value = p.meta_t1_c01||0;
+    document.getElementById('planoMetaT1C02').value = p.meta_t1_c02||0;
+    document.getElementById('planoMetaT2C01').value = p.meta_t2_c01||0;
+    document.getElementById('planoMetaT2C02').value = p.meta_t2_c02||0;
+    toggleDistribuicaoParede();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){ toast('Erro: '+e.message,'err'); }
 }
-function editarPlano(id) {
-  const p = planos.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById('plano-edit-id').value = p.id;
-  document.getElementById('p-data-limite').value = p.data_limite ? String(p.data_limite).substring(0,10) : '';
-  document.getElementById('p-num-op').value = p.num_op || '';
-  document.getElementById('p-cod-decio').value = p.cod_decio || '';
-  document.getElementById('p-cod-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('p-descricao').value = p.descricao || '';
-  document.getElementById('p-meta').value = p.meta || '';
-  window.scrollTo({ top:0, behavior:'smooth' });
+
+async function excluirPlano(id){
+  if (!confirm('Excluir plano?')) return;
+  try{ await api('/prod-planos/'+id, {method:'DELETE'}); toast('Plano excluído'); loadAll(); }
+  catch(e){ toast('Erro: '+e.message,'err'); }
 }
-async function excluirPlano(id) {
-  if (!confirm('Excluir este plano? Isto NÃO exclui os apontamentos detalhados já feitos.')) return;
-  try { await api('/prod-planos/' + id, { method:'DELETE' }); toast('Plano excluído'); loadAll(); }
-  catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-function renderPlanos() {
-  const tb = document.getElementById('tb-planos');
-  if (!planos.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Nenhum plano cadastrado.</td></tr>'; return; }
-  tb.innerHTML = planos.map(p => {
+
+function renderPlanos(){
+  const tb = document.querySelector('#tblPlanos tbody'); if (!tb) return;
+  tb.innerHTML='';
+  planos.forEach(p=>{
     const meta = parseFloat(p.meta)||0;
     const real = parseFloat(p.realizado)||0;
-    const pct = meta > 0 ? (real/meta)*100 : 0;
-    const status = calcStatus(p);
-    return `<tr>
+    const pct = meta>0 ? (real/meta*100) : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
       <td>${fmtData(p.data_limite)}</td>
-      <td>${p.num_op ? '<strong>'+p.num_op+'</strong>' : '<span style="color:var(--text2)">-</span>'}</td>
-      <td><strong>${p.cod_decio||'-'}</strong></td>
-      <td>${p.cod_intelbras||'-'}</td>
-      <td>${p.descricao||p.produto||'-'}</td>
-      <td>${fmtNum(meta)}</td>
-      <td>${fmtNum(real)}</td>
-      <td>${pct.toFixed(1)}%</td>
-      <td>${badgeStatus(status)}</td>
+      <td>${p.num_op||''}</td>
+      <td>${p.cod_decio||''}</td>
+      <td>${p.produto||''}</td>
+      <td>${p.categoria||''}</td>
+      <td style="text-align:right">${fmtNum(meta,0)}</td>
+      <td style="text-align:right">${fmtNum(real,0)}</td>
+      <td style="text-align:right">${fmtNum(pct,1)}%</td>
+      <td><span class="status ${p.status||'em_andamento'}">${p.status||'em_andamento'}</span></td>
       <td>
-        <button class="btn-sm btn-blue" onclick="editarPlano(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
-        <button class="btn-sm btn-red" onclick="excluirPlano(${p.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ============ APONTAMENTO ============
-async function iniciarApontamento() {
-  const data_execucao = document.getElementById('a-data').value;
-  const turno = document.getElementById('a-turno').value;
-  const celula = document.getElementById('a-celula').value;
-  const num_op = document.getElementById('a-num-op').value;
-  const serie_inicial = document.getElementById('a-serie-ini').value;
-  const cod_decio = document.getElementById('a-cod-decio').value.trim();
-  const cod_intelbras = document.getElementById('a-cod-intelbras').value.trim();
-  const descricao = document.getElementById('a-descricao').value.trim();
-  const categoria = document.getElementById('a-categoria').value;
-  const meta = parseFloat(document.getElementById('a-meta').value || 0);
-  const observacoes = document.getElementById('a-obs').value.trim();
-  const hora_reportado = parseFloat(document.getElementById('a-cod-decio').dataset.horaRep || 0);
-
-  if (!data_execucao) return toast('Informe a data', 'error');
-  if (!turno) return toast('Selecione o turno', 'error');
-  if (!celula) return toast('Selecione a célula', 'error');
-  if (!/^\d{8}$/.test(num_op)) return toast('N° OP deve ter exatos 8 dígitos', 'error');
-  if (!/^[A-Z0-9]{13}$/.test(serie_inicial)) return toast('Série Inicial deve ter 13 caracteres', 'error');
-  if (!cod_decio) return toast('Informe o código Décio', 'error');
-
-  try {
-    await api('/prod-apontamentos-detalhados/iniciar', {
-      method:'POST',
-      body:{ data_execucao, turno, celula, num_op, serie_inicial,
-             cod_decio, cod_intelbras, descricao, categoria,
-             meta, hora_reportado, observacoes }
-    });
-    toast('🚀 Produção iniciada! Finalize depois para somar no plano.');
-    limparApontamento();
-    loadAll();
-  } catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-function limparApontamento() {
-  ['a-data','a-turno','a-celula','a-num-op','a-serie-ini','a-cod-decio','a-cod-intelbras','a-descricao','a-categoria','a-meta','a-obs']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.querySelectorAll('#sec-apontar .form-group input').forEach(i => i.classList.remove('valid','invalid'));
-}
-
-function renderApontamentosAndamento() {
-  const tb = document.getElementById('tb-apont-andamento');
-  const lista = apontamentosDet.filter(a => a.status_apontamento === 'em_andamento');
-  document.getElementById('qtd-andamento').textContent = `(${lista.length})`;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Nenhum apontamento em andamento.</td></tr>'; return; }
-  tb.innerHTML = lista.map(a => `<tr>
-    <td>${fmtData(a.data_execucao)}</td>
-    <td>${a.turno||'-'}º</td>
-    <td>${a.celula||'-'}</td>
-    <td><strong>${a.num_op||'-'}</strong></td>
-    <td>${a.serie_inicial||'-'}</td>
-    <td>${a.cod_decio||'-'}</td>
-    <td>${a.descricao||'-'}</td>
-    <td>${fmtNum(a.meta)}</td>
-    <td>
-      <button class="btn-sm btn-accent" onclick="abrirModalFinalizar(${a.id})" style="padding:4px 10px;font-size:11px">✅ Finalizar</button>
-      <button class="btn-sm btn-red" onclick="excluirApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
-    </td>
-  </tr>`).join('');
-}
-
-function abrirModalFinalizar(id) {
-  const a = apontamentosDet.find(x => x.id === id);
-  if (!a) return toast('Apontamento não encontrado', 'error');
-  document.getElementById('fin-id').value = a.id;
-  document.getElementById('fin-serie-fim').value = '';
-  document.getElementById('fin-realizado').value = '';
-  document.getElementById('fin-hora-total').value = '';
-  document.getElementById('fin-obs').value = a.observacoes || '';
-  document.getElementById('info-finalizar').innerHTML =
-    `<strong>OP ${a.num_op}</strong> — ${a.cod_decio} ${a.descricao||''}<br>
-     Data: ${fmtData(a.data_execucao)} | Turno ${a.turno} | ${a.celula} | Série Ini: ${a.serie_inicial}`;
-  document.getElementById('modal-finalizar').classList.add('show');
-}
-function fecharModalFinalizar() {
-  document.getElementById('modal-finalizar').classList.remove('show');
-}
-async function confirmarFinalizacao() {
-  const id = document.getElementById('fin-id').value;
-  const serie_final = document.getElementById('fin-serie-fim').value.trim().toUpperCase();
-  const realizado = parseFloat(document.getElementById('fin-realizado').value || 0);
-  const observacoes = document.getElementById('fin-obs').value.trim();
-  const ap = apontamentosDet.find(x => String(x.id) === String(id));
-  const hr = ap ? (parseFloat(ap.hora_reportado) || 0) : 0;
-  const hora_reportada_total = hr * realizado;
-
-  if (!/^[A-Z0-9]{13}$/.test(serie_final)) return toast('Série Final deve ter 13 caracteres', 'error');
-  if (realizado <= 0) return toast('Informe o realizado (maior que zero)', 'error');
-
-  try {
-    await api(`/prod-apontamentos-detalhados/${id}/finalizar`, {
-      method:'POST',
-      body:{ serie_final, realizado, hora_reportada_total, observacoes }
-    });
-    toast('✅ Finalizado e somado no plano!');
-    fecharModalFinalizar();
-    loadAll();
-  } catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-
-async function excluirApontamentoDet(id) {
-  if (!confirm('Excluir este apontamento? Se estiver finalizado, o realizado será subtraído do plano.')) return;
-  try { await api('/prod-apontamentos-detalhados/' + id, { method:'DELETE' }); toast('Apontamento excluído'); loadAll(); }
-  catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-
-// ============ AJUSTAR APONTAMENTO ============
-function ajustarApontamentoDet(id) {
-  const a = apontamentosDet.find(x => x.id === id);
-  if (!a) return toast('Apontamento não encontrado', 'error');
-  document.getElementById('aj-id').value = a.id;
-  document.getElementById('aj-realizado-old').value = a.realizado || 0;
-  document.getElementById('aj-plano-id').value = a.plano_id || '';
-  document.getElementById('aj-data').value = a.data_execucao ? String(a.data_execucao).substring(0,10) : '';
-  document.getElementById('aj-turno').value = a.turno || '1';
-  document.getElementById('aj-celula').value = a.celula || 'Célula 01';
-  document.getElementById('aj-num-op').value = a.num_op || '';
-  document.getElementById('aj-serie-ini').value = a.serie_inicial || '';
-  document.getElementById('aj-serie-fim').value = a.serie_final || '';
-  document.getElementById('aj-cod-decio').value = a.cod_decio || '';
-  document.getElementById('aj-descricao').value = a.descricao || '';
-  document.getElementById('aj-categoria').value = a.categoria || '';
-  document.getElementById('aj-meta').value = a.meta || 0;
-  document.getElementById('aj-realizado').value = a.realizado || 0;
-  document.getElementById('aj-hora-total').value = a.hora_reportada_total || 0;
-  document.getElementById('aj-obs').value = a.observacoes || '';
-  document.getElementById('modal-ajustar').classList.add('show');
-}
-function fecharModalAjustar() {
-  document.getElementById('modal-ajustar').classList.remove('show');
-}
-async function salvarAjusteApontamento() {
-  const id = document.getElementById('aj-id').value;
-  const serie_ini = document.getElementById('aj-serie-ini').value.trim().toUpperCase();
-  const serie_fim = document.getElementById('aj-serie-fim').value.trim().toUpperCase();
-  const body = {
-    data_execucao: document.getElementById('aj-data').value,
-    turno: document.getElementById('aj-turno').value,
-    celula: document.getElementById('aj-celula').value,
-    serie_inicial: serie_ini,
-    serie_final: serie_fim,
-    categoria: document.getElementById('aj-categoria').value || null,
-    meta: parseFloat(document.getElementById('aj-meta').value) || 0,
-    realizado: parseFloat(document.getElementById('aj-realizado').value) || 0,
-    hora_reportada_total: parseFloat(document.getElementById('aj-hora-total').value) || 0,
-    observacoes: document.getElementById('aj-obs').value || null
-  };
-  if (!body.data_execucao) return toast('Informe a data', 'error');
-  if (serie_ini && !/^[A-Z0-9]{13}$/.test(serie_ini)) return toast('Série Inicial inválida (13 caracteres)', 'error');
-  if (serie_fim && !/^[A-Z0-9]{13}$/.test(serie_fim)) return toast('Série Final inválida (13 caracteres)', 'error');
-  if (body.realizado < 0) return toast('Realizado não pode ser negativo', 'error');
-  try {
-    await api('/prod-apontamentos-detalhados/' + id, { method: 'PUT', body });
-    toast('Apontamento ajustado!');
-    fecharModalAjustar();
-    loadAll();
-  } catch(e) {
-    toast('Erro: ' + e.message, 'error');
-  }
-}
-
-function renderApontamentosDet() {
-  const tb = document.getElementById('tb-apont-det');
-  const di = document.getElementById('f-data-ini').value;
-  const df = document.getElementById('f-data-fim').value;
-  const ft = document.getElementById('f-turno').value;
-  const fc = document.getElementById('f-celula').value;
-  const fop = document.getElementById('f-op').value.trim();
-  const fd = document.getElementById('f-decio').value.trim().toLowerCase();
-  let lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
-  if (di) lista = lista.filter(a => String(a.data_execucao).substring(0,10) >= di);
-  if (df) lista = lista.filter(a => String(a.data_execucao).substring(0,10) <= df);
-  if (ft) lista = lista.filter(a => String(a.turno) === ft);
-  if (fc) lista = lista.filter(a => a.celula === fc);
-  if (fop) lista = lista.filter(a => (a.num_op||'').includes(fop));
-  if (fd) lista = lista.filter(a => (a.cod_decio||'').toLowerCase().includes(fd));
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Nenhum apontamento encontrado.</td></tr>'; return; }
-  tb.innerHTML = lista.map(a => `<tr>
-    <td>${fmtData(a.data_execucao)}</td>
-    <td>${a.turno||'-'}º</td>
-    <td>${a.celula||'-'}</td>
-    <td><strong>${a.num_op||'-'}</strong></td>
-    <td>${a.serie_inicial||'-'}</td>
-    <td>${a.serie_final||'-'}</td>
-    <td>${a.cod_decio||'-'}</td>
-    <td>${a.cod_intelbras||'-'}</td>
-    <td>${a.descricao||'-'}</td>
-    <td>${a.categoria||'-'}</td>
-    <td>${fmtNum(a.meta)}</td>
-    <td>${fmtNum(a.realizado)}</td>
-    <td>${fmtNum(a.hora_reportada_total)}</td>
-    <td>${(a.observacoes||'').substring(0,30)}</td>
-    <td>
-      <button class="btn-sm btn-orange" onclick="ajustarApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px" title="Ajustar">✏️</button>
-      <button class="btn-sm btn-red" onclick="excluirApontamentoDet(${a.id})" style="padding:4px 8px;font-size:11px" title="Excluir">🗑️</button>
-    </td>
-  </tr>`).join('');
-}
-
-function exportarApontamentosCSV() {
-  const lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
-  if (!lista.length) return toast('Nada para exportar', 'warn');
-  const head = ['Data','Turno','Célula','N° OP','Série Ini','Série Fim','Cód. Décio','Cód. Intel.','Descrição','Categoria','Meta','Realizado','Hora Total','Obs.'];
-  const rows = lista.map(a => [
-    fmtData(a.data_execucao), a.turno||'', a.celula||'', a.num_op||'', a.serie_inicial||'', a.serie_final||'',
-    a.cod_decio||'', a.cod_intelbras||'', a.descricao||'', a.categoria||'',
-    a.meta||0, a.realizado||0, a.hora_reportada_total||0, (a.observacoes||'').replace(/[\r\n;]/g,' ')
-  ]);
-  const csv = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `apontamentos_${new Date().toISOString().substring(0,10)}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-// ============ PRODUTOS ============
-async function salvarProduto() {
-  const cod_decio = document.getElementById('prod-decio').value.trim();
-  if (!cod_decio) return toast('Informe o código Décio', 'error');
-  const body = {
-    cod_decio,
-    cod_intelbras: document.getElementById('prod-intelbras').value.trim() || null,
-    descricao: document.getElementById('prod-desc').value.trim() || null,
-    categoria: document.getElementById('prod-cat').value || null,
-    valor: parseFloat(document.getElementById('prod-valor').value) || 0,
-    min_reportado: parseFloat(document.getElementById('prod-min').value) || 0,
-    hora_reportado: parseFloat(document.getElementById('prod-hora').value) || 0
-  };
-  const editId = document.getElementById('prod-edit-id').value;
-  try {
-    if (editId) {
-      await api('/prod-produtos/' + editId, { method:'PUT', body });
-      toast('Produto atualizado!');
-    } else {
-      await api('/prod-produtos', { method:'POST', body });
-      toast('Produto salvo!');
-    }
-    limparProduto();
-    loadAll();
-  } catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-function limparProduto() {
-  ['prod-edit-id','prod-decio','prod-intelbras','prod-desc','prod-cat','prod-valor','prod-min','prod-hora']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-}
-function editarProduto(id) {
-  const p = produtos.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById('prod-edit-id').value = p.id;
-  document.getElementById('prod-decio').value = p.cod_decio || '';
-  document.getElementById('prod-intelbras').value = p.cod_intelbras || '';
-  document.getElementById('prod-desc').value = p.descricao || '';
-  document.getElementById('prod-cat').value = p.categoria || '';
-  document.getElementById('prod-valor').value = p.valor || '';
-  document.getElementById('prod-min').value = p.min_reportado || '';
-  document.getElementById('prod-hora').value = p.hora_reportado || '';
-  window.scrollTo({ top:0, behavior:'smooth' });
-}
-async function excluirProduto(id) {
-  if (!confirm('Excluir este produto?')) return;
-  try { await api('/prod-produtos/' + id, { method:'DELETE' }); toast('Produto excluído'); loadAll(); }
-  catch(e) { toast('Erro: ' + e.message, 'error'); }
-}
-function renderProdutos() {
-  const tb = document.getElementById('tb-produtos');
-  const busca = (document.getElementById('prod-busca').value || '').toLowerCase();
-  let lista = produtos.slice();
-  if (busca) {
-    lista = lista.filter(p =>
-      (p.cod_decio||'').toLowerCase().includes(busca) ||
-      (p.cod_intelbras||'').toLowerCase().includes(busca) ||
-      (p.descricao||'').toLowerCase().includes(busca)
-    );
-  }
-  document.getElementById('prod-total').textContent = lista.length;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Nenhum produto.</td></tr>'; return; }
-  tb.innerHTML = lista.map(p => `<tr>
-    <td><strong>${p.cod_decio||'-'}</strong></td>
-    <td>${p.cod_intelbras||'-'}</td>
-    <td>${p.descricao||'-'}</td>
-    <td>${p.categoria||'-'}</td>
-    <td>${fmtNum(p.valor)}</td>
-    <td>${fmtNum(p.min_reportado)}</td>
-    <td>${fmtNum(p.hora_reportado)}</td>
-    <td>
-      <button class="btn-sm btn-blue" onclick="editarProduto(${p.id})" style="padding:4px 8px;font-size:11px">✏️</button>
-      <button class="btn-sm btn-red" onclick="excluirProduto(${p.id})" style="padding:4px 8px;font-size:11px">🗑️</button>
-    </td>
-  </tr>`).join('');
-}
-
-// ============ DASHBOARD — FILTROS ============
-function onChangeCategoria() {
-  const cat = document.getElementById('dash-categoria').value;
-  const turnoWrap = document.getElementById('dash-turno-wrap');
-  const celWrap = document.getElementById('dash-celula-wrap');
-  if (cat === 'Parede') {
-    turnoWrap.style.display = '';
-    document.getElementById('dash-turno').value = 'total';
-    document.getElementById('dash-celula').value = 'total';
-    celWrap.style.display = 'none';
-  } else {
-    turnoWrap.style.display = 'none';
-    celWrap.style.display = 'none';
-  }
-  renderDashboard();
-}
-
-function onChangeTurno() {
-  const turno = document.getElementById('dash-turno').value;
-  const celWrap = document.getElementById('dash-celula-wrap');
-  if (turno === '1' || turno === '2') {
-    celWrap.style.display = '';
-    document.getElementById('dash-celula').value = 'total';
-  } else {
-    celWrap.style.display = 'none';
-  }
-  renderDashboard();
-}
-
-function codigosDaCategoria(cat) {
-  return new Set(produtos.filter(p => (p.categoria||'') === cat).map(p => p.cod_decio));
-}
-
-function filtrarApontamentosDash() {
-  const cat = document.getElementById('dash-categoria').value;
-  const turno = document.getElementById('dash-turno') ? document.getElementById('dash-turno').value : 'total';
-  const celula = document.getElementById('dash-celula') ? document.getElementById('dash-celula').value : 'total';
-  let lista = apontamentosDet.filter(a => a.status_apontamento === 'finalizado');
-  if (cat !== 'total') {
-    lista = lista.filter(a => (a.categoria||'') === cat);
-  }
-  if (cat === 'Parede' && turno !== 'total') {
-    lista = lista.filter(a => String(a.turno) === String(turno));
-    if (celula !== 'total') {
-      lista = lista.filter(a => (a.celula||'') === celula);
-    }
-  }
-  return lista;
-}
-
-function filtrarPlanosDash() {
-  const cat = document.getElementById('dash-categoria').value;
-  let lista = planos.slice();
-  if (cat !== 'total') {
-    const codsCat = codigosDaCategoria(cat);
-    lista = lista.filter(p => codsCat.has(p.cod_decio));
-  }
-  return lista;
-}
-
-// Meta de horas fixa baseada no cadastro (pessoas × horas) e filtros do dashboard
-function calcularMetaHorasDiaria() {
-  const cat = document.getElementById('dash-categoria').value;
-  const turno = document.getElementById('dash-turno') ? document.getElementById('dash-turno').value : 'total';
-  const celula = document.getElementById('dash-celula') ? document.getElementById('dash-celula').value : 'total';
-
-  let linhas = metaHorasConfig.slice();
-
-  if (cat !== 'total') {
-    linhas = linhas.filter(c => c.categoria === cat);
-    if (cat === 'Parede' && turno !== 'total') {
-      linhas = linhas.filter(c => String(c.turno) === String(turno));
-      if (celula !== 'total') {
-        linhas = linhas.filter(c => c.celula === celula);
-      }
-    }
-  }
-
-  let total = 0;
-  linhas.forEach(c => {
-    total += (parseFloat(c.pessoas)||0) * (parseFloat(c.horas_por_pessoa)||0);
+        <button class="btn-sm" onclick="editarPlano(${p.id})">✏️</button>
+        <button class="btn-sm btn-danger" onclick="excluirPlano(${p.id})">🗑️</button>
+      </td>`;
+    tb.appendChild(tr);
   });
+}
+
+// =========================================================
+// APONTAMENTOS DETALHADOS
+// =========================================================
+async function iniciarProducao(){
+  const body = {
+    data_exec: document.getElementById('apData').value,
+    turno: document.getElementById('apTurno').value,
+    celula: document.getElementById('apCelula').value,
+    num_op: (document.getElementById('apNumOp').value||'').trim(),
+    serie_inicial: (document.getElementById('apSerieIni').value||'').trim().toUpperCase(),
+    cod_decio: (document.getElementById('apCodDecio').value||'').trim().toUpperCase(),
+    cod_intelbras: (document.getElementById('apCodIntel').value||'').trim().toUpperCase(),
+    produto: (document.getElementById('apProduto').value||'').trim(),
+    categoria: document.getElementById('apCategoria').value,
+    meta: parseFloat(document.getElementById('apMeta').value)||0,
+    observacoes: (document.getElementById('apObs').value||'').trim()
+  };
+  try{
+    await api('/prod-apontamentos-detalhados/iniciar', {method:'POST', body:JSON.stringify(body)});
+    toast('Produção iniciada'); limparApontamento(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+function limparApontamento(){
+  ['apData','apNumOp','apSerieIni','apCodDecio','apCodIntel','apProduto','apMeta','apObs']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+let finalizarId = null;
+function abrirFinalizar(id){
+  finalizarId = id;
+  document.getElementById('finSerieFinal').value='';
+  document.getElementById('finRealizado').value='';
+  document.getElementById('finHora').value='';
+  document.getElementById('finObs').value='';
+  document.getElementById('modal-finalizar').style.display='flex';
+}
+function fecharFinalizar(){ document.getElementById('modal-finalizar').style.display='none'; finalizarId=null; }
+async function salvarFinalizar(){
+  if (!finalizarId) return;
+  const body = {
+    serie_final: (document.getElementById('finSerieFinal').value||'').trim().toUpperCase(),
+    realizado: parseFloat(document.getElementById('finRealizado').value)||0,
+    hora_reportado: parseFloat(document.getElementById('finHora').value)||0,
+    observacoes: (document.getElementById('finObs').value||'').trim()
+  };
+  try{
+    await api('/prod-apontamentos-detalhados/'+finalizarId+'/finalizar', {method:'POST', body:JSON.stringify(body)});
+    toast('Produção finalizada'); fecharFinalizar(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+// AJUSTAR APONTAMENTO
+let ajusteId = null;
+async function ajustarApontamentoDet(id){
+  try{
+    const a = await api('/prod-apontamentos-detalhados/'+id);
+    ajusteId = id;
+    document.getElementById('ajData').value = fmtDataISO(a.data_exec);
+    document.getElementById('ajTurno').value = a.turno||'';
+    document.getElementById('ajCelula').value = a.celula||'';
+    document.getElementById('ajNumOp').value = a.num_op||'';
+    document.getElementById('ajSerieIni').value = a.serie_inicial||'';
+    document.getElementById('ajSerieFim').value = a.serie_final||'';
+    document.getElementById('ajCodDecio').value = a.cod_decio||'';
+    document.getElementById('ajCodIntel').value = a.cod_intelbras||'';
+    document.getElementById('ajCategoria').value = a.categoria||'';
+    document.getElementById('ajMeta').value = a.meta||0;
+    document.getElementById('ajRealizado').value = a.realizado||0;
+    document.getElementById('ajHora').value = a.hora_reportado||0;
+    document.getElementById('ajObs').value = a.observacoes||'';
+    document.getElementById('modal-ajustar').style.display='flex';
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+function fecharModalAjustar(){ document.getElementById('modal-ajustar').style.display='none'; ajusteId=null; }
+async function salvarAjusteApontamento(){
+  if (!ajusteId) return;
+  const body = {
+    data_exec: document.getElementById('ajData').value,
+    turno: document.getElementById('ajTurno').value,
+    celula: document.getElementById('ajCelula').value,
+    num_op: (document.getElementById('ajNumOp').value||'').trim(),
+    serie_inicial: (document.getElementById('ajSerieIni').value||'').trim().toUpperCase(),
+    serie_final: (document.getElementById('ajSerieFim').value||'').trim().toUpperCase(),
+    cod_decio: (document.getElementById('ajCodDecio').value||'').trim().toUpperCase(),
+    cod_intelbras: (document.getElementById('ajCodIntel').value||'').trim().toUpperCase(),
+    categoria: document.getElementById('ajCategoria').value,
+    meta: parseFloat(document.getElementById('ajMeta').value)||0,
+    realizado: parseFloat(document.getElementById('ajRealizado').value)||0,
+    hora_reportado: parseFloat(document.getElementById('ajHora').value)||0,
+    observacoes: (document.getElementById('ajObs').value||'').trim()
+  };
+  try{
+    await api('/prod-apontamentos-detalhados/'+ajusteId, {method:'PUT', body:JSON.stringify(body)});
+    toast('Apontamento ajustado'); fecharModalAjustar(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+async function excluirApontamentoDet(id){
+  if (!confirm('Excluir apontamento?')) return;
+  try{ await api('/prod-apontamentos-detalhados/'+id, {method:'DELETE'}); toast('Excluído'); loadAll(); }
+  catch(e){ toast('Erro: '+e.message,'err'); }
+}
+
+function renderApontamentosDet(){
+  // Em andamento
+  const tbA = document.querySelector('#tblApontAndamento tbody');
+  if (tbA){
+    tbA.innerHTML='';
+    apontamentosDet.filter(a=>a.status_apontamento==='em_andamento').forEach(a=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${fmtData(a.data_exec)}</td>
+        <td>${a.turno||''}</td>
+        <td>${a.celula||''}</td>
+        <td>${a.num_op||''}</td>
+        <td>${a.serie_inicial||''}</td>
+        <td>${a.cod_decio||''}</td>
+        <td>${a.produto||''}</td>
+        <td>${a.categoria||''}</td>
+        <td style="text-align:right">${fmtNum(a.meta,0)}</td>
+        <td>
+          <button class="btn-sm btn-primary" onclick="abrirFinalizar(${a.id})">✅ Finalizar</button>
+          <button class="btn-sm" onclick="ajustarApontamentoDet(${a.id})">✏️</button>
+          <button class="btn-sm btn-danger" onclick="excluirApontamentoDet(${a.id})">🗑️</button>
+        </td>`;
+      tbA.appendChild(tr);
+    });
+  }
+  // Histórico
+  const tbH = document.querySelector('#tblApontHist tbody');
+  if (tbH){
+    tbH.innerHTML='';
+    apontamentosDet.filter(a=>a.status_apontamento==='finalizado').forEach(a=>{
+      const meta=parseFloat(a.meta)||0, real=parseFloat(a.realizado)||0;
+      const pct = meta>0?(real/meta*100):0;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${fmtData(a.data_exec)}</td>
+        <td>${a.turno||''}</td>
+        <td>${a.celula||''}</td>
+        <td>${a.num_op||''}</td>
+        <td>${a.cod_decio||''}</td>
+        <td>${a.categoria||''}</td>
+        <td style="text-align:right">${fmtNum(meta,0)}</td>
+        <td style="text-align:right">${fmtNum(real,0)}</td>
+        <td style="text-align:right">${fmtNum(pct,1)}%</td>
+        <td style="text-align:right">${fmtNum(a.hora_reportado,2)}</td>
+        <td>
+          <button class="btn-sm" style="background:#f59e0b;color:#000" onclick="ajustarApontamentoDet(${a.id})">✏️</button>
+          <button class="btn-sm btn-danger" onclick="excluirApontamentoDet(${a.id})">🗑️</button>
+        </td>`;
+      tbH.appendChild(tr);
+    });
+  }
+}
+
+// =========================================================
+// PRODUTOS
+// =========================================================
+async function salvarProduto(){
+  const body = {
+    cod_decio: (document.getElementById('prdCodDecio').value||'').trim().toUpperCase(),
+    cod_intelbras: (document.getElementById('prdCodIntel').value||'').trim().toUpperCase(),
+    descricao: (document.getElementById('prdDesc').value||'').trim(),
+    categoria: document.getElementById('prdCategoria').value,
+    valor: parseFloat(document.getElementById('prdValor').value)||0,
+    minimo: parseFloat(document.getElementById('prdMin').value)||0,
+    hora: parseFloat(document.getElementById('prdHora').value)||0
+  };
+  if (!body.cod_decio){ toast('Informe o cod. Décio','err'); return; }
+  try{
+    await api('/prod-produtos', {method:'POST', body:JSON.stringify(body)});
+    toast('Produto salvo'); limparProduto(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+function limparProduto(){
+  ['prdCodDecio','prdCodIntel','prdDesc','prdValor','prdMin','prdHora']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+async function excluirProduto(id){
+  if (!confirm('Excluir produto?')) return;
+  try{ await api('/prod-produtos/'+id, {method:'DELETE'}); toast('Excluído'); loadAll(); }
+  catch(e){ toast('Erro: '+e.message,'err'); }
+}
+function renderProdutos(){
+  const tb=document.querySelector('#tblProdutos tbody'); if(!tb) return;
+  tb.innerHTML='';
+  produtos.forEach(p=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${p.cod_decio||''}</td>
+      <td>${p.cod_intelbras||''}</td>
+      <td>${p.descricao||''}</td>
+      <td>${p.categoria||''}</td>
+      <td style="text-align:right">${fmtNum(p.valor)}</td>
+      <td style="text-align:right">${fmtNum(p.hora)}</td>
+      <td><button class="btn-sm btn-danger" onclick="excluirProduto(${p.id})">🗑️</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// =========================================================
+// DASHBOARD FILTERS
+// =========================================================
+function onChangeCategoria(){
+  const cat = document.getElementById('filtroCategoria').value;
+  const wrapT = document.getElementById('wrapFiltroTurno');
+  const wrapC = document.getElementById('wrapFiltroCelula');
+  wrapT.style.display = (cat==='Parede') ? 'inline-block' : 'none';
+  wrapC.style.display = 'none';
+  document.getElementById('filtroTurno').value = '';
+  document.getElementById('filtroCelula').value = '';
+  renderDashboard();
+}
+function onChangeTurno(){
+  const t = document.getElementById('filtroTurno').value;
+  const wrapC = document.getElementById('wrapFiltroCelula');
+  wrapC.style.display = (t==='1' || t==='2') ? 'inline-block' : 'none';
+  document.getElementById('filtroCelula').value = '';
+  renderDashboard();
+}
+
+// =========================================================
+// META-HORA — calcular meta diária com base na config + override
+// =========================================================
+function calcularMetaHorasDiaria(dataISO){
+  const cat = document.getElementById('filtroCategoria').value;
+  const turno = document.getElementById('filtroTurno').value;
+  const celula = document.getElementById('filtroCelula').value;
+
+  // 1) Override do dia?
+  const ovs = metaHorasOverride.filter(o => fmtDataISO(o.data) === dataISO);
+  if (ovs.length){
+    let usados = ovs.filter(o => {
+      if (cat && o.categoria !== cat && cat !== '') {
+        if (cat === 'Total' || cat === '') return true;
+        return o.categoria === cat;
+      }
+      if (turno && o.turno && o.turno !== turno) return false;
+      if (celula && o.celula && o.celula !== celula) return false;
+      return true;
+    });
+    if (usados.length) return usados.reduce((s,o)=>s+(parseFloat(o.horas_meta)||0),0);
+  }
+
+  // 2) Config fixa
+  let cfg = metaHorasConfig.filter(c=>c.ativo!==false);
+  if (cat && cat !== 'Total' && cat !== '') cfg = cfg.filter(c=>c.categoria===cat);
+  if (turno) cfg = cfg.filter(c => !c.turno || c.turno===turno);
+  if (celula) cfg = cfg.filter(c => !c.celula || c.celula===celula);
+  return cfg.reduce((s,c)=>s + (parseFloat(c.pessoas)||0)*(parseFloat(c.horas_por_pessoa)||0), 0);
+}
+
+// =========================================================
+// META QUANTIDADE — proporcional por turno/célula
+// =========================================================
+function metaPlanoFiltrada(plano){
+  const cat = document.getElementById('filtroCategoria').value;
+  const turno = document.getElementById('filtroTurno').value;
+  const celula = document.getElementById('filtroCelula').value;
+  const total = parseFloat(plano.meta)||0;
+
+  // Filtro de categoria
+  if (cat && cat !== 'Total' && cat !== '' && plano.categoria !== cat) return 0;
+
+  // Sem turno/célula selecionados → meta total
+  if (!turno && !celula) return total;
+
+  // Apenas Parede tem distribuição
+  if (plano.categoria !== 'Parede') return total;
+
+  const t1c01 = parseFloat(plano.meta_t1_c01)||0;
+  const t1c02 = parseFloat(plano.meta_t1_c02)||0;
+  const t2c01 = parseFloat(plano.meta_t2_c01)||0;
+  const t2c02 = parseFloat(plano.meta_t2_c02)||0;
+  const somaDist = t1c01+t1c02+t2c01+t2c02;
+
+  // Fallback proporcional (horas) se não houver distribuição
+  let mT1C01, mT1C02, mT2C01, mT2C02;
+  if (somaDist > 0){
+    mT1C01=t1c01; mT1C02=t1c02; mT2C01=t2c01; mT2C02=t2c02;
+  } else {
+    mT1C01 = total * (21/81);
+    mT1C02 = total * (21/81);
+    mT2C01 = total * (19.5/81);
+    mT2C02 = total * (19.5/81);
+  }
+
+  if (turno==='1' && celula==='Célula 01') return mT1C01;
+  if (turno==='1' && celula==='Célula 02') return mT1C02;
+  if (turno==='2' && celula==='Célula 01') return mT2C01;
+  if (turno==='2' && celula==='Célula 02') return mT2C02;
+  if (turno==='1') return mT1C01 + mT1C02;
+  if (turno==='2') return mT2C01 + mT2C02;
   return total;
 }
 
-function renderDashboard() {
-  if (!document.getElementById('sec-dashboard').classList.contains('show')) return;
-  const mesFiltro = document.getElementById('filtro-mes').value;
-  if (!mesFiltro) return;
-
-  const [ano, mes] = mesFiltro.split('-').map(Number);
-  const diasNoMes = new Date(ano, mes, 0).getDate();
-  const labels = [];
-  for (let d = 1; d <= diasNoMes; d++) labels.push(String(d).padStart(2,'0'));
-
-  const planosF = filtrarPlanosDash();
-  const apontF = filtrarApontamentosDash();
-
-  // Meta de QUANTIDADE por dia (soma das metas dos planos com data_limite no dia)
-  // E marca quais dias têm plano para aplicar a meta de horas fixa
-  const metaDia = new Array(diasNoMes).fill(0);
-  const diaTemPlano = new Array(diasNoMes).fill(false);
-  planosF.forEach(p => {
-    if (!p.data_limite) return;
-    const s = String(p.data_limite).substring(0,10);
-    const [a,m,d] = s.split('-').map(Number);
-    if (a === ano && m === mes && d >= 1 && d <= diasNoMes) {
-      metaDia[d-1] += parseFloat(p.meta) || 0;
-      diaTemPlano[d-1] = true;
-    }
+// =========================================================
+// FILTROS DE APONTAMENTOS
+// =========================================================
+function filtrarApontamentos(){
+  const cat = document.getElementById('filtroCategoria').value;
+  const turno = document.getElementById('filtroTurno').value;
+  const celula = document.getElementById('filtroCelula').value;
+  return apontamentosDet.filter(a=>{
+    if (a.status_apontamento !== 'finalizado') return false;
+    if (cat && cat !== 'Total' && cat !== '' && a.categoria !== cat) return false;
+    if (turno && a.turno !== turno) return false;
+    if (celula && a.celula !== celula) return false;
+    return true;
   });
-
-  // Meta de HORAS por dia = pessoas × horas (fixa), só aplica nos dias com plano
-  const metaHorasFixa = calcularMetaHorasDiaria();
-  const metaHoraDia = new Array(diasNoMes).fill(0);
-  for (let i = 0; i < diasNoMes; i++) {
-    metaHoraDia[i] = diaTemPlano[i] ? metaHorasFixa : 0;
-  }
-
-  // Realizado por dia (quantidade e horas)
-  const realDia = new Array(diasNoMes).fill(0);
-  const horaDia = new Array(diasNoMes).fill(0);
-  apontF.forEach(a => {
-    if (!a.data_execucao) return;
-    const s = String(a.data_execucao).substring(0,10);
-    const [ya,ym,yd] = s.split('-').map(Number);
-    if (ya === ano && ym === mes && yd >= 1 && yd <= diasNoMes) {
-      realDia[yd-1] += parseFloat(a.realizado) || 0;
-      horaDia[yd-1] += parseFloat(a.hora_reportada_total) || 0;
-    }
-  });
-
-  // % diárias
-  const pctProd = metaDia.map((m,i) => m > 0 ? (realDia[i]/m)*100 : null);
-  const pctHora = metaHoraDia.map((m,i) => m > 0 ? (horaDia[i]/m)*100 : null);
-
-  // Acumulado mensal (quantidade)
-  const pctAcum = [];
-  let accMeta = 0, accReal = 0;
-  for (let i = 0; i < diasNoMes; i++) {
-    accMeta += metaDia[i];
-    accReal += realDia[i];
-    pctAcum.push(accMeta > 0 ? (accReal/accMeta)*100 : null);
-  }
-
-  // Acumulado mensal (horas)
-  const pctAcumHora = [];
-  let accMetaH = 0, accRealH = 0;
-  for (let i = 0; i < diasNoMes; i++) {
-    accMetaH += metaHoraDia[i];
-    accRealH += horaDia[i];
-    pctAcumHora.push(accMetaH > 0 ? (accRealH/accMetaH)*100 : null);
-  }
-
-  desenharGraficoLinha('chartProducao',   '_prod',     labels, pctProd,     'Produção Diária');
-  desenharGraficoLinha('chartHoras',      '_hora',     labels, pctHora,     'Hora Reportada Diária');
-  desenharGraficoLinha('chartAcumulado',  '_acum',     labels, pctAcum,     'Acumulado Mensal');
-  desenharGraficoLinha('chartHorasAcum',  '_acumhora', labels, pctAcumHora, 'Hora Acumulada Mensal');
 }
 
-function desenharGraficoLinha(canvasId, key, labels, dados, titulo) {
-  const ctx = document.getElementById(canvasId);
-  if (!ctx) return;
-  if (_charts[key]) { _charts[key].destroy(); _charts[key] = null; }
-  const metaLinha = labels.map(() => 100);
-  _charts[key] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Meta (100%)', data: metaLinha, borderColor: '#f0883e', backgroundColor: 'rgba(240,136,62,0.1)', borderWidth: 2, borderDash: [6,4], pointRadius: 0, tension: 0 },
-        { label: titulo + ' (%)', data: dados, borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.15)', borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#58a6ff', tension: 0.25, spanGaps: true }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#e6edf3', font: { size: 11 } } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y == null ? '-' : c.parsed.y.toFixed(1) + '%'}` } }
-      },
-      scales: {
-        x: { ticks: { color: '#8b98a5' }, grid: { color: '#2d4055' } },
-        y: { beginAtZero: true, ticks: { color: '#8b98a5', callback: v => v + '%' }, grid: { color: '#2d4055' } }
+// =========================================================
+// RENDER DASHBOARD (4 GRÁFICOS)
+// =========================================================
+function renderDashboard(){
+  if (typeof Chart === 'undefined') return;
+
+  // 1) Descobrir dias que TÊM plano no mês (independente do filtro de turno/célula)
+  const cat = document.getElementById('filtroCategoria').value;
+  const planosDoMes = planos.filter(p=>{
+    if (cat && cat !== 'Total' && cat !== '' && p.categoria !== cat) return false;
+    return fmtDataISO(p.data_limite).startsWith(mesAtual);
+  });
+
+  // Agrupar dias com plano
+  const diasSet = new Set();
+  planosDoMes.forEach(p => diasSet.add(fmtDataISO(p.data_limite)));
+  const dias = Array.from(diasSet).sort();
+
+  if (!dias.length){
+    [chartProducao, chartHoras, chartAcumulado, chartHorasAcum].forEach(c=>{ if(c) c.destroy(); });
+    chartProducao = chartHoras = chartAcumulado = chartHorasAcum = null;
+    return;
+  }
+
+  const aps = filtrarApontamentos();
+
+  // Para cada dia: meta quantidade, realizado quantidade, meta hora, hora realizada
+  const metaDia = [], realDia = [], pctDia = [];
+  const metaHoraDia = [], horaRealDia = [];
+  let accMeta = 0, accReal = 0, accMetaH = 0, accRealH = 0;
+  const pctAcum = [], metaHoraAcum = [], horaRealAcum = [];
+
+  dias.forEach(d=>{
+    // Meta quantidade do dia (proporcional ao filtro)
+    const metaQ = planos
+      .filter(p => fmtDataISO(p.data_limite) === d)
+      .reduce((s,p)=> s + metaPlanoFiltrada(p), 0);
+
+    // Realizado quantidade do dia
+    const realQ = aps
+      .filter(a => fmtDataISO(a.data_exec) === d)
+      .reduce((s,a)=> s + (parseFloat(a.realizado)||0), 0);
+
+    // Meta hora do dia
+    const metaH = calcularMetaHorasDiaria(d);
+
+    // Hora reportada do dia
+    const horaR = aps
+      .filter(a => fmtDataISO(a.data_exec) === d)
+      .reduce((s,a)=> s + (parseFloat(a.hora_reportado)||0), 0);
+
+    metaDia.push(metaQ);
+    realDia.push(realQ);
+    pctDia.push(metaQ>0 ? (realQ/metaQ*100) : 0);
+    metaHoraDia.push(metaH);
+    horaRealDia.push(horaR);
+
+    accMeta += metaQ; accReal += realQ;
+    accMetaH += metaH; accRealH += horaR;
+    pctAcum.push(accMeta>0 ? (accReal/accMeta*100) : 0);
+    metaHoraAcum.push(accMetaH);
+    horaRealAcum.push(accRealH);
+  });
+
+  const labels = dias.map(d=>{ const x=new Date(d+'T00:00'); return pad2(x.getDate())+'/'+pad2(x.getMonth()+1); });
+
+  // GRÁFICO 1 — Produção Diária %
+  drawChart('chartProducao', 'chartProducao_ref', labels, [
+    {label:'Meta (100%)', data: labels.map(()=>100), borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
+    {label:'Realizado %', data: pctDia, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
+  ], '%', 1);
+
+  // GRÁFICO 2 — Hora Diária (em horas)
+  drawChart('chartHoras', 'chartHoras_ref', labels, [
+    {label:'Meta (h)', data: metaHoraDia, borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
+    {label:'Reportado (h)', data: horaRealDia, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
+  ], 'h', 2);
+
+  // GRÁFICO 3 — Acumulado Mensal Quantidade %
+  drawChart('chartAcumulado', 'chartAcumulado_ref', labels, [
+    {label:'Meta (100%)', data: labels.map(()=>100), borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
+    {label:'Realizado acumulado %', data: pctAcum, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
+  ], '%', 3);
+
+  // GRÁFICO 4 — Acumulado Mensal Horas
+  drawChart('chartHorasAcum', 'chartHorasAcum_ref', labels, [
+    {label:'Meta acumulada (h)', data: metaHoraAcum, borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
+    {label:'Reportado acumulado (h)', data: horaRealAcum, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
+  ], 'h', 4);
+}
+
+function drawChart(canvasId, refKey, labels, datasets, unit, idx){
+  const refs = { 1:'chartProducao', 2:'chartHoras', 3:'chartAcumulado', 4:'chartHorasAcum' };
+  const ctxEl = document.getElementById(canvasId);
+  if (!ctxEl) return;
+  const old = { 1:chartProducao, 2:chartHoras, 3:chartAcumulado, 4:chartHorasAcum }[idx];
+  if (old) old.destroy();
+  const novo = new Chart(ctxEl.getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#cbd5e1' } } },
+      scales:{
+        x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,.1)' } },
+        y:{ ticks:{ color:'#94a3b8', callback:(v)=>fmtNum(v, unit==='%'?0:1)+unit }, grid:{ color:'rgba(148,163,184,.1)' }, beginAtZero:true }
       }
     }
   });
+  if (idx===1) chartProducao = novo;
+  if (idx===2) chartHoras = novo;
+  if (idx===3) chartAcumulado = novo;
+  if (idx===4) chartHorasAcum = novo;
 }
 
-// ============ INIT ============
-(async function init() {
-  const hoje = new Date();
-  const mes = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0');
-  document.getElementById('filtro-mes').value = mes;
-  document.getElementById('a-data').value = hoje.toISOString().substring(0,10);
+// =========================================================
+// ABA CONFIG — OVERRIDE DE META-HORA
+// =========================================================
+async function salvarOverride(){
+  const body = {
+    data: document.getElementById('ovData').value,
+    categoria: document.getElementById('ovCategoria').value,
+    turno: document.getElementById('ovTurno').value || null,
+    celula: document.getElementById('ovCelula').value || null,
+    horas_meta: parseFloat(document.getElementById('ovHoras').value)||0,
+    motivo: (document.getElementById('ovMotivo').value||'').trim()
+  };
+  if (!body.data || !body.categoria){ toast('Informe data e categoria','err'); return; }
+  try{
+    await api('/prod-meta-horas-override', {method:'POST', body:JSON.stringify(body)});
+    toast('Override salvo'); limparOverride(); loadAll();
+  }catch(e){ toast('Erro: '+e.message,'err'); }
+}
+function limparOverride(){
+  ['ovData','ovTurno','ovCelula','ovHoras','ovMotivo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const c=document.getElementById('ovCategoria'); if(c) c.value='';
+}
+async function excluirOverride(id){
+  if (!confirm('Excluir override?')) return;
+  try{ await api('/prod-meta-horas-override/'+id, {method:'DELETE'}); toast('Excluído'); loadAll(); }
+  catch(e){ toast('Erro: '+e.message,'err'); }
+}
+function renderOverrides(){
+  const tb = document.querySelector('#tblOverrides tbody'); if (!tb) return;
+  tb.innerHTML='';
+  metaHorasOverride.forEach(o=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${fmtData(o.data)}</td>
+      <td>${o.categoria||''}</td>
+      <td>${o.turno||'-'}</td>
+      <td>${o.celula||'-'}</td>
+      <td style="text-align:right">${fmtNum(o.horas_meta,2)}</td>
+      <td>${o.motivo||''}</td>
+      <td><button class="btn-sm btn-danger" onclick="excluirOverride(${o.id})">🗑️</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// =========================================================
+// INIT
+// =========================================================
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const inp = document.getElementById('filtroMes');
+  if (inp) inp.value = mesAtual;
   await loadUser();
   await loadAll();
-})();
+  showTab('dashboard');
+});
 </script>
-
 </body>
 </html>
