@@ -49,6 +49,31 @@ async function garantirColunas() {
     await pool.query("ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS status_apontamento VARCHAR(20) DEFAULT 'finalizado'");
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(12,4) DEFAULT 0');
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ALTER COLUMN serie_final DROP NOT NULL').catch(()=>{});
+
+    // Tabela de configuração de meta de horas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prod_meta_horas_config (
+        id SERIAL PRIMARY KEY,
+        categoria VARCHAR(20) NOT NULL,
+        turno VARCHAR(5),
+        celula VARCHAR(50),
+        pessoas NUMERIC(6,2) NOT NULL DEFAULT 0,
+        horas_por_pessoa NUMERIC(6,2) NOT NULL DEFAULT 0,
+        ativo BOOLEAN DEFAULT TRUE,
+        UNIQUE (categoria, turno, celula)
+      )
+    `);
+    const r = await pool.query('SELECT COUNT(*)::int AS qtd FROM prod_meta_horas_config');
+    if (r.rows[0].qtd === 0) {
+      await pool.query(`
+        INSERT INTO prod_meta_horas_config (categoria, turno, celula, pessoas, horas_por_pessoa) VALUES
+          ('Piso',   NULL,  NULL,        6, 7.0),
+          ('Parede', '1', 'Célula 01', 3, 7.0),
+          ('Parede', '1', 'Célula 02', 3, 7.0),
+          ('Parede', '2', 'Célula 01', 3, 6.5),
+          ('Parede', '2', 'Célula 02', 3, 6.5)
+      `);
+    }
   } catch(e) { /* silencioso */ }
 }
 garantirColunas();
@@ -421,7 +446,7 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   }
 });
 
-// 🆕 PUT — Ajustar apontamento detalhado (recalcula plano)
+// PUT — Ajustar apontamento detalhado (recalcula plano)
 router.put('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -520,6 +545,46 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
     res.status(500).json({ error: 'Erro ao excluir apontamento' });
   } finally {
     client.release();
+  }
+});
+
+// =====================================================
+// PROD-META-HORAS-CONFIG (configuração da meta de horas)
+// =====================================================
+
+router.get('/prod-meta-horas-config', requireAuth, async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT * FROM prod_meta_horas_config WHERE ativo = TRUE ORDER BY categoria, turno NULLS FIRST, celula NULLS FIRST'
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('GET /prod-meta-horas-config', err);
+    res.status(500).json({ error: 'Erro ao listar configuração' });
+  }
+});
+
+router.put('/prod-meta-horas-config/:id', requireAuth, async (req, res) => {
+  try {
+    const { pessoas, horas_por_pessoa, ativo } = req.body;
+    await pool.query(
+      `UPDATE prod_meta_horas_config
+       SET pessoas = COALESCE($1, pessoas),
+           horas_por_pessoa = COALESCE($2, horas_por_pessoa),
+           ativo = COALESCE($3, ativo)
+       WHERE id = $4`,
+      [
+        pessoas != null ? parseFloat(pessoas) : null,
+        horas_por_pessoa != null ? parseFloat(horas_por_pessoa) : null,
+        ativo != null ? !!ativo : null,
+        req.params.id
+      ]
+    );
+    const r = await pool.query('SELECT * FROM prod_meta_horas_config WHERE id=$1', [req.params.id]);
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('PUT /prod-meta-horas-config/:id', err);
+    res.status(500).json({ error: 'Erro ao atualizar configuração' });
   }
 });
 
