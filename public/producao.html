@@ -150,7 +150,8 @@ table tr:hover{background:var(--panel2)}
             </select>
           </div>
           <div style="font-size:11px;color:var(--text2);max-width:260px;line-height:1.4">
-            <strong>Meta diária</strong> = soma das metas dos planos do dia.<br>
+            <strong>Meta diária (qtd)</strong> = soma das metas dos planos do dia.<br>
+            <strong>Meta hora</strong> = Σ pessoas × horas (fixo).<br>
             <strong>% = Realizado ÷ Meta × 100</strong>
           </div>
         </div>
@@ -167,8 +168,13 @@ table tr:hover{background:var(--panel2)}
       </div>
 
       <div class="card">
-        <div class="card-title">📈 Acumulado Mensal (%) — Σ Realizado ÷ Σ Meta</div>
+        <div class="card-title">📈 Acumulado Mensal (%) — Σ Realizado ÷ Σ Meta (quantidade)</div>
         <canvas id="chartAcumulado" style="max-height:320px"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⏰ Hora Reportada Acumulada Mensal (%) — Σ Horas Reais ÷ Σ Meta Horas</div>
+        <canvas id="chartHorasAcum" style="max-height:320px"></canvas>
       </div>
 
     </div>
@@ -479,8 +485,11 @@ table tr:hover{background:var(--panel2)}
     </div>
   </div>
 </div>
+
+<div id="toast"></div>
 <script>
 let planos = [], apontamentos = [], apontamentosDet = [], produtos = [];
+let metaHorasConfig = [];
 const _charts = {};
 
 async function api(url, opts = {}) {
@@ -590,6 +599,7 @@ async function loadAll() {
     apontamentos = await api('/prod-apontamentos' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
     apontamentosDet = await api('/prod-apontamentos-detalhados' + (mes ? '?mes=' + mes : '')).catch(()=>[]);
     produtos = await api('/prod-produtos').catch(()=>[]);
+    metaHorasConfig = await api('/prod-meta-horas-config').catch(()=>[]);
     renderPlanos();
     renderDashboard();
     renderApontamentosDet();
@@ -1094,6 +1104,31 @@ function filtrarPlanosDash() {
   return lista;
 }
 
+// Meta de horas fixa baseada no cadastro (pessoas × horas) e filtros do dashboard
+function calcularMetaHorasDiaria() {
+  const cat = document.getElementById('dash-categoria').value;
+  const turno = document.getElementById('dash-turno') ? document.getElementById('dash-turno').value : 'total';
+  const celula = document.getElementById('dash-celula') ? document.getElementById('dash-celula').value : 'total';
+
+  let linhas = metaHorasConfig.slice();
+
+  if (cat !== 'total') {
+    linhas = linhas.filter(c => c.categoria === cat);
+    if (cat === 'Parede' && turno !== 'total') {
+      linhas = linhas.filter(c => String(c.turno) === String(turno));
+      if (celula !== 'total') {
+        linhas = linhas.filter(c => c.celula === celula);
+      }
+    }
+  }
+
+  let total = 0;
+  linhas.forEach(c => {
+    total += (parseFloat(c.pessoas)||0) * (parseFloat(c.horas_por_pessoa)||0);
+  });
+  return total;
+}
+
 function renderDashboard() {
   if (!document.getElementById('sec-dashboard').classList.contains('show')) return;
   const mesFiltro = document.getElementById('filtro-mes').value;
@@ -1107,21 +1142,28 @@ function renderDashboard() {
   const planosF = filtrarPlanosDash();
   const apontF = filtrarApontamentosDash();
 
+  // Meta de QUANTIDADE por dia (soma das metas dos planos com data_limite no dia)
+  // E marca quais dias têm plano para aplicar a meta de horas fixa
   const metaDia = new Array(diasNoMes).fill(0);
-  const metaHoraDia = new Array(diasNoMes).fill(0);
+  const diaTemPlano = new Array(diasNoMes).fill(false);
   planosF.forEach(p => {
     if (!p.data_limite) return;
     const s = String(p.data_limite).substring(0,10);
     const [a,m,d] = s.split('-').map(Number);
     if (a === ano && m === mes && d >= 1 && d <= diasNoMes) {
-      const m_plano = parseFloat(p.meta) || 0;
-      metaDia[d-1] += m_plano;
-      const prod = produtos.find(x => x.cod_decio === p.cod_decio);
-      const hr = prod ? (parseFloat(prod.hora_reportado)||0) : 0;
-      metaHoraDia[d-1] += m_plano * hr;
+      metaDia[d-1] += parseFloat(p.meta) || 0;
+      diaTemPlano[d-1] = true;
     }
   });
 
+  // Meta de HORAS por dia = pessoas × horas (fixa), só aplica nos dias com plano
+  const metaHorasFixa = calcularMetaHorasDiaria();
+  const metaHoraDia = new Array(diasNoMes).fill(0);
+  for (let i = 0; i < diasNoMes; i++) {
+    metaHoraDia[i] = diaTemPlano[i] ? metaHorasFixa : 0;
+  }
+
+  // Realizado por dia (quantidade e horas)
   const realDia = new Array(diasNoMes).fill(0);
   const horaDia = new Array(diasNoMes).fill(0);
   apontF.forEach(a => {
@@ -1134,9 +1176,11 @@ function renderDashboard() {
     }
   });
 
+  // % diárias
   const pctProd = metaDia.map((m,i) => m > 0 ? (realDia[i]/m)*100 : null);
   const pctHora = metaHoraDia.map((m,i) => m > 0 ? (horaDia[i]/m)*100 : null);
 
+  // Acumulado mensal (quantidade)
   const pctAcum = [];
   let accMeta = 0, accReal = 0;
   for (let i = 0; i < diasNoMes; i++) {
@@ -1145,9 +1189,19 @@ function renderDashboard() {
     pctAcum.push(accMeta > 0 ? (accReal/accMeta)*100 : null);
   }
 
-  desenharGraficoLinha('chartProducao', '_prod', labels, pctProd, 'Produção Diária');
-  desenharGraficoLinha('chartHoras', '_hora', labels, pctHora, 'Hora Reportada Diária');
-  desenharGraficoLinha('chartAcumulado', '_acum', labels, pctAcum, 'Acumulado Mensal');
+  // Acumulado mensal (horas)
+  const pctAcumHora = [];
+  let accMetaH = 0, accRealH = 0;
+  for (let i = 0; i < diasNoMes; i++) {
+    accMetaH += metaHoraDia[i];
+    accRealH += horaDia[i];
+    pctAcumHora.push(accMetaH > 0 ? (accRealH/accMetaH)*100 : null);
+  }
+
+  desenharGraficoLinha('chartProducao',   '_prod',     labels, pctProd,     'Produção Diária');
+  desenharGraficoLinha('chartHoras',      '_hora',     labels, pctHora,     'Hora Reportada Diária');
+  desenharGraficoLinha('chartAcumulado',  '_acum',     labels, pctAcum,     'Acumulado Mensal');
+  desenharGraficoLinha('chartHorasAcum',  '_acumhora', labels, pctAcumHora, 'Hora Acumulada Mensal');
 }
 
 function desenharGraficoLinha(canvasId, key, labels, dados, titulo) {
@@ -1191,5 +1245,3 @@ function desenharGraficoLinha(canvasId, key, labels, dados, titulo) {
 
 </body>
 </html>
-
-<div id="toast"></div>
