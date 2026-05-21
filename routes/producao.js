@@ -46,11 +46,17 @@ async function garantirColunas() {
   try {
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300)');
     await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS num_op VARCHAR(8)');
+    // 🆕 Distribuição da meta por turno/célula
+    await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta_t1_c01 NUMERIC(12,2) DEFAULT 0');
+    await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta_t1_c02 NUMERIC(12,2) DEFAULT 0');
+    await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta_t2_c01 NUMERIC(12,2) DEFAULT 0');
+    await pool.query('ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta_t2_c02 NUMERIC(12,2) DEFAULT 0');
+
     await pool.query("ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS status_apontamento VARCHAR(20) DEFAULT 'finalizado'");
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(12,4) DEFAULT 0');
     await pool.query('ALTER TABLE prod_apontamentos_detalhados ALTER COLUMN serie_final DROP NOT NULL').catch(()=>{});
 
-    // Tabela de configuração de meta de horas
+    // Tabela de configuração de meta de horas (fixa)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS prod_meta_horas_config (
         id SERIAL PRIMARY KEY,
@@ -63,8 +69,8 @@ async function garantirColunas() {
         UNIQUE (categoria, turno, celula)
       )
     `);
-    const r = await pool.query('SELECT COUNT(*)::int AS qtd FROM prod_meta_horas_config');
-    if (r.rows[0].qtd === 0) {
+    const rcfg = await pool.query('SELECT COUNT(*)::int AS qtd FROM prod_meta_horas_config');
+    if (rcfg.rows[0].qtd === 0) {
       await pool.query(`
         INSERT INTO prod_meta_horas_config (categoria, turno, celula, pessoas, horas_por_pessoa) VALUES
           ('Piso',   NULL,  NULL,        6, 7.0),
@@ -74,7 +80,22 @@ async function garantirColunas() {
           ('Parede', '2', 'Célula 02', 3, 6.5)
       `);
     }
-  } catch(e) { /* silencioso */ }
+
+    // 🆕 Tabela de override de meta-hora (eventos, meio expediente etc.)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prod_meta_horas_override (
+        id SERIAL PRIMARY KEY,
+        data DATE NOT NULL,
+        categoria VARCHAR(20) NOT NULL,
+        turno VARCHAR(5),
+        celula VARCHAR(50),
+        horas_meta NUMERIC(8,2) NOT NULL DEFAULT 0,
+        motivo VARCHAR(255),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (data, categoria, turno, celula)
+      )
+    `);
+  } catch(e) { console.error('garantirColunas', e.message); }
 }
 garantirColunas();
 
@@ -110,7 +131,10 @@ router.get('/prod-planos/:id', requireAuth, async (req, res) => {
 
 router.post('/prod-planos', requireAuth, async (req, res) => {
   try {
-    const { data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op } = req.body;
+    const {
+      data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op,
+      meta_t1_c01, meta_t1_c02, meta_t2_c01, meta_t2_c02
+    } = req.body;
     if (!data_limite) return res.status(400).json({ error: 'Data limite obrigatória' });
     if (!cod_decio) return res.status(400).json({ error: 'Código Décio obrigatório' });
 
@@ -125,9 +149,16 @@ router.post('/prod-planos', requireAuth, async (req, res) => {
     const mes = mesDaData(data_limite);
     const prod = produto || descricao || cod_decio;
     const r = await pool.query(
-      `INSERT INTO prod_planos (mes, data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op, realizado, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'em_andamento') RETURNING *`,
-      [mes, data_limite, cod_decio, cod_intelbras || null, descricao || null, prod, meta || 0, observacoes || null, opFinal]
+      `INSERT INTO prod_planos
+        (mes, data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op,
+         meta_t1_c01, meta_t1_c02, meta_t2_c01, meta_t2_c02, realizado, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'em_andamento') RETURNING *`,
+      [
+        mes, data_limite, cod_decio, cod_intelbras || null, descricao || null, prod,
+        meta || 0, observacoes || null, opFinal,
+        parseFloat(meta_t1_c01) || 0, parseFloat(meta_t1_c02) || 0,
+        parseFloat(meta_t2_c01) || 0, parseFloat(meta_t2_c02) || 0
+      ]
     );
     await atualizarStatusPlano(r.rows[0].id);
     const final = await pool.query('SELECT * FROM prod_planos WHERE id=$1', [r.rows[0].id]);
@@ -140,7 +171,10 @@ router.post('/prod-planos', requireAuth, async (req, res) => {
 
 router.put('/prod-planos/:id', requireAuth, async (req, res) => {
   try {
-    const { data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op } = req.body;
+    const {
+      data_limite, cod_decio, cod_intelbras, descricao, produto, meta, observacoes, num_op,
+      meta_t1_c01, meta_t1_c02, meta_t2_c01, meta_t2_c02
+    } = req.body;
 
     let opFinal;
     if (num_op === undefined || num_op === null) {
@@ -166,14 +200,22 @@ router.put('/prod-planos/:id', requireAuth, async (req, res) => {
            produto=COALESCE($6,produto),
            meta=COALESCE($7,meta),
            observacoes=COALESCE($8,observacoes),
-           num_op = CASE WHEN $10::boolean THEN $9 ELSE num_op END
+           num_op = CASE WHEN $10::boolean THEN $9 ELSE num_op END,
+           meta_t1_c01 = COALESCE($12, meta_t1_c01),
+           meta_t1_c02 = COALESCE($13, meta_t1_c02),
+           meta_t2_c01 = COALESCE($14, meta_t2_c01),
+           meta_t2_c02 = COALESCE($15, meta_t2_c02)
        WHERE id=$11`,
       [
         data_limite || null, mes, cod_decio || null, cod_intelbras || null,
         descricao || null, prod || null, meta ?? null, observacoes || null,
         opFinal === undefined ? null : opFinal,
         opFinal !== undefined,
-        req.params.id
+        req.params.id,
+        meta_t1_c01 != null ? parseFloat(meta_t1_c01) : null,
+        meta_t1_c02 != null ? parseFloat(meta_t1_c02) : null,
+        meta_t2_c01 != null ? parseFloat(meta_t2_c01) : null,
+        meta_t2_c02 != null ? parseFloat(meta_t2_c02) : null
       ]
     );
     await atualizarStatusPlano(req.params.id);
@@ -196,7 +238,7 @@ router.delete('/prod-planos/:id', requireAuth, async (req, res) => {
 });
 
 // =====================================================
-// PROD-APONTAMENTOS (simples, mantido para compat.)
+// PROD-APONTAMENTOS (simples — mantido)
 // =====================================================
 
 router.get('/prod-apontamentos', requireAuth, async (req, res) => {
@@ -283,7 +325,7 @@ router.get('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) =>
   }
 });
 
-// INICIAR PRODUÇÃO (1ª etapa) — não soma no plano ainda
+// INICIAR PRODUÇÃO (1ª etapa) — não soma no plano
 router.post('/prod-apontamentos-detalhados/iniciar', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -386,7 +428,7 @@ router.post('/prod-apontamentos-detalhados/:id/finalizar', requireAuth, async (r
   }
 });
 
-// POST tradicional (mantido para compatibilidade — cria já finalizado)
+// POST tradicional (compatibilidade — cria já finalizado)
 router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -446,7 +488,7 @@ router.post('/prod-apontamentos-detalhados', requireAuth, async (req, res) => {
   }
 });
 
-// PUT — Ajustar apontamento detalhado (recalcula plano)
+// PUT — Ajustar apontamento detalhado
 router.put('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -549,7 +591,7 @@ router.delete('/prod-apontamentos-detalhados/:id', requireAuth, async (req, res)
 });
 
 // =====================================================
-// PROD-META-HORAS-CONFIG (configuração da meta de horas)
+// PROD-META-HORAS-CONFIG (configuração fixa)
 // =====================================================
 
 router.get('/prod-meta-horas-config', requireAuth, async (req, res) => {
@@ -585,6 +627,57 @@ router.put('/prod-meta-horas-config/:id', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('PUT /prod-meta-horas-config/:id', err);
     res.status(500).json({ error: 'Erro ao atualizar configuração' });
+  }
+});
+
+// =====================================================
+// PROD-META-HORAS-OVERRIDE (eventos / meio expediente)
+// =====================================================
+
+router.get('/prod-meta-horas-override', requireAuth, async (req, res) => {
+  try {
+    const { mes } = req.query;
+    let q = 'SELECT * FROM prod_meta_horas_override';
+    const params = [];
+    if (mes) { params.push(mes); q += ` WHERE to_char(data,'YYYY-MM') = $1`; }
+    q += ' ORDER BY data DESC, categoria, turno, celula';
+    const r = await pool.query(q, params);
+    res.json(r.rows);
+  } catch (err) {
+    console.error('GET /prod-meta-horas-override', err);
+    res.status(500).json({ error: 'Erro ao listar overrides' });
+  }
+});
+
+router.post('/prod-meta-horas-override', requireAuth, async (req, res) => {
+  try {
+    const { data, categoria, turno, celula, horas_meta, motivo } = req.body;
+    if (!data) return res.status(400).json({ error: 'Data obrigatória' });
+    if (!categoria) return res.status(400).json({ error: 'Categoria obrigatória' });
+    if (horas_meta == null || isNaN(parseFloat(horas_meta))) return res.status(400).json({ error: 'Horas obrigatórias' });
+
+    const r = await pool.query(
+      `INSERT INTO prod_meta_horas_override (data, categoria, turno, celula, horas_meta, motivo)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (data, categoria, turno, celula) DO UPDATE
+         SET horas_meta = EXCLUDED.horas_meta, motivo = EXCLUDED.motivo
+       RETURNING *`,
+      [data, categoria, turno || null, celula || null, parseFloat(horas_meta), motivo || null]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error('POST /prod-meta-horas-override', err);
+    res.status(500).json({ error: 'Erro ao salvar override: ' + err.message });
+  }
+});
+
+router.delete('/prod-meta-horas-override/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM prod_meta_horas_override WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /prod-meta-horas-override/:id', err);
+    res.status(500).json({ error: 'Erro ao excluir override' });
   }
 });
 
