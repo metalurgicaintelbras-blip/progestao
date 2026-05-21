@@ -550,6 +550,7 @@ async function api(path, opts={}) {
 }
 function toast(msg, tipo='ok') {
   const t = document.getElementById('toast');
+  if (!t) { console.log('[toast]', msg); return; }
   t.textContent = msg; t.className = 'toast ' + tipo; t.style.display='block';
   setTimeout(()=>{ t.style.display='none'; }, 3000);
 }
@@ -557,6 +558,11 @@ function fmtData(d){ if(!d) return ''; const x = new Date(d); return x.toLocaleD
 function fmtDataISO(d){ if(!d) return ''; return String(d).substring(0,10); }
 function fmtNum(n, casas=2){ const v = parseFloat(n)||0; return v.toLocaleString('pt-BR',{minimumFractionDigits:casas, maximumFractionDigits:casas}); }
 function pad2(n){ return String(n).padStart(2,'0'); }
+// 🔒 Acesso seguro a elementos que podem não existir no HTML
+function getVal(id){ const el = document.getElementById(id); return el ? el.value : ''; }
+function setVal(id, v){ const el = document.getElementById(id); if (el) el.value = v; }
+function setText(id, v){ const el = document.getElementById(id); if (el) el.textContent = v; }
+function setDisplay(id, v){ const el = document.getElementById(id); if (el) el.style.display = v; }
 
 // =========================================================
 // CLOCK + USER
@@ -573,8 +579,7 @@ async function loadUser(){
   try{
     const u = await api('/me');
     usuarioLogado = u;
-    const el = document.getElementById('userName');
-    if (el) el.textContent = u.nome || u.email || 'Usuário';
+    setText('userName', u.nome || u.email || 'Usuário');
   }catch(e){ console.warn('user', e.message); }
 }
 async function logout(){
@@ -592,56 +597,64 @@ function showTab(tab){
   if (sec) sec.style.display='block';
   const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
   if (btn) btn.classList.add('active');
-  if (tab==='dashboard') renderDashboard();
-  if (tab==='config') renderOverrides();
+  try {
+    if (tab==='dashboard') renderDashboard();
+    if (tab==='config') renderOverrides();
+  } catch(e) {
+    console.error('Erro ao renderizar aba', tab, e);
+  }
 }
 
 // =========================================================
-// LOAD ALL
+// LOAD ALL — tolerante a rotas que falham
 // =========================================================
+async function safeApi(path, fallback=[]) {
+  try { return await api(path); }
+  catch(e) { console.warn('Falha em', path, e.message); return fallback; }
+}
 async function loadAll(){
   try{
     const [pl, ap, apd, pr, mhc, mho] = await Promise.all([
-      api('/prod-planos?mes='+mesAtual),
-      api('/prod-apontamentos?mes='+mesAtual),
-      api('/prod-apontamentos-detalhados?mes='+mesAtual),
-      api('/prod-produtos'),
-      api('/prod-meta-horas-config'),
-      api('/prod-meta-horas-override?mes='+mesAtual)
+      safeApi('/prod-planos?mes='+mesAtual, []),
+      safeApi('/prod-apontamentos?mes='+mesAtual, []),
+      safeApi('/prod-apontamentos-detalhados?mes='+mesAtual, []),
+      safeApi('/prod-produtos', []),
+      safeApi('/prod-meta-horas-config', []),
+      safeApi('/prod-meta-horas-override?mes='+mesAtual, [])
     ]);
     planos = pl || []; apontamentos = ap || []; apontamentosDet = apd || [];
     produtos = pr || []; metaHorasConfig = mhc || []; metaHorasOverride = mho || [];
-    renderPlanos(); renderApontamentosDet(); renderProdutos(); renderDashboard();
+    renderPlanos(); renderApontamentosDet(); renderProdutos();
+    try { renderDashboard(); } catch(e) { console.error('renderDashboard', e); }
+    try { renderOverrides(); } catch(e) { console.error('renderOverrides', e); }
   }catch(e){ toast('Erro ao carregar: '+e.message, 'err'); }
 }
 
 function onMesChange(){
-  const inp = document.getElementById('filtroMes');
-  if (inp && inp.value) { mesAtual = inp.value; loadAll(); }
+  const v = getVal('filtroMes');
+  if (v) { mesAtual = v; loadAll(); }
 }
 
 // =========================================================
 // PLANO MENSAL
 // =========================================================
 function toggleDistribuicaoParede(){
-  const cat = (document.getElementById('planoCategoria')||{}).value || '';
-  const box = document.getElementById('boxDistribuicaoParede');
-  if (!box) return;
-  box.style.display = (cat === 'Parede') ? 'block' : 'none';
+  const cat = getVal('planoCategoria');
+  setDisplay('boxDistribuicaoParede', (cat === 'Parede') ? 'block' : 'none');
 }
 
 async function salvarPlano(){
-  const data = document.getElementById('planoData').value;
-  const numOp = (document.getElementById('planoNumOp').value||'').trim();
-  const codDecio = (document.getElementById('planoCodDecio').value||'').trim().toUpperCase();
-  const codIntel = (document.getElementById('planoCodIntel').value||'').trim().toUpperCase();
-  const produto = (document.getElementById('planoProduto').value||'').trim();
-  const meta = parseFloat(document.getElementById('planoMeta').value)||0;
-  const categoria = (document.getElementById('planoCategoria')||{}).value || '';
-  const mt1c01 = parseFloat((document.getElementById('planoMetaT1C01')||{}).value)||0;
-  const mt1c02 = parseFloat((document.getElementById('planoMetaT1C02')||{}).value)||0;
-  const mt2c01 = parseFloat((document.getElementById('planoMetaT2C01')||{}).value)||0;
-  const mt2c02 = parseFloat((document.getElementById('planoMetaT2C02')||{}).value)||0;
+  const data = getVal('planoData');
+  const numOp = (getVal('planoNumOp')||'').trim();
+  const codDecio = (getVal('planoCodDecio')||'').trim().toUpperCase();
+  const codIntel = (getVal('planoCodIntel')||'').trim().toUpperCase();
+  const produto = (getVal('planoProduto')||'').trim();
+  const meta = parseFloat(getVal('planoMeta'))||0;
+  const categoria = getVal('planoCategoria');
+  const mt1c01 = parseFloat(getVal('planoMetaT1C01'))||0;
+  const mt1c02 = parseFloat(getVal('planoMetaT1C02'))||0;
+  const mt2c01 = parseFloat(getVal('planoMetaT2C01'))||0;
+  const mt2c02 = parseFloat(getVal('planoMetaT2C02'))||0;
   if (!data){ toast('Informe a data limite','err'); return; }
   if (!/^\d{8}$/.test(numOp)){ toast('N° OP deve ter 8 dígitos','err'); return; }
   if (!codDecio){ toast('Informe o código Décio','err'); return; }
@@ -652,7 +665,7 @@ async function salvarPlano(){
     meta_t1_c01:mt1c01, meta_t1_c02:mt1c02, meta_t2_c01:mt2c01, meta_t2_c02:mt2c02
   };
   try{
-    const editId = document.getElementById('planoEditId').value;
+    const editId = getVal('planoEditId');
     if (editId){ await api('/prod-planos/'+editId, {method:'PUT', body:JSON.stringify(body)}); toast('Plano atualizado'); }
     else { await api('/prod-planos', {method:'POST', body:JSON.stringify(body)}); toast('Plano criado'); }
     cancelarPlano(); loadAll();
@@ -661,27 +674,26 @@ async function salvarPlano(){
 
 function cancelarPlano(){
   ['planoData','planoNumOp','planoCodDecio','planoCodIntel','planoProduto','planoMeta',
-   'planoMetaT1C01','planoMetaT1C02','planoMetaT2C01','planoMetaT2C02','planoEditId']
-   .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const cat=document.getElementById('planoCategoria'); if(cat) cat.value='';
+   'planoMetaT1C01','planoMetaT1C02','planoMetaT2C01','planoMetaT2C02','planoEditId','planoCategoria']
+   .forEach(id=>setVal(id,''));
   toggleDistribuicaoParede();
 }
 
 async function editarPlano(id){
   try{
     const p = await api('/prod-planos/'+id);
-    document.getElementById('planoEditId').value = p.id;
-    document.getElementById('planoData').value = fmtDataISO(p.data_limite);
-    document.getElementById('planoNumOp').value = p.num_op||'';
-    document.getElementById('planoCodDecio').value = p.cod_decio||'';
-    document.getElementById('planoCodIntel').value = p.cod_intelbras||'';
-    document.getElementById('planoProduto').value = p.produto||'';
-    document.getElementById('planoMeta').value = p.meta||0;
-    const cat=document.getElementById('planoCategoria'); if(cat) cat.value=p.categoria||'';
-    document.getElementById('planoMetaT1C01').value = p.meta_t1_c01||0;
-    document.getElementById('planoMetaT1C02').value = p.meta_t1_c02||0;
-    document.getElementById('planoMetaT2C01').value = p.meta_t2_c01||0;
-    document.getElementById('planoMetaT2C02').value = p.meta_t2_c02||0;
+    setVal('planoEditId', p.id);
+    setVal('planoData', fmtDataISO(p.data_limite));
+    setVal('planoNumOp', p.num_op||'');
+    setVal('planoCodDecio', p.cod_decio||'');
+    setVal('planoCodIntel', p.cod_intelbras||'');
+    setVal('planoProduto', p.produto||'');
+    setVal('planoMeta', p.meta||0);
+    setVal('planoCategoria', p.categoria||'');
+    setVal('planoMetaT1C01', p.meta_t1_c01||0);
+    setVal('planoMetaT1C02', p.meta_t1_c02||0);
+    setVal('planoMetaT2C01', p.meta_t2_c01||0);
+    setVal('planoMetaT2C02', p.meta_t2_c02||0);
     toggleDistribuicaoParede();
     window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){ toast('Erro: '+e.message,'err'); }
@@ -724,17 +736,17 @@ function renderPlanos(){
 // =========================================================
 async function iniciarProducao(){
   const body = {
-    data_exec: document.getElementById('apData').value,
-    turno: document.getElementById('apTurno').value,
-    celula: document.getElementById('apCelula').value,
-    num_op: (document.getElementById('apNumOp').value||'').trim(),
-    serie_inicial: (document.getElementById('apSerieIni').value||'').trim().toUpperCase(),
-    cod_decio: (document.getElementById('apCodDecio').value||'').trim().toUpperCase(),
-    cod_intelbras: (document.getElementById('apCodIntel').value||'').trim().toUpperCase(),
-    produto: (document.getElementById('apProduto').value||'').trim(),
-    categoria: document.getElementById('apCategoria').value,
-    meta: parseFloat(document.getElementById('apMeta').value)||0,
-    observacoes: (document.getElementById('apObs').value||'').trim()
+    data_exec: getVal('apData'),
+    turno: getVal('apTurno'),
+    celula: getVal('apCelula'),
+    num_op: (getVal('apNumOp')||'').trim(),
+    serie_inicial: (getVal('apSerieIni')||'').trim().toUpperCase(),
+    cod_decio: (getVal('apCodDecio')||'').trim().toUpperCase(),
+    cod_intelbras: (getVal('apCodIntel')||'').trim().toUpperCase(),
+    produto: (getVal('apProduto')||'').trim(),
+    categoria: getVal('apCategoria'),
+    meta: parseFloat(getVal('apMeta'))||0,
+    observacoes: (getVal('apObs')||'').trim()
   };
   try{
     await api('/prod-apontamentos-detalhados/iniciar', {method:'POST', body:JSON.stringify(body)});
@@ -744,26 +756,26 @@ async function iniciarProducao(){
 
 function limparApontamento(){
   ['apData','apNumOp','apSerieIni','apCodDecio','apCodIntel','apProduto','apMeta','apObs']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    .forEach(id=>setVal(id,''));
 }
 
 let finalizarId = null;
 function abrirFinalizar(id){
   finalizarId = id;
-  document.getElementById('finSerieFinal').value='';
-  document.getElementById('finRealizado').value='';
-  document.getElementById('finHora').value='';
-  document.getElementById('finObs').value='';
-  document.getElementById('modal-finalizar').style.display='flex';
+  setVal('finSerieFinal','');
+  setVal('finRealizado','');
+  setVal('finHora','');
+  setVal('finObs','');
+  setDisplay('modal-finalizar','flex');
 }
-function fecharFinalizar(){ document.getElementById('modal-finalizar').style.display='none'; finalizarId=null; }
+function fecharFinalizar(){ setDisplay('modal-finalizar','none'); finalizarId=null; }
 async function salvarFinalizar(){
   if (!finalizarId) return;
   const body = {
-    serie_final: (document.getElementById('finSerieFinal').value||'').trim().toUpperCase(),
-    realizado: parseFloat(document.getElementById('finRealizado').value)||0,
-    hora_reportado: parseFloat(document.getElementById('finHora').value)||0,
-    observacoes: (document.getElementById('finObs').value||'').trim()
+    serie_final: (getVal('finSerieFinal')||'').trim().toUpperCase(),
+    realizado: parseFloat(getVal('finRealizado'))||0,
+    hora_reportado: parseFloat(getVal('finHora'))||0,
+    observacoes: (getVal('finObs')||'').trim()
   };
   try{
     await api('/prod-apontamentos-detalhados/'+finalizarId+'/finalizar', {method:'POST', body:JSON.stringify(body)});
@@ -777,39 +789,39 @@ async function ajustarApontamentoDet(id){
   try{
     const a = await api('/prod-apontamentos-detalhados/'+id);
     ajusteId = id;
-    document.getElementById('ajData').value = fmtDataISO(a.data_exec);
-    document.getElementById('ajTurno').value = a.turno||'';
-    document.getElementById('ajCelula').value = a.celula||'';
-    document.getElementById('ajNumOp').value = a.num_op||'';
-    document.getElementById('ajSerieIni').value = a.serie_inicial||'';
-    document.getElementById('ajSerieFim').value = a.serie_final||'';
-    document.getElementById('ajCodDecio').value = a.cod_decio||'';
-    document.getElementById('ajCodIntel').value = a.cod_intelbras||'';
-    document.getElementById('ajCategoria').value = a.categoria||'';
-    document.getElementById('ajMeta').value = a.meta||0;
-    document.getElementById('ajRealizado').value = a.realizado||0;
-    document.getElementById('ajHora').value = a.hora_reportado||0;
-    document.getElementById('ajObs').value = a.observacoes||'';
-    document.getElementById('modal-ajustar').style.display='flex';
+    setVal('ajData', fmtDataISO(a.data_exec));
+    setVal('ajTurno', a.turno||'');
+    setVal('ajCelula', a.celula||'');
+    setVal('ajNumOp', a.num_op||'');
+    setVal('ajSerieIni', a.serie_inicial||'');
+    setVal('ajSerieFim', a.serie_final||'');
+    setVal('ajCodDecio', a.cod_decio||'');
+    setVal('ajCodIntel', a.cod_intelbras||'');
+    setVal('ajCategoria', a.categoria||'');
+    setVal('ajMeta', a.meta||0);
+    setVal('ajRealizado', a.realizado||0);
+    setVal('ajHora', a.hora_reportado||0);
+    setVal('ajObs', a.observacoes||'');
+    setDisplay('modal-ajustar','flex');
   }catch(e){ toast('Erro: '+e.message,'err'); }
 }
-function fecharModalAjustar(){ document.getElementById('modal-ajustar').style.display='none'; ajusteId=null; }
+function fecharModalAjustar(){ setDisplay('modal-ajustar','none'); ajusteId=null; }
 async function salvarAjusteApontamento(){
   if (!ajusteId) return;
   const body = {
-    data_exec: document.getElementById('ajData').value,
-    turno: document.getElementById('ajTurno').value,
-    celula: document.getElementById('ajCelula').value,
-    num_op: (document.getElementById('ajNumOp').value||'').trim(),
-    serie_inicial: (document.getElementById('ajSerieIni').value||'').trim().toUpperCase(),
-    serie_final: (document.getElementById('ajSerieFim').value||'').trim().toUpperCase(),
-    cod_decio: (document.getElementById('ajCodDecio').value||'').trim().toUpperCase(),
-    cod_intelbras: (document.getElementById('ajCodIntel').value||'').trim().toUpperCase(),
-    categoria: document.getElementById('ajCategoria').value,
-    meta: parseFloat(document.getElementById('ajMeta').value)||0,
-    realizado: parseFloat(document.getElementById('ajRealizado').value)||0,
-    hora_reportado: parseFloat(document.getElementById('ajHora').value)||0,
-    observacoes: (document.getElementById('ajObs').value||'').trim()
+    data_exec: getVal('ajData'),
+    turno: getVal('ajTurno'),
+    celula: getVal('ajCelula'),
+    num_op: (getVal('ajNumOp')||'').trim(),
+    serie_inicial: (getVal('ajSerieIni')||'').trim().toUpperCase(),
+    serie_final: (getVal('ajSerieFim')||'').trim().toUpperCase(),
+    cod_decio: (getVal('ajCodDecio')||'').trim().toUpperCase(),
+    cod_intelbras: (getVal('ajCodIntel')||'').trim().toUpperCase(),
+    categoria: getVal('ajCategoria'),
+    meta: parseFloat(getVal('ajMeta'))||0,
+    realizado: parseFloat(getVal('ajRealizado'))||0,
+    hora_reportado: parseFloat(getVal('ajHora'))||0,
+    observacoes: (getVal('ajObs')||'').trim()
   };
   try{
     await api('/prod-apontamentos-detalhados/'+ajusteId, {method:'PUT', body:JSON.stringify(body)});
@@ -824,7 +836,6 @@ async function excluirApontamentoDet(id){
 }
 
 function renderApontamentosDet(){
-  // Em andamento
   const tbA = document.querySelector('#tblApontAndamento tbody');
   if (tbA){
     tbA.innerHTML='';
@@ -848,7 +859,6 @@ function renderApontamentosDet(){
       tbA.appendChild(tr);
     });
   }
-  // Histórico
   const tbH = document.querySelector('#tblApontHist tbody');
   if (tbH){
     tbH.innerHTML='';
@@ -881,13 +891,13 @@ function renderApontamentosDet(){
 // =========================================================
 async function salvarProduto(){
   const body = {
-    cod_decio: (document.getElementById('prdCodDecio').value||'').trim().toUpperCase(),
-    cod_intelbras: (document.getElementById('prdCodIntel').value||'').trim().toUpperCase(),
-    descricao: (document.getElementById('prdDesc').value||'').trim(),
-    categoria: document.getElementById('prdCategoria').value,
-    valor: parseFloat(document.getElementById('prdValor').value)||0,
-    minimo: parseFloat(document.getElementById('prdMin').value)||0,
-    hora: parseFloat(document.getElementById('prdHora').value)||0
+    cod_decio: (getVal('prdCodDecio')||'').trim().toUpperCase(),
+    cod_intelbras: (getVal('prdCodIntel')||'').trim().toUpperCase(),
+    descricao: (getVal('prdDesc')||'').trim(),
+    categoria: getVal('prdCategoria'),
+    valor: parseFloat(getVal('prdValor'))||0,
+    minimo: parseFloat(getVal('prdMin'))||0,
+    hora: parseFloat(getVal('prdHora'))||0
   };
   if (!body.cod_decio){ toast('Informe o cod. Décio','err'); return; }
   try{
@@ -896,8 +906,8 @@ async function salvarProduto(){
   }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 function limparProduto(){
-  ['prdCodDecio','prdCodIntel','prdDesc','prdValor','prdMin','prdHora']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['prdCodDecio','prdCodIntel','prdDesc','prdValor','prdMin','prdHora','prdCategoria']
+    .forEach(id=>setVal(id,''));
 }
 async function excluirProduto(id){
   if (!confirm('Excluir produto?')) return;
@@ -925,39 +935,32 @@ function renderProdutos(){
 // DASHBOARD FILTERS
 // =========================================================
 function onChangeCategoria(){
-  const cat = document.getElementById('filtroCategoria').value;
-  const wrapT = document.getElementById('wrapFiltroTurno');
-  const wrapC = document.getElementById('wrapFiltroCelula');
-  wrapT.style.display = (cat==='Parede') ? 'inline-block' : 'none';
-  wrapC.style.display = 'none';
-  document.getElementById('filtroTurno').value = '';
-  document.getElementById('filtroCelula').value = '';
+  const cat = getVal('filtroCategoria');
+  setDisplay('wrapFiltroTurno', (cat==='Parede') ? 'inline-block' : 'none');
+  setDisplay('wrapFiltroCelula', 'none');
+  setVal('filtroTurno', '');
+  setVal('filtroCelula', '');
   renderDashboard();
 }
 function onChangeTurno(){
-  const t = document.getElementById('filtroTurno').value;
-  const wrapC = document.getElementById('wrapFiltroCelula');
-  wrapC.style.display = (t==='1' || t==='2') ? 'inline-block' : 'none';
-  document.getElementById('filtroCelula').value = '';
+  const t = getVal('filtroTurno');
+  setDisplay('wrapFiltroCelula', (t==='1' || t==='2') ? 'inline-block' : 'none');
+  setVal('filtroCelula', '');
   renderDashboard();
 }
 
 // =========================================================
-// META-HORA — calcular meta diária com base na config + override
+// META-HORA
 // =========================================================
 function calcularMetaHorasDiaria(dataISO){
-  const cat = document.getElementById('filtroCategoria').value;
-  const turno = document.getElementById('filtroTurno').value;
-  const celula = document.getElementById('filtroCelula').value;
+  const cat = getVal('filtroCategoria');
+  const turno = getVal('filtroTurno');
+  const celula = getVal('filtroCelula');
 
-  // 1) Override do dia?
   const ovs = metaHorasOverride.filter(o => fmtDataISO(o.data) === dataISO);
   if (ovs.length){
     let usados = ovs.filter(o => {
-      if (cat && o.categoria !== cat && cat !== '') {
-        if (cat === 'Total' || cat === '') return true;
-        return o.categoria === cat;
-      }
+      if (cat && cat !== 'Total' && cat !== '' && o.categoria !== cat) return false;
       if (turno && o.turno && o.turno !== turno) return false;
       if (celula && o.celula && o.celula !== celula) return false;
       return true;
@@ -965,7 +968,6 @@ function calcularMetaHorasDiaria(dataISO){
     if (usados.length) return usados.reduce((s,o)=>s+(parseFloat(o.horas_meta)||0),0);
   }
 
-  // 2) Config fixa
   let cfg = metaHorasConfig.filter(c=>c.ativo!==false);
   if (cat && cat !== 'Total' && cat !== '') cfg = cfg.filter(c=>c.categoria===cat);
   if (turno) cfg = cfg.filter(c => !c.turno || c.turno===turno);
@@ -974,21 +976,16 @@ function calcularMetaHorasDiaria(dataISO){
 }
 
 // =========================================================
-// META QUANTIDADE — proporcional por turno/célula
+// META QUANTIDADE
 // =========================================================
 function metaPlanoFiltrada(plano){
-  const cat = document.getElementById('filtroCategoria').value;
-  const turno = document.getElementById('filtroTurno').value;
-  const celula = document.getElementById('filtroCelula').value;
+  const cat = getVal('filtroCategoria');
+  const turno = getVal('filtroTurno');
+  const celula = getVal('filtroCelula');
   const total = parseFloat(plano.meta)||0;
 
-  // Filtro de categoria
   if (cat && cat !== 'Total' && cat !== '' && plano.categoria !== cat) return 0;
-
-  // Sem turno/célula selecionados → meta total
   if (!turno && !celula) return total;
-
-  // Apenas Parede tem distribuição
   if (plano.categoria !== 'Parede') return total;
 
   const t1c01 = parseFloat(plano.meta_t1_c01)||0;
@@ -997,7 +994,6 @@ function metaPlanoFiltrada(plano){
   const t2c02 = parseFloat(plano.meta_t2_c02)||0;
   const somaDist = t1c01+t1c02+t2c01+t2c02;
 
-  // Fallback proporcional (horas) se não houver distribuição
   let mT1C01, mT1C02, mT2C01, mT2C02;
   if (somaDist > 0){
     mT1C01=t1c01; mT1C02=t1c02; mT2C01=t2c01; mT2C02=t2c02;
@@ -1018,12 +1014,12 @@ function metaPlanoFiltrada(plano){
 }
 
 // =========================================================
-// FILTROS DE APONTAMENTOS
+// FILTRO DE APONTAMENTOS
 // =========================================================
 function filtrarApontamentos(){
-  const cat = document.getElementById('filtroCategoria').value;
-  const turno = document.getElementById('filtroTurno').value;
-  const celula = document.getElementById('filtroCelula').value;
+  const cat = getVal('filtroCategoria');
+  const turno = getVal('filtroTurno');
+  const celula = getVal('filtroCelula');
   return apontamentosDet.filter(a=>{
     if (a.status_apontamento !== 'finalizado') return false;
     if (cat && cat !== 'Total' && cat !== '' && a.categoria !== cat) return false;
@@ -1034,19 +1030,23 @@ function filtrarApontamentos(){
 }
 
 // =========================================================
-// RENDER DASHBOARD (4 GRÁFICOS)
+// RENDER DASHBOARD (4 GRÁFICOS) — defensivo
 // =========================================================
 function renderDashboard(){
   if (typeof Chart === 'undefined') return;
+  // se não houver nenhum canvas do dashboard, nem tenta
+  if (!document.getElementById('chartProducao') &&
+      !document.getElementById('chartHoras') &&
+      !document.getElementById('chartAcumulado') &&
+      !document.getElementById('chartHorasAcum')) return;
 
-  // 1) Descobrir dias que TÊM plano no mês (independente do filtro de turno/célula)
-  const cat = document.getElementById('filtroCategoria').value;
-  const planosDoMes = planos.filter(p=>{
+  const cat = getVal('filtroCategoria');
+
+  const planosDoMes = (planos||[]).filter(p=>{
     if (cat && cat !== 'Total' && cat !== '' && p.categoria !== cat) return false;
     return fmtDataISO(p.data_limite).startsWith(mesAtual);
   });
 
-  // Agrupar dias com plano
   const diasSet = new Set();
   planosDoMes.forEach(p => diasSet.add(fmtDataISO(p.data_limite)));
   const dias = Array.from(diasSet).sort();
@@ -1058,37 +1058,26 @@ function renderDashboard(){
   }
 
   const aps = filtrarApontamentos();
-
-  // Para cada dia: meta quantidade, realizado quantidade, meta hora, hora realizada
   const metaDia = [], realDia = [], pctDia = [];
   const metaHoraDia = [], horaRealDia = [];
   let accMeta = 0, accReal = 0, accMetaH = 0, accRealH = 0;
   const pctAcum = [], metaHoraAcum = [], horaRealAcum = [];
 
   dias.forEach(d=>{
-    // Meta quantidade do dia (proporcional ao filtro)
     const metaQ = planos
       .filter(p => fmtDataISO(p.data_limite) === d)
       .reduce((s,p)=> s + metaPlanoFiltrada(p), 0);
-
-    // Realizado quantidade do dia
     const realQ = aps
       .filter(a => fmtDataISO(a.data_exec) === d)
       .reduce((s,a)=> s + (parseFloat(a.realizado)||0), 0);
-
-    // Meta hora do dia
     const metaH = calcularMetaHorasDiaria(d);
-
-    // Hora reportada do dia
     const horaR = aps
       .filter(a => fmtDataISO(a.data_exec) === d)
       .reduce((s,a)=> s + (parseFloat(a.hora_reportado)||0), 0);
 
-    metaDia.push(metaQ);
-    realDia.push(realQ);
+    metaDia.push(metaQ); realDia.push(realQ);
     pctDia.push(metaQ>0 ? (realQ/metaQ*100) : 0);
-    metaHoraDia.push(metaH);
-    horaRealDia.push(horaR);
+    metaHoraDia.push(metaH); horaRealDia.push(horaR);
 
     accMeta += metaQ; accReal += realQ;
     accMetaH += metaH; accRealH += horaR;
@@ -1099,33 +1088,28 @@ function renderDashboard(){
 
   const labels = dias.map(d=>{ const x=new Date(d+'T00:00'); return pad2(x.getDate())+'/'+pad2(x.getMonth()+1); });
 
-  // GRÁFICO 1 — Produção Diária %
-  drawChart('chartProducao', 'chartProducao_ref', labels, [
+  drawChart('chartProducao', labels, [
     {label:'Meta (100%)', data: labels.map(()=>100), borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
     {label:'Realizado %', data: pctDia, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
   ], '%', 1);
 
-  // GRÁFICO 2 — Hora Diária (em horas)
-  drawChart('chartHoras', 'chartHoras_ref', labels, [
+  drawChart('chartHoras', labels, [
     {label:'Meta (h)', data: metaHoraDia, borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
     {label:'Reportado (h)', data: horaRealDia, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
   ], 'h', 2);
 
-  // GRÁFICO 3 — Acumulado Mensal Quantidade %
-  drawChart('chartAcumulado', 'chartAcumulado_ref', labels, [
+  drawChart('chartAcumulado', labels, [
     {label:'Meta (100%)', data: labels.map(()=>100), borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
     {label:'Realizado acumulado %', data: pctAcum, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
   ], '%', 3);
 
-  // GRÁFICO 4 — Acumulado Mensal Horas
-  drawChart('chartHorasAcum', 'chartHorasAcum_ref', labels, [
+  drawChart('chartHorasAcum', labels, [
     {label:'Meta acumulada (h)', data: metaHoraAcum, borderColor:'#f59e0b', borderDash:[6,4], tension:.2},
     {label:'Reportado acumulado (h)', data: horaRealAcum, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.15)', tension:.2, fill:true}
   ], 'h', 4);
 }
 
-function drawChart(canvasId, refKey, labels, datasets, unit, idx){
-  const refs = { 1:'chartProducao', 2:'chartHoras', 3:'chartAcumulado', 4:'chartHorasAcum' };
+function drawChart(canvasId, labels, datasets, unit, idx){
   const ctxEl = document.getElementById(canvasId);
   if (!ctxEl) return;
   const old = { 1:chartProducao, 2:chartHoras, 3:chartAcumulado, 4:chartHorasAcum }[idx];
@@ -1153,12 +1137,12 @@ function drawChart(canvasId, refKey, labels, datasets, unit, idx){
 // =========================================================
 async function salvarOverride(){
   const body = {
-    data: document.getElementById('ovData').value,
-    categoria: document.getElementById('ovCategoria').value,
-    turno: document.getElementById('ovTurno').value || null,
-    celula: document.getElementById('ovCelula').value || null,
-    horas_meta: parseFloat(document.getElementById('ovHoras').value)||0,
-    motivo: (document.getElementById('ovMotivo').value||'').trim()
+    data: getVal('ovData'),
+    categoria: getVal('ovCategoria'),
+    turno: getVal('ovTurno') || null,
+    celula: getVal('ovCelula') || null,
+    horas_meta: parseFloat(getVal('ovHoras'))||0,
+    motivo: (getVal('ovMotivo')||'').trim()
   };
   if (!body.data || !body.categoria){ toast('Informe data e categoria','err'); return; }
   try{
@@ -1167,8 +1151,7 @@ async function salvarOverride(){
   }catch(e){ toast('Erro: '+e.message,'err'); }
 }
 function limparOverride(){
-  ['ovData','ovTurno','ovCelula','ovHoras','ovMotivo'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const c=document.getElementById('ovCategoria'); if(c) c.value='';
+  ['ovData','ovTurno','ovCelula','ovHoras','ovMotivo','ovCategoria'].forEach(id=>setVal(id,''));
 }
 async function excluirOverride(id){
   if (!confirm('Excluir override?')) return;
@@ -1178,7 +1161,7 @@ async function excluirOverride(id){
 function renderOverrides(){
   const tb = document.querySelector('#tblOverrides tbody'); if (!tb) return;
   tb.innerHTML='';
-  metaHorasOverride.forEach(o=>{
+  (metaHorasOverride||[]).forEach(o=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td>${fmtData(o.data)}</td>
@@ -1196,8 +1179,7 @@ function renderOverrides(){
 // INIT
 // =========================================================
 document.addEventListener('DOMContentLoaded', async ()=>{
-  const inp = document.getElementById('filtroMes');
-  if (inp) inp.value = mesAtual;
+  setVal('filtroMes', mesAtual);
   await loadUser();
   await loadAll();
   showTab('dashboard');
