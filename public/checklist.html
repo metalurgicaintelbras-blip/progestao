@@ -455,6 +455,14 @@ function pedirDelAtiv(id){
   };
 }
 
+function pedirDelExec(id,dateStr){
+  document.getElementById('modal-del-msg').textContent='Excluir esta execução do histórico?';
+  document.getElementById('modal-del').classList.add('show');
+  document.getElementById('modal-del-btn').onclick=async function(){
+    await api.del('/api/cl-execucoes/'+id);toast('Execução excluída!');fecharModal();await loadAll();abrirDetalheDia(dateStr);
+  };
+}
+
 /* ========= ABA HISTÓRICO — POR DIA ========= */
 /* Constrói um mapa: dateStr -> { ativas:[], feitas:n, pendentes:n, parciais:n } */
 function montarHistoricoPorDia(){
@@ -580,7 +588,12 @@ function abrirDetalheDia(dateStr){
       }
       var freqLabel=a.freq==='Diária'?'Todo dia':a.freq;
       var execTxt= execs.length
-        ? execs.map(function(e,i){return (i+1)+'ª às '+fmtHora(e.hora||'--:--')}).join(' • ')
+        ? execs.map(function(e,i){
+            return '<span style="display:inline-flex;align-items:center;gap:3px;margin:2px 6px 2px 0;white-space:nowrap">'+
+                   (i+1)+'ª às '+fmtHora(e.hora||'--:--')+
+                   '<button class="btn-sm btn-ghost" style="padding:0 5px;line-height:1.3;font-size:.8rem" title="Excluir esta execução" onclick="pedirDelExec('+e.id+',\''+dateStr+'\')">🗑️</button>'+
+                   '</span>';
+          }).join('')
         : '—';
       return '<tr>'+
         '<td><strong style="color:var(--accent)">🕐 '+horarios+'</strong></td>'+
