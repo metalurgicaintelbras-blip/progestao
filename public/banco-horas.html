@@ -10,10 +10,6 @@
 .topbar{background:var(--card);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.topbar .logo{font-size:1.2rem;font-weight:700;color:var(--accent)}.topbar .right{display:flex;align-items:center;gap:16px}.topbar .clock{background:var(--card2);padding:4px 12px;border-radius:20px;font-size:.85rem;color:var(--text2)}.topbar .user{font-size:.9rem;color:var(--text2)}
 .btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}.btn-danger{background:var(--red);color:#fff}.btn-primary{background:var(--accent);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-warning{background:var(--yellow);color:#000}.btn-primary:hover{background:#2563eb}.btn-green:hover{background:#16a34a}.btn-danger:hover{opacity:.85}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}.btn-warning:hover{background:#ca8a04}
 .layout{display:flex;min-height:calc(100vh - 57px)}.sidebar{width:220px;background:var(--card);padding:16px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px}.sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);color:var(--text2);font-size:.9rem;transition:.2s}.sidebar a:hover,.sidebar a.active{background:var(--accent);color:#fff}.main{flex:1;padding:24px;overflow-y:auto}
-.kpi-filter{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;background:var(--card);padding:12px 16px;border-radius:var(--radius);border:1px solid var(--border)}
-.kpi-filter label{font-size:.85rem;color:var(--text2);font-weight:600}
-.kpi-filter input,.kpi-filter select{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem}
-.kpi-filter .filter-info{font-size:.8rem;color:var(--text2);margin-left:auto}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}.kpi{background:var(--card);padding:20px;border-radius:var(--radius);text-align:center}.kpi .num{font-size:2rem;font-weight:700}.kpi .lbl{font-size:.8rem;color:var(--text2);margin-top:4px}
 .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.tab{padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.2s}.tab:hover,.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tbl-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.88rem}th{background:var(--card2);color:var(--text2);font-weight:600}tr:hover{background:rgba(59,130,246,.08)}
@@ -26,10 +22,6 @@
 .link-name{color:var(--accent);cursor:pointer;font-weight:600}.link-name:hover{text-decoration:underline}
 .hist-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0;padding:14px;background:var(--card2);border-radius:var(--radius)}
 .hist-summary .hs-item{text-align:center}.hist-summary .hs-num{font-size:1.4rem;font-weight:700}.hist-summary .hs-lbl{font-size:.75rem;color:var(--text2)}
-.detalhe-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px}
-.detalhe-row:last-child{border-bottom:none}
-.detalhe-row .lbl{color:var(--text2);font-size:.85rem;font-weight:600}
-.detalhe-row .val{color:var(--text);font-size:.9rem;text-align:right;flex:1;word-break:break-word}
 @media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -46,21 +38,12 @@
   <a href="/producao">📊 Produção</a>
 </nav>
 <div class="main">
-  <h2 style="margin-bottom:14px">⏰ Banco de Horas</h2>
-
-  <!-- FILTRO DE MES PARA OS KPIs -->
-  <div class="kpi-filter">
-    <label>🗓️ Filtrar KPIs por mês:</label>
-    <input type="month" id="kpi-mes" onchange="updateKPIs()">
-    <button class="btn-sm btn-ghost" onclick="limparFiltroKpi()">Limpar (todos os meses)</button>
-    <span class="filter-info" id="kpi-info">Exibindo: todos os meses</span>
-  </div>
+  <h2 style="margin-bottom:20px">⏰ Banco de Horas</h2>
 
   <div class="kpis">
     <div class="kpi"><div class="num" id="k-lancamentos" style="color:var(--accent)">0</div><div class="lbl">Lançamentos</div></div>
     <div class="kpi"><div class="num" id="k-positivo" style="color:var(--green)">0h</div><div class="lbl">Saldo Positivo</div></div>
     <div class="kpi"><div class="num" id="k-negativo" style="color:var(--red)">0h</div><div class="lbl">Saldo Negativo</div></div>
-    <div class="kpi"><div class="num" id="k-descontar" style="color:var(--accent2)">0h</div><div class="lbl">A Descontar</div></div>
     <div class="kpi"><div class="num" id="k-colabs" style="color:var(--accent2)">0</div><div class="lbl">Colaboradores</div></div>
   </div>
 
@@ -74,7 +57,6 @@
   <!-- LANCAMENTOS -->
   <div class="section active" id="sec-lancamentos">
     <div class="search-bar"><input id="search-lanc" placeholder="Buscar..." oninput="renderLanc()"></div>
-    <p style="font-size:.8rem;color:var(--text2);margin-bottom:10px">Clique no nome do colaborador para ver os detalhes do lançamento.</p>
     <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Tipo</th><th>Minutos</th><th>Data</th><th>Motivo</th><th>Ações</th></tr></thead><tbody id="tb-lanc"></tbody></table></div>
   </div>
 
@@ -83,11 +65,7 @@
     <h3>Novo Lançamento</h3>
     <div class="form-grid" style="margin-top:14px">
       <div class="form-group"><label>Colaborador *</label><select id="n-colab"></select></div>
-      <div class="form-group"><label>Tipo *</label><select id="n-tipo">
-        <option value="Crédito">Crédito (+)</option>
-        <option value="Débito">Débito (-)</option>
-        <option value="Descontar">Descontar (=)</option>
-      </select></div>
+      <div class="form-group"><label>Tipo *</label><select id="n-tipo"><option value="Crédito">Crédito (+)</option><option value="Débito">Débito (-)</option></select></div>
       <div class="form-group"><label>Minutos *</label><input id="n-min" type="number" min="1"></div>
       <div class="form-group"><label>Data *</label><input id="n-data" type="date"></div>
       <div class="form-group"><label>Motivo</label><input id="n-motivo"></div>
@@ -116,8 +94,8 @@
   <!-- SALDO POR COLABORADOR -->
   <div class="section" id="sec-saldo">
     <h3>💰 Saldo por Colaborador</h3>
-    <p style="font-size:.8rem;color:var(--text2);margin-top:6px">Clique no nome do colaborador para ver o histórico mensal. A coluna <strong style="color:var(--accent2)">Descontar</strong> é apenas informativa e não afeta o saldo.</p>
-    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Colaborador</th><th>Turno</th><th>Créditos</th><th>Débitos</th><th>Descontar</th><th>Saldo</th></tr></thead><tbody id="tb-saldo"></tbody></table></div>
+    <p style="font-size:.8rem;color:var(--text2);margin-top:6px">Clique no nome do colaborador para ver o histórico mensal</p>
+    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Colaborador</th><th>Turno</th><th>Créditos</th><th>Débitos</th><th>Saldo</th></tr></thead><tbody id="tb-saldo"></tbody></table></div>
   </div>
 
 </div></div>
@@ -131,11 +109,7 @@
   <input type="hidden" id="aj-id">
   <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
     <div class="form-group"><label>Colaborador *</label><select id="aj-colab"></select></div>
-    <div class="form-group"><label>Tipo *</label><select id="aj-tipo">
-      <option value="Crédito">Crédito (+)</option>
-      <option value="Débito">Débito (-)</option>
-      <option value="Descontar">Descontar (=)</option>
-    </select></div>
+    <div class="form-group"><label>Tipo *</label><select id="aj-tipo"><option value="Crédito">Crédito (+)</option><option value="Débito">Débito (-)</option></select></div>
     <div class="form-group"><label>Minutos *</label><input id="aj-min" type="number" min="1"></div>
     <div class="form-group"><label>Data *</label><input id="aj-data" type="date"></div>
     <div class="form-group" style="grid-column:1/-1"><label>Motivo</label><input id="aj-motivo"></div>
@@ -164,16 +138,6 @@
   </div>
 </div></div>
 
-<!-- MODAL DETALHE DE LANÇAMENTO -->
-<div class="modal-overlay" id="modal-detalhe-lanc"><div class="modal">
-  <h3 id="det-titulo">📝 Detalhes do Lançamento</h3>
-  <div id="det-body" style="margin-top:8px"></div>
-  <div class="btns">
-    <button class="btn-sm btn-ghost" onclick="fecharModalDetalheLanc()">Fechar</button>
-    <button class="btn-sm btn-warning" id="det-btn-ajustar">✏️ Ajustar</button>
-  </div>
-</div></div>
-
 <!-- MODAL HISTÓRICO LANÇAMENTOS -->
 <div class="modal-overlay" id="modal-hist"><div class="modal lg">
   <h3 id="hist-titulo">Histórico</h3>
@@ -189,7 +153,7 @@
   <div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModalHist()">Fechar</button></div>
 </div></div>
 
-<!-- MODAL HISTÓRICO CONVITES -->
+<!-- MODAL HISTÓRICO CONVITES (por colaborador, sem filtro de mês) -->
 <div class="modal-overlay" id="modal-hist-conv"><div class="modal lg">
   <h3 id="hist-conv-titulo">Convites</h3>
   <div class="hist-summary" id="hist-conv-summary"></div>
@@ -212,13 +176,7 @@ const api={
 };
 function toast(m,t='success'){const e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3000)}
 
-function badgeTipo(tipo){
-  if(tipo==='Crédito')return'badge-green';
-  if(tipo==='Débito')return'badge-red';
-  if(tipo==='Descontar')return'badge-purple';
-  return'badge-blue';
-}
-
+/* ===== FORMATAÇÃO DE DATA À PROVA DE FUSO HORÁRIO ===== */
 function fmt(d){
   if(!d)return'-';
   const s=String(d);
@@ -260,45 +218,13 @@ async function loadAll(){
   updateKPIs();renderLanc();renderConv();
 }
 
-/* ====== KPIs COM FILTRO DE MÊS ====== */
-function limparFiltroKpi(){
-  document.getElementById('kpi-mes').value='';
-  updateKPIs();
-}
-
 function updateKPIs(){
-  const mesFiltro=document.getElementById('kpi-mes').value;
-  const lancFiltrados=mesFiltro
-    ? lancamentos.filter(l=>isoMes(l.data)===mesFiltro)
-    : lancamentos;
-
-  // Colaboradores únicos com lançamentos no filtro
-  const colabsAtivos=mesFiltro
-    ? new Set(lancFiltrados.map(l=>l.colaborador_id)).size
-    : colabs.length;
-
-  let pos=0,neg=0,desc=0;
-  lancFiltrados.forEach(l=>{
-    if(l.tipo==='Crédito')pos+=l.minutos;
-    else if(l.tipo==='Débito')neg+=l.minutos;
-    else if(l.tipo==='Descontar')desc+=l.minutos;
-  });
-
-  document.getElementById('k-lancamentos').textContent=lancFiltrados.length;
+  document.getElementById('k-lancamentos').textContent=lancamentos.length;
+  let pos=0,neg=0;
+  lancamentos.forEach(l=>{if(l.tipo==='Crédito')pos+=l.minutos;else neg+=l.minutos});
   document.getElementById('k-positivo').textContent=minToH(pos);
   document.getElementById('k-negativo').textContent=minToH(neg);
-  document.getElementById('k-descontar').textContent=minToH(desc);
-  document.getElementById('k-colabs').textContent=colabsAtivos;
-
-  // Info do filtro
-  const info=document.getElementById('kpi-info');
-  if(mesFiltro){
-    const [y,m]=mesFiltro.split('-');
-    const nomeMes=new Date(+y,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    info.textContent='Exibindo: '+nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1);
-  } else {
-    info.textContent='Exibindo: todos os meses';
-  }
+  document.getElementById('k-colabs').textContent=colabs.length;
 }
 
 /* LANCAMENTOS */
@@ -308,9 +234,10 @@ function renderLanc(){
   const tb=document.getElementById('tb-lanc');
   if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum lançamento</td></tr>';return}
   tb.innerHTML=list.map(l=>{
+    const badge=l.tipo==='Crédito'?'badge-green':'badge-red';
     return `<tr>
-      <td><span class="link-name" onclick="abrirDetalheLanc(${l.id})">${l.colab_nome||'-'}</span></td>
-      <td><span class="badge ${badgeTipo(l.tipo)}">${l.tipo}</span></td>
+      <td>${l.colab_nome||'-'}</td>
+      <td><span class="badge ${badge}">${l.tipo}</span></td>
       <td>${l.minutos} min (${minToH(l.minutos)})</td>
       <td>${fmt(l.data)}</td>
       <td>${l.motivo||'-'}</td>
@@ -321,28 +248,6 @@ function renderLanc(){
     </tr>`;
   }).join('');
 }
-
-/* DETALHE LANÇAMENTO */
-function abrirDetalheLanc(id){
-  const l=lancamentos.find(x=>x.id===id);
-  if(!l)return toast('Lançamento não encontrado','error');
-  const body=document.getElementById('det-body');
-  body.innerHTML=`
-    <div class="detalhe-row"><span class="lbl">👤 Colaborador</span><span class="val">${l.colab_nome||'-'}</span></div>
-    <div class="detalhe-row"><span class="lbl">⏱️ Turno</span><span class="val">${l.colab_turno||'-'}</span></div>
-    <div class="detalhe-row"><span class="lbl">🏷️ Tipo</span><span class="val"><span class="badge ${badgeTipo(l.tipo)}">${l.tipo}</span></span></div>
-    <div class="detalhe-row"><span class="lbl">⏲️ Minutos</span><span class="val">${l.minutos} min (${minToH(l.minutos)})</span></div>
-    <div class="detalhe-row"><span class="lbl">📅 Data</span><span class="val">${fmt(l.data)}</span></div>
-    <div class="detalhe-row"><span class="lbl">📝 Motivo</span><span class="val">${l.motivo||'-'}</span></div>
-    <div class="detalhe-row"><span class="lbl">💬 Justificativa</span><span class="val">${l.justificativa||'-'}</span></div>
-    <div class="detalhe-row"><span class="lbl">🕒 Criado em</span><span class="val">${l.created_at?new Date(l.created_at).toLocaleString('pt-BR'):'-'}</span></div>
-  `;
-  document.getElementById('det-titulo').textContent='📝 Detalhes do Lançamento — '+(l.colab_nome||'-');
-  document.getElementById('det-btn-ajustar').onclick=()=>{fecharModalDetalheLanc();abrirAjuste(id)};
-  document.getElementById('modal-detalhe-lanc').classList.add('show');
-}
-function fecharModalDetalheLanc(){document.getElementById('modal-detalhe-lanc').classList.remove('show')}
-
 async function salvarLanc(){
   const colaborador_id=document.getElementById('n-colab').value;
   const tipo=document.getElementById('n-tipo').value;
@@ -454,20 +359,26 @@ async function salvarAjusteConv(){
 /* HISTÓRICO DE CONVITES POR COLABORADOR */
 function abrirHistoricoConv(colabId, nome){
   document.getElementById('hist-conv-titulo').textContent='📩 Convites — '+nome;
+
+  // ordena por data do convite (mais recente primeiro)
   const list=convites
     .filter(c=>c.colaborador_id===colabId)
     .slice()
     .sort((a,b)=>isoDate(b.data).localeCompare(isoDate(a.data)));
+
+  // resumo
   const tot=list.length;
   const aceitos=list.filter(c=>c.resposta==='Aceito').length;
   const recusados=list.filter(c=>c.resposta==='Recusado').length;
   const pendentes=list.filter(c=>c.resposta==='Pendente').length;
+
   document.getElementById('hist-conv-summary').innerHTML=`
     <div class="hs-item"><div class="hs-num" style="color:var(--accent)">${tot}</div><div class="hs-lbl">Total</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--green)">${aceitos}</div><div class="hs-lbl">Aceitos</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--red)">${recusados}</div><div class="hs-lbl">Recusados</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--yellow)">${pendentes}</div><div class="hs-lbl">Pendentes</div></div>
   `;
+
   const tb=document.getElementById('hist-conv-tb');
   if(!list.length){
     tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text2)">Nenhum convite</td></tr>';
@@ -482,6 +393,7 @@ function abrirHistoricoConv(colabId, nome){
       </tr>`;
     }).join('');
   }
+
   document.getElementById('modal-hist-conv').classList.add('show');
 }
 function fecharModalHistConv(){document.getElementById('modal-hist-conv').classList.remove('show')}
@@ -490,15 +402,10 @@ function fecharModalHistConv(){document.getElementById('modal-hist-conv').classL
 function renderSaldo(){
   const tb=document.getElementById('tb-saldo');
   const map={};
-  colabs.forEach(c=>map[c.id]={id:c.id,nome:c.nome,turno:c.turno||'-',cred:0,deb:0,desc:0});
-  lancamentos.forEach(l=>{
-    if(!map[l.colaborador_id])return;
-    if(l.tipo==='Crédito')map[l.colaborador_id].cred+=l.minutos;
-    else if(l.tipo==='Débito')map[l.colaborador_id].deb+=l.minutos;
-    else if(l.tipo==='Descontar')map[l.colaborador_id].desc+=l.minutos;
-  });
+  colabs.forEach(c=>map[c.id]={id:c.id,nome:c.nome,turno:c.turno||'-',cred:0,deb:0});
+  lancamentos.forEach(l=>{if(!map[l.colaborador_id])return;if(l.tipo==='Crédito')map[l.colaborador_id].cred+=l.minutos;else map[l.colaborador_id].deb+=l.minutos});
   const rows=Object.values(map).sort((a,b)=>a.nome.localeCompare(b.nome));
-  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
   tb.innerHTML=rows.map(r=>{
     const saldo=r.cred-r.deb;
     const badge=saldo>0?'badge-green':saldo<0?'badge-red':'badge-blue';
@@ -507,7 +414,6 @@ function renderSaldo(){
       <td>${r.turno}</td>
       <td><span class="badge badge-green">${minToH(r.cred)}</span></td>
       <td><span class="badge badge-red">${minToH(r.deb)}</span></td>
-      <td><span class="badge badge-purple">${minToH(r.desc)}</span></td>
       <td><span class="badge ${badge}">${minToH(saldo)}</span></td>
     </tr>`;
   }).join('');
@@ -517,6 +423,7 @@ function renderSaldo(){
 function abrirHistorico(colabId, nome){
   histColabId=colabId;
   document.getElementById('hist-titulo').textContent='📊 Histórico — '+nome;
+
   const list=lancamentos.filter(l=>l.colaborador_id===colabId);
   if(!list.length){
     document.getElementById('hist-mes').innerHTML='<option value="">— sem registros —</option>';
@@ -525,7 +432,9 @@ function abrirHistorico(colabId, nome){
     document.getElementById('modal-hist').classList.add('show');
     return;
   }
+
   const meses=[...new Set(list.map(l=>isoMes(l.data)))].filter(Boolean).sort().reverse();
+
   const sel=document.getElementById('hist-mes');
   sel.innerHTML=meses.map(m=>{
     const [y,mo]=m.split('-');
@@ -533,6 +442,7 @@ function abrirHistorico(colabId, nome){
     return `<option value="${m}">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</option>`;
   }).join('');
   sel.value=meses[0];
+
   renderHistMes();
   document.getElementById('modal-hist').classList.add('show');
 }
@@ -540,56 +450,56 @@ function abrirHistorico(colabId, nome){
 function renderHistMes(){
   const mes=document.getElementById('hist-mes').value;
   if(!mes||!histColabId)return;
+
   const todos=lancamentos
     .filter(l=>l.colaborador_id===histColabId)
     .slice()
     .sort((a,b)=>isoDate(a.data).localeCompare(isoDate(b.data)));
+
   let acc=0;
   const enriched=todos.map(l=>{
-    let v=0;
-    if(l.tipo==='Crédito')v=l.minutos;
-    else if(l.tipo==='Débito')v=-l.minutos;
+    const v=l.tipo==='Crédito'?l.minutos:-l.minutos;
     acc+=v;
     return {...l, acumulado:acc};
   });
+
   const list=enriched.filter(l=>isoMes(l.data)===mes);
-  let cred=0,deb=0,desc=0;
-  list.forEach(l=>{
-    if(l.tipo==='Crédito')cred+=l.minutos;
-    else if(l.tipo==='Débito')deb+=l.minutos;
-    else if(l.tipo==='Descontar')desc+=l.minutos;
-  });
+
+  let cred=0,deb=0;
+  list.forEach(l=>{if(l.tipo==='Crédito')cred+=l.minutos;else deb+=l.minutos});
   const saldoMes=cred-deb;
   const saldoTotal=enriched.length?enriched[enriched.length-1].acumulado:0;
+
   document.getElementById('hist-summary').innerHTML=`
     <div class="hs-item"><div class="hs-num" style="color:var(--accent)">${list.length}</div><div class="hs-lbl">Lançamentos no mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--green)">${minToH(cred)}</div><div class="hs-lbl">Créditos do mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:var(--red)">${minToH(deb)}</div><div class="hs-lbl">Débitos do mês</div></div>
-    <div class="hs-item"><div class="hs-num" style="color:var(--accent2)">${minToH(desc)}</div><div class="hs-lbl">A descontar</div></div>
     <div class="hs-item"><div class="hs-num" style="color:${saldoMes>=0?'var(--green)':'var(--red)'}">${minToH(saldoMes)}</div><div class="hs-lbl">Saldo do mês</div></div>
     <div class="hs-item"><div class="hs-num" style="color:${saldoTotal>=0?'var(--green)':'var(--red)'}">${minToH(saldoTotal)}</div><div class="hs-lbl">Saldo acumulado</div></div>
   `;
+
   const tb=document.getElementById('hist-tb');
   if(!list.length){
     tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Sem lançamentos neste mês</td></tr>';
     return;
   }
   tb.innerHTML=list.map(l=>{
+    const badge=l.tipo==='Crédito'?'badge-green':'badge-red';
     const accBadge=l.acumulado>0?'badge-green':l.acumulado<0?'badge-red':'badge-blue';
-    const accText=l.tipo==='Descontar'?'—':minToH(l.acumulado);
     return `<tr>
       <td>${fmt(l.data)}</td>
-      <td><span class="badge ${badgeTipo(l.tipo)}">${l.tipo}</span></td>
+      <td><span class="badge ${badge}">${l.tipo}</span></td>
       <td>${l.minutos} (${minToH(l.minutos)})</td>
       <td>${l.motivo||'-'}</td>
       <td style="max-width:240px;white-space:normal">${l.justificativa||'-'}</td>
-      <td><span class="badge ${l.tipo==='Descontar'?'badge-purple':accBadge}">${accText}</span></td>
+      <td><span class="badge ${accBadge}">${minToH(l.acumulado)}</span></td>
     </tr>`;
   }).join('');
 }
 
 function fecharModalHist(){document.getElementById('modal-hist').classList.remove('show');histColabId=null}
 
+/* DELETE GENERICO */
 async function delItem(resource,id){
   if(!confirm('Excluir este registro?'))return;
   await api.del('/api/'+resource+'/'+id);toast('Excluído!');await loadAll();

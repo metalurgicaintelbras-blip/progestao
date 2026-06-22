@@ -23,18 +23,4 @@ function requireAdmin(req, res, next) {
   return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' });
 }
 
-// Bloqueia escrita para usuários "viewer" (somente leitura)
-function blockViewerWrites(req, res, next) {
-  if (['GET', 'OPTIONS', 'HEAD'].includes(req.method)) {
-    return next();
-  }
-  if (req.path === '/login' || req.path === '/logout') {
-    return next();
-  }
-  if (req.session && req.session.role === 'viewer') {
-    return res.status(403).json({ error: 'Usuário somente leitura. Operação não permitida.' });
-  }
-  next();
-}
-
-module.exports = { requireAuth, requireAdmin, blockViewerWrites };
+module.exports = { requireAuth, requireAdmin };
