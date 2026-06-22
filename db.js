@@ -1,325 +1,200 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const express = require('express');
+const router = express.Router();
+const { pool } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+// ======================== FERRAMENTAS CRUD ========================
+
+// GET /api/ferramentas
+router.get('/', requireAuth, async (req, res) => {
+  try { res.json((await pool.query('SELECT * FROM ferramentas ORDER BY nome')).rows); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-async function initDB() {
-  const client = await pool.connect();
+// GET /api/ferramentas/:id
+router.get('/:id', requireAuth, async (req, res) => {
   try {
-    // ============ TABELAS BASE ============
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        nome VARCHAR(200),
-        role VARCHAR(50) DEFAULT 'user',
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+    const r = await pool.query('SELECT * FROM ferramentas WHERE id=$1', [req.params.id]);
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-      CREATE TABLE IF NOT EXISTS colaboradores (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        matricula VARCHAR(50),
-        setor VARCHAR(100),
-        cargo VARCHAR(100),
-        ativo BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+// POST /api/ferramentas
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    const { nome, cod, cat, loc, status, cal, prev, obs, foto } = req.body;
+    if (!nome || !cod) return res.status(400).json({ error: 'Nome e codigo obrigatorios' });
+    const r = await pool.query(
+      'INSERT INTO ferramentas (nome,cod,cat,loc,status,cal,prev,obs,foto) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+      [nome, cod, cat||null, loc||null, status||'Disponível', cal||null, prev||null, obs||null, foto||null]
+    );
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-      CREATE TABLE IF NOT EXISTS ferramentas (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        codigo VARCHAR(100),
-        categoria VARCHAR(100),
-        status VARCHAR(50) DEFAULT 'disponivel',
-        localizacao VARCHAR(200),
-        observacoes TEXT,
-        foto TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+// PUT /api/ferramentas/:id
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const { nome, cod, cat, loc, status, cal, prev, obs, foto } = req.body;
+    const r = await pool.query(
+      'UPDATE ferramentas SET nome=$1,cod=$2,cat=$3,loc=$4,status=$5,cal=$6,prev=$7,obs=$8,foto=$9,updated_at=NOW() WHERE id=$10 RETURNING *',
+      [nome, cod, cat, loc, status, cal||null, prev||null, obs, foto, req.params.id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-      CREATE TABLE IF NOT EXISTS emprestimos (
-        id SERIAL PRIMARY KEY,
-        ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data_emprestimo TIMESTAMP DEFAULT NOW(),
-        data_devolucao TIMESTAMP,
-        observacoes TEXT,
-        status VARCHAR(50) DEFAULT 'ativo'
-      );
+// DELETE /api/ferramentas/:id
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM ferramentas WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-      CREATE TABLE IF NOT EXISTS manutencoes (
-        id SERIAL PRIMARY KEY,
-        ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        tipo VARCHAR(50),
-        descricao TEXT,
-        data TIMESTAMP DEFAULT NOW(),
-        custo NUMERIC(10,2)
-      );
+// ======================== EMPRESTIMOS ========================
 
-      CREATE TABLE IF NOT EXISTS checklist_ferramentas (
-        id SERIAL PRIMARY KEY,
-        ferramenta_id INTEGER REFERENCES ferramentas(id) ON DELETE CASCADE,
-        data TIMESTAMP DEFAULT NOW(),
-        status VARCHAR(50),
-        observacoes TEXT,
-        responsavel VARCHAR(200)
-      );
-
-      CREATE TABLE IF NOT EXISTS epis (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        ca VARCHAR(50),
-        validade DATE,
-        categoria VARCHAR(100),
-        foto TEXT,
-        observacoes TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS epi_entregas (
-        id SERIAL PRIMARY KEY,
-        epi_id INTEGER REFERENCES epis(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data TIMESTAMP DEFAULT NOW(),
-        quantidade INTEGER DEFAULT 1,
-        motivo VARCHAR(100),
-        observacoes TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS epi_checklists (
-        id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data DATE,
-        hora TIME,
-        turno VARCHAR(50),
-        status VARCHAR(50),
-        epis_irregulares TEXT,
-        obs TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS bh_lancamentos (
-        id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data DATE,
-        horas NUMERIC(5,2),
-        tipo VARCHAR(50),
-        descricao TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS bh_convites (
-        id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data DATE,
-        status VARCHAR(50),
-        observacoes TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS bh_atrasos (
-        id SERIAL PRIMARY KEY,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        data DATE,
-        minutos INTEGER,
-        motivo TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS bh_eventos (
-        id SERIAL PRIMARY KEY,
-        titulo VARCHAR(200),
-        data DATE,
-        descricao TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS treinamentos (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        descricao TEXT,
-        carga_horaria INTEGER,
-        validade_meses INTEGER,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS tr_registros (
-        id SERIAL PRIMARY KEY,
-        treinamento_id INTEGER REFERENCES treinamentos(id) ON DELETE CASCADE,
-        data DATE,
-        instrutor VARCHAR(200),
-        local VARCHAR(200),
-        observacoes TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS tr_presencas (
-        id SERIAL PRIMARY KEY,
-        registro_id INTEGER REFERENCES tr_registros(id) ON DELETE CASCADE,
-        colaborador_id INTEGER REFERENCES colaboradores(id),
-        presente BOOLEAN DEFAULT true
-      );
-
-      CREATE TABLE IF NOT EXISTS tr_agenda (
-        id SERIAL PRIMARY KEY,
-        treinamento_id INTEGER REFERENCES treinamentos(id),
-        data DATE,
-        observacoes TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS db_setores (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        descricao TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS db_registros (
-        id SERIAL PRIMARY KEY,
-        setor_id INTEGER REFERENCES db_setores(id),
-        data DATE,
-        turno VARCHAR(50),
-        responsavel VARCHAR(200),
-        ocorrencias TEXT,
-        fotos TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS db_resumos (
-        id SERIAL PRIMARY KEY,
-        mes VARCHAR(7),
-        conteudo TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS cl_atividades (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(200) NOT NULL,
-        descricao TEXT,
-        frequencia VARCHAR(50)
-      );
-
-      CREATE TABLE IF NOT EXISTS cl_execucoes (
-        id SERIAL PRIMARY KEY,
-        atividade_id INTEGER REFERENCES cl_atividades(id) ON DELETE CASCADE,
-        data DATE,
-        status VARCHAR(50),
-        responsavel VARCHAR(200),
-        observacoes TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS prod_planos (
-        id SERIAL PRIMARY KEY,
-        mes VARCHAR(7),
-        produto VARCHAR(200),
-        meta NUMERIC(12,2) DEFAULT 0,
-        observacoes TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS prod_apontamentos (
-        id SERIAL PRIMARY KEY,
-        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE CASCADE,
-        data DATE,
-        quantidade NUMERIC(12,2),
-        observacoes TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS prod_produtos (
-        id SERIAL PRIMARY KEY,
-        cod_decio VARCHAR(50) UNIQUE NOT NULL,
-        cod_intelbras VARCHAR(50),
-        descricao VARCHAR(300),
-        categoria VARCHAR(100),
-        valor NUMERIC(12,2) DEFAULT 0,
-        minutos_reportados NUMERIC(10,2) DEFAULT 0,
-        hora_reportado NUMERIC(10,4) DEFAULT 0,
-        ativo BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS "session" (
-        "sid" VARCHAR NOT NULL COLLATE "default",
-        "sess" JSON NOT NULL,
-        "expire" TIMESTAMP(6) NOT NULL,
-        PRIMARY KEY ("sid")
-      );
-      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+// GET /api/ferramentas/emprestimos/todos
+router.get('/emprestimos/todos', requireAuth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT e.*, f.nome as ferr_nome, f.cod as ferr_cod, c.nome as colab_nome
+      FROM emprestimos e
+      JOIN ferramentas f ON e.ferramenta_id = f.id
+      JOIN colaboradores c ON e.colaborador_id = c.id
+      ORDER BY e.created_at DESC
     `);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    // ============ AJUSTES EM TABELAS EXISTENTES ============
-    await client.query(`
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS mes VARCHAR(7);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS produto VARCHAR(300);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS meta NUMERIC(12,2) DEFAULT 0;
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS observacoes TEXT;
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_decio VARCHAR(50);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'em_andamento';
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS data_limite DATE;
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS realizado NUMERIC(12,2) DEFAULT 0;
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
-      ALTER TABLE prod_planos ADD COLUMN IF NOT EXISTS num_op VARCHAR(8);
+// POST /api/ferramentas/emprestimos
+router.post('/emprestimos', requireAuth, async (req, res) => {
+  try {
+    const { ferramenta_id, colaborador_id, dt, obs } = req.body;
+    if (!ferramenta_id || !colaborador_id || !dt) return res.status(400).json({ error: 'Campos obrigatorios' });
+    const r = await pool.query(
+      'INSERT INTO emprestimos (ferramenta_id,colaborador_id,dt,obs) VALUES ($1,$2,$3,$4) RETURNING *',
+      [ferramenta_id, colaborador_id, dt, obs||null]
+    );
+    await pool.query('UPDATE ferramentas SET status=$1 WHERE id=$2', ['Em Uso', ferramenta_id]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/ferramentas/emprestimos/:id/devolver
+router.put('/emprestimos/:id/devolver', requireAuth, async (req, res) => {
+  try {
+    const { dev_dt } = req.body;
+    const r = await pool.query(
+      'UPDATE emprestimos SET dev_dt=$1, devolvido=TRUE WHERE id=$2 RETURNING *',
+      [dev_dt, req.params.id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
+    const emp = r.rows[0];
+    const pend = await pool.query(
+      'SELECT COUNT(*) FROM emprestimos WHERE ferramenta_id=$1 AND devolvido=FALSE',
+      [emp.ferramenta_id]
+    );
+    if (parseInt(pend.rows[0].count) === 0) {
+      await pool.query('UPDATE ferramentas SET status=$1 WHERE id=$2', ['Disponível', emp.ferramenta_id]);
+    }
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/ferramentas/emprestimos/:id
+router.delete('/emprestimos/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM emprestimos WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ======================== MANUTENCOES ========================
+
+// GET /api/ferramentas/manutencoes/todos
+router.get('/manutencoes/todos', requireAuth, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT m.*, f.nome as ferr_nome, f.cod as ferr_cod, c.nome as resp_nome
+      FROM manutencoes m
+      JOIN ferramentas f ON m.ferramenta_id = f.id
+      LEFT JOIN colaboradores c ON m.responsavel_id = c.id
+      ORDER BY m.created_at DESC
     `);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    // Índice para acelerar busca por OP
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_prod_planos_num_op ON prod_planos(num_op);
-    `);
+// POST /api/ferramentas/manutencoes
+router.post('/manutencoes', requireAuth, async (req, res) => {
+  try {
+    const { ferramenta_id, tipo, responsavel_id, env, ret, descricao } = req.body;
+    if (!ferramenta_id || !env || !descricao) return res.status(400).json({ error: 'Campos obrigatorios' });
+    const r = await pool.query(
+      'INSERT INTO manutencoes (ferramenta_id,tipo,responsavel_id,env,ret,descricao) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+      [ferramenta_id, tipo, responsavel_id||null, env, ret||null, descricao]
+    );
+    if (!ret) await pool.query('UPDATE ferramentas SET status=$1 WHERE id=$2', ['Manutenção', ferramenta_id]);
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    await client.query(`
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS cod_intelbras VARCHAR(50);
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS descricao VARCHAR(300);
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS valor NUMERIC(12,2) DEFAULT 0;
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS minutos_reportados NUMERIC(10,2) DEFAULT 0;
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS hora_reportado NUMERIC(10,4) DEFAULT 0;
-      ALTER TABLE prod_produtos ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
-    `);
+// PUT /api/ferramentas/manutencoes/:id
+router.put('/manutencoes/:id', requireAuth, async (req, res) => {
+  try {
+    const { tipo, responsavel_id, env, ret, descricao } = req.body;
+    const r = await pool.query(
+      'UPDATE manutencoes SET tipo=$1,responsavel_id=$2,env=$3,ret=$4,descricao=$5,updated_at=NOW() WHERE id=$6 RETURNING *',
+      [tipo, responsavel_id||null, env, ret||null, descricao, req.params.id]
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Nao encontrado' });
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    await client.query(`
-      UPDATE prod_planos
-      SET data_limite = (date_trunc('month', to_date(mes || '-01', 'YYYY-MM-DD')) + interval '1 month - 1 day')::date
-      WHERE data_limite IS NULL AND mes IS NOT NULL;
-    `);
+// DELETE /api/ferramentas/manutencoes/:id
+router.delete('/manutencoes/:id', requireAuth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM manutencoes WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    // ============ NOVA TABELA: APONTAMENTOS DETALHADOS ============
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS prod_apontamentos_detalhados (
-        id SERIAL PRIMARY KEY,
-        data_execucao DATE NOT NULL,
-        turno VARCHAR(10) NOT NULL,
-        celula VARCHAR(50) NOT NULL,
-        num_op VARCHAR(8) NOT NULL,
-        serie_inicial VARCHAR(13) NOT NULL,
-        serie_final VARCHAR(13) NOT NULL,
-        cod_decio VARCHAR(50) NOT NULL,
-        cod_intelbras VARCHAR(50),
-        descricao VARCHAR(300),
-        categoria VARCHAR(100),
-        meta NUMERIC(12,2) DEFAULT 0,
-        realizado NUMERIC(12,2) DEFAULT 0,
-        hora_reportada_total NUMERIC(12,4) DEFAULT 0,
-        observacoes TEXT,
-        plano_id INTEGER REFERENCES prod_planos(id) ON DELETE SET NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+// ======================== CHECKLIST FERRAMENTAS ========================
 
-      CREATE INDEX IF NOT EXISTS idx_apont_det_data ON prod_apontamentos_detalhados(data_execucao);
-      CREATE INDEX IF NOT EXISTS idx_apont_det_decio ON prod_apontamentos_detalhados(cod_decio);
-      CREATE INDEX IF NOT EXISTS idx_apont_det_op ON prod_apontamentos_detalhados(num_op);
-      CREATE INDEX IF NOT EXISTS idx_apont_det_plano ON prod_apontamentos_detalhados(plano_id);
-    `);
+// GET /api/ferramentas/checklist?data=2026-05-08
+router.get('/checklist', requireAuth, async (req, res) => {
+  try {
+    const data = req.query.data || new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `SELECT cf.*, f.nome as ferr_nome, f.cod as ferr_cod, f.cat as ferr_cat, f.loc as ferr_loc
+       FROM checklist_ferramentas cf
+       JOIN ferramentas f ON cf.ferramenta_id = f.id
+       WHERE cf.data = $1`,
+      [data]
+    );
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-    console.log('Database tables initialized successfully');
-  } catch (err) {
-    console.error('Error initializing database:', err);
-    throw err;
-  } finally {
-    client.release();
-  }
-}
+// POST /api/ferramentas/checklist
+router.post('/checklist', requireAuth, async (req, res) => {
+  try {
+    const { ferramenta_id, checked, obs, data } = req.body;
+    const d = data || new Date().toISOString().slice(0, 10);
+    const r = await pool.query(
+      `INSERT INTO checklist_ferramentas (ferramenta_id,checked,obs,data)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (ferramenta_id,data) DO UPDATE SET checked=$2, obs=$3, updated_at=NOW()
+       RETURNING *`,
+      [ferramenta_id, checked||false, obs||null, d]
+    );
+    res.json(r.rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-module.exports = { pool, initDB };
+module.exports = router;

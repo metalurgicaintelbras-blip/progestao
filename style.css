@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProGestão – Banco de Horas</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--accent:#3b82f6;--accent2:#8b5cf6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316;--text:#f1f5f9;--text2:#94a3b8;--border:#475569;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}a{color:var(--accent);text-decoration:none}
+.topbar{background:var(--card);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}.topbar .logo{font-size:1.2rem;font-weight:700;color:var(--accent)}.topbar .right{display:flex;align-items:center;gap:16px}.topbar .clock{background:var(--card2);padding:4px 12px;border-radius:20px;font-size:.85rem;color:var(--text2)}.topbar .user{font-size:.9rem;color:var(--text2)}
+.btn-sm{padding:6px 14px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:.2s}.btn-danger{background:var(--red);color:#fff}.btn-primary{background:var(--accent);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-primary:hover{background:#2563eb}.btn-green:hover{background:#16a34a}.btn-danger:hover{opacity:.85}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.layout{display:flex;min-height:calc(100vh - 57px)}.sidebar{width:220px;background:var(--card);padding:16px 12px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px}.sidebar a{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius);color:var(--text2);font-size:.9rem;transition:.2s}.sidebar a:hover,.sidebar a.active{background:var(--accent);color:#fff}.main{flex:1;padding:24px;overflow-y:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}.kpi{background:var(--card);padding:20px;border-radius:var(--radius);text-align:center}.kpi .num{font-size:2rem;font-weight:700}.kpi .lbl{font-size:.8rem;color:var(--text2);margin-top:4px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}.tab{padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.2s}.tab:hover,.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbl-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.88rem}th{background:var(--card2);color:var(--text2);font-weight:600}tr:hover{background:rgba(59,130,246,.08)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:700px}.form-group{display:flex;flex-direction:column;gap:4px}.form-group label{font-size:.8rem;color:var(--text2)}.form-group input,.form-group select,.form-group textarea{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem}.form-group textarea{min-height:80px;resize:vertical}
+.badge{padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600}.badge-green{background:rgba(34,197,94,.15);color:var(--green)}.badge-red{background:rgba(239,68,68,.15);color:var(--red)}.badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow)}.badge-blue{background:rgba(59,130,246,.15);color:var(--accent)}.badge-purple{background:rgba(139,92,246,.15);color:var(--accent2)}
+.toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:var(--radius);color:#fff;font-weight:600;z-index:9999;animation:slideIn .3s}@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center}.modal-overlay.show{display:flex}.modal{background:var(--card);border-radius:var(--radius);padding:28px;max-width:440px;width:90%}.modal h3{margin-bottom:12px}.modal .btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.section{display:none}.section.active{display:block}
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.search-bar input,.search-bar select{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.88rem}.search-bar input{flex:1;min-width:200px}
+@media(max-width:768px){.sidebar{display:none}.form-grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><a href="/">⚙ ProGestão</a> / Banco de Horas</div>
+  <div class="right"><span class="clock" id="clock"></span><span class="user" id="user-display"></span><button class="btn-sm btn-danger" onclick="doLogout()">Sair</button></div>
+</div>
+<div class="layout">
+<nav class="sidebar">
+  <a href="/">🏠 Início</a><a href="/ferramentas">🔧 Ferramentas</a><a href="/epis">🦺 EPIs</a>
+  <a href="/banco-horas" class="active">⏰ Banco Horas</a><a href="/treinamentos">📚 Treinamentos</a>
+  <a href="/diario-bordo">📋 Diário Bordo</a><a href="/checklist">✅ Checklist</a>
+</nav>
+<div class="main">
+  <h2 style="margin-bottom:20px">⏰ Banco de Horas</h2>
+
+  <div class="kpis">
+    <div class="kpi"><div class="num" id="k-lancamentos" style="color:var(--accent)">0</div><div class="lbl">Lançamentos</div></div>
+    <div class="kpi"><div class="num" id="k-positivo" style="color:var(--green)">0h</div><div class="lbl">Saldo Positivo</div></div>
+    <div class="kpi"><div class="num" id="k-negativo" style="color:var(--red)">0h</div><div class="lbl">Saldo Negativo</div></div>
+    <div class="kpi"><div class="num" id="k-atrasos" style="color:var(--yellow)">0</div><div class="lbl">Atrasos</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('lancamentos')">📝 Lançamentos</div>
+    <div class="tab" onclick="showTab('novo')">➕ Novo</div>
+    <div class="tab" onclick="showTab('convites')">📩 Convites</div>
+    <div class="tab" onclick="showTab('atrasos')">⚠ Atrasos</div>
+    <div class="tab" onclick="showTab('eventos')">📅 Eventos</div>
+    <div class="tab" onclick="showTab('saldo')">💰 Saldo</div>
+  </div>
+
+  <!-- LANCAMENTOS -->
+  <div class="section active" id="sec-lancamentos">
+    <div class="search-bar"><input id="search-lanc" placeholder="Buscar..." oninput="renderLanc()"></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Colaborador</th><th>Tipo</th><th>Minutos</th><th>Data</th><th>Motivo</th><th>Ações</th></tr></thead><tbody id="tb-lanc"></tbody></table></div>
+  </div>
+
+  <!-- NOVO LANCAMENTO -->
+  <div class="section" id="sec-novo">
+    <h3>Novo Lançamento</h3>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group"><label>Colaborador *</label><select id="n-colab"></select></div>
+      <div class="form-group"><label>Tipo *</label><select id="n-tipo"><option value="Crédito">Crédito (+)</option><option value="Débito">Débito (-)</option></select></div>
+      <div class="form-group"><label>Minutos *</label><input id="n-min" type="number" min="1"></div>
+      <div class="form-group"><label>Data *</label><input id="n-data" type="date"></div>
+      <div class="form-group"><label>Motivo</label><input id="n-motivo"></div>
+      <div class="form-group"><label>Justificativa</label><textarea id="n-just"></textarea></div>
+    </div>
+    <button class="btn-sm btn-green" style="margin-top:14px" onclick="salvarLanc()">Salvar</button>
+  </div>
+
+  <!-- CONVITES -->
+  <div class="section" id="sec-convites">
+    <h3>Convites de Banco de Horas</h3>
+    <div class="form-grid" style="margin:14px 0">
+      <div class="form-group"><label>Colaborador *</label><select id="cv-colab"></select></div>
+      <div class="form-group"><label>Data do Convite *</label><input id="cv-data" type="date"></div>
+      <div class="form-group"><label>Data para Banco *</label><input id="cv-db" type="date"></div>
+      <div class="form-group"><label>Resposta</label><select id="cv-resp"><option>Pendente</option><option>Aceito</option><option>Recusado</option></select></div>
+      <div class="form-group"><label>Observação</label><input id="cv-obs"></div>
+    </div>
+    <button class="btn-sm btn-green" onclick="salvarConvite()">Registrar Convite</button>
+    <div class="tbl-wrap" style="margin-top:20px"><table><thead><tr><th>Colaborador</th><th>Data Convite</th><th>Data Banco</th><th>Resposta</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="tb-conv"></tbody></table></div>
+  </div>
+
+  <!-- ATRASOS -->
+  <div class="section" id="sec-atrasos">
+    <h3>Registrar Atraso</h3>
+    <div class="form-grid" style="margin:14px 0">
+      <div class="form-group"><label>Colaborador *</label><select id="at-colab"></select></div>
+      <div class="form-group"><label>Data *</label><input id="at-data" type="date"></div>
+      <div class="form-group"><label>Ponto *</label><select id="at-ponto"><option>Entrada</option><option>Saída</option></select></div>
+      <div class="form-group"><label>Horário Linha *</label><input id="at-linha" type="time"></div>
+      <div class="form-group"><label>Diferença (min)</label><input id="at-diff" type="number" min="0"></div>
+      <div class="form-group"><label>Motivo</label><input id="at-motivo"></div>
+      <div class="form-group"><label>Obs</label><input id="at-obs"></div>
+    </div>
+    <button class="btn-sm btn-green" onclick="salvarAtraso()">Registrar Atraso</button>
+    <div class="tbl-wrap" style="margin-top:20px"><table><thead><tr><th>Colaborador</th><th>Data</th><th>Ponto</th><th>Linha</th><th>Diff(min)</th><th>Motivo</th><th>Ações</th></tr></thead><tbody id="tb-atr"></tbody></table></div>
+  </div>
+
+  <!-- EVENTOS -->
+  <div class="section" id="sec-eventos">
+    <h3>Eventos / Feriados</h3>
+    <div class="form-grid" style="margin:14px 0">
+      <div class="form-group"><label>Tipo</label><select id="ev-tipo"><option>Feriado</option><option>Compensação</option><option>Reunião</option><option>Outro</option></select></div>
+      <div class="form-group"><label>Abrangência</label><select id="ev-abr"><option value="">Todos</option><option>Individual</option></select></div>
+      <div class="form-group" id="ev-colab-wrap"><label>Colaborador</label><select id="ev-colab"></select></div>
+      <div class="form-group"><label>Data *</label><input id="ev-data" type="date"></div>
+      <div class="form-group"><label>Hora</label><input id="ev-hora" type="time"></div>
+      <div class="form-group"><label>Descrição</label><input id="ev-desc"></div>
+    </div>
+    <button class="btn-sm btn-green" onclick="salvarEvento()">Registrar Evento</button>
+    <div class="tbl-wrap" style="margin-top:20px"><table><thead><tr><th>Tipo</th><th>Data</th><th>Hora</th><th>Colaborador</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="tb-ev"></tbody></table></div>
+  </div>
+
+  <!-- SALDO POR COLABORADOR -->
+  <div class="section" id="sec-saldo">
+    <h3>💰 Saldo por Colaborador</h3>
+    <div class="tbl-wrap" style="margin-top:14px"><table><thead><tr><th>Colaborador</th><th>Turno</th><th>Créditos</th><th>Débitos</th><th>Saldo</th></tr></thead><tbody id="tb-saldo"></tbody></table></div>
+  </div>
+
+</div></div>
+
+<div class="modal-overlay" id="modal-del"><div class="modal"><h3>Confirmar Exclusão</h3><p id="modal-del-msg">Tem certeza?</p><div class="btns"><button class="btn-sm btn-ghost" onclick="fecharModal()">Cancelar</button><button class="btn-sm btn-danger" id="modal-del-btn">Excluir</button></div></div></div>
+
+<script>
+let lancamentos=[],convites=[],atrasos=[],eventos=[],colabs=[];
+const api={
+  async get(u){const r=await fetch(u);if(r.status===401)return location.href='/login';return r.json()},
+  async post(u,d){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(r.status===401)return location.href='/login';return r.json()},
+  async del(u){const r=await fetch(u,{method:'DELETE'});if(r.status===401)return location.href='/login';return r.json()}
+};
+function toast(m,t='success'){const e=document.createElement('div');e.className='toast';e.style.background=t==='error'?'var(--red)':'var(--green)';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3000)}
+function fmt(d){if(!d)return'-';return new Date(d).toLocaleDateString('pt-BR')}
+function minToH(m){const h=Math.floor(Math.abs(m)/60);const mm=Math.abs(m)%60;return(m<0?'-':'')+h+'h'+String(mm).padStart(2,'0')}
+function updateClock(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR')+' — '+n.toLocaleDateString('pt-BR')}
+setInterval(updateClock,1000);updateClock();
+async function doLogout(){await fetch('/api/logout',{method:'POST'});location.href='/login'}
+
+function showTab(t){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+t).classList.add('active');
+  if(event&&event.target)event.target.classList.add('active');
+  if(['novo','convites','atrasos','eventos'].includes(t))populateSelects();
+  if(t==='saldo')renderSaldo();
+}
+
+function populateSelects(){
+  ['n-colab','cv-colab','at-colab','ev-colab'].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
+    s.innerHTML='<option value="">Selecione...</option>'+colabs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  });
+  const today=new Date().toISOString().split('T')[0];
+  ['n-data','cv-data','cv-db','at-data','ev-data'].forEach(id=>{const e=document.getElementById(id);if(e&&!e.value)e.value=today});
+}
+
+async function loadAll(){
+  [lancamentos,convites,atrasos,eventos,colabs]=await Promise.all([
+    api.get('/api/bh-lancamentos'),api.get('/api/bh-convites'),api.get('/api/bh-atrasos'),api.get('/api/bh-eventos'),api.get('/api/colaboradores')
+  ]);
+  updateKPIs();renderLanc();renderConv();renderAtr();renderEv();
+}
+
+function updateKPIs(){
+  document.getElementById('k-lancamentos').textContent=lancamentos.length;
+  let pos=0,neg=0;
+  lancamentos.forEach(l=>{if(l.tipo==='Crédito')pos+=l.minutos;else neg+=l.minutos});
+  document.getElementById('k-positivo').textContent=minToH(pos);
+  document.getElementById('k-negativo').textContent=minToH(neg);
+  document.getElementById('k-atrasos').textContent=atrasos.length;
+}
+
+/* LANCAMENTOS */
+function renderLanc(){
+  const q=(document.getElementById('search-lanc').value||'').toLowerCase();
+  const list=lancamentos.filter(l=>(l.colab_nome||'').toLowerCase().includes(q));
+  const tb=document.getElementById('tb-lanc');
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum lançamento</td></tr>';return}
+  tb.innerHTML=list.map(l=>{
+    const badge=l.tipo==='Crédito'?'badge-green':'badge-red';
+    return `<tr><td>${l.colab_nome||'-'}</td><td><span class="badge ${badge}">${l.tipo}</span></td><td>${l.minutos} min (${minToH(l.minutos)})</td><td>${fmt(l.data)}</td><td>${l.motivo||'-'}</td><td><button class="btn-sm btn-danger" onclick="delItem('bh-lancamentos',${l.id})">🗑</button></td></tr>`;
+  }).join('');
+}
+async function salvarLanc(){
+  const colaborador_id=document.getElementById('n-colab').value;
+  const tipo=document.getElementById('n-tipo').value;
+  const minutos=parseInt(document.getElementById('n-min').value);
+  const data=document.getElementById('n-data').value;
+  const motivo=document.getElementById('n-motivo').value;
+  const justificativa=document.getElementById('n-just').value;
+  if(!colaborador_id||!data||!minutos)return toast('Preencha campos obrigatórios','error');
+  await api.post('/api/bh-lancamentos',{colaborador_id:+colaborador_id,tipo,minutos,data,motivo,justificativa});
+  toast('Lançamento salvo!');document.getElementById('n-min').value='';document.getElementById('n-motivo').value='';document.getElementById('n-just').value='';await loadAll();
+}
+
+/* CONVITES */
+function renderConv(){
+  const tb=document.getElementById('tb-conv');
+  if(!convites.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum convite</td></tr>';return}
+  tb.innerHTML=convites.map(c=>{
+    const badge=c.resposta==='Aceito'?'badge-green':c.resposta==='Recusado'?'badge-red':'badge-yellow';
+    return `<tr><td>${c.colab_nome||'-'}</td><td>${fmt(c.data)}</td><td>${fmt(c.data_banco)}</td><td><span class="badge ${badge}">${c.resposta}</span></td><td>${c.obs||'-'}</td><td><button class="btn-sm btn-danger" onclick="delItem('bh-convites',${c.id})">🗑</button></td></tr>`;
+  }).join('');
+}
+async function salvarConvite(){
+  const colaborador_id=document.getElementById('cv-colab').value;
+  const data=document.getElementById('cv-data').value;
+  const data_banco=document.getElementById('cv-db').value;
+  const resposta=document.getElementById('cv-resp').value;
+  const obs=document.getElementById('cv-obs').value;
+  if(!colaborador_id||!data||!data_banco)return toast('Preencha campos obrigatórios','error');
+  await api.post('/api/bh-convites',{colaborador_id:+colaborador_id,data,data_banco,resposta,obs});
+  toast('Convite registrado!');await loadAll();
+}
+
+/* ATRASOS */
+function renderAtr(){
+  const tb=document.getElementById('tb-atr');
+  if(!atrasos.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2)">Nenhum atraso</td></tr>';return}
+  tb.innerHTML=atrasos.map(a=>`<tr><td>${a.colab_nome||'-'}</td><td>${fmt(a.data)}</td><td>${a.ponto}</td><td>${a.linha||'-'}</td><td>${a.diff||0}</td><td>${a.motivo||'-'}</td><td><button class="btn-sm btn-danger" onclick="delItem('bh-atrasos',${a.id})">🗑</button></td></tr>`).join('');
+}
+async function salvarAtraso(){
+  const colaborador_id=document.getElementById('at-colab').value;
+  const data=document.getElementById('at-data').value;
+  const ponto=document.getElementById('at-ponto').value;
+  const linha=document.getElementById('at-linha').value;
+  const diff=parseInt(document.getElementById('at-diff').value)||0;
+  const motivo=document.getElementById('at-motivo').value;
+  const obs=document.getElementById('at-obs').value;
+  if(!colaborador_id||!data||!ponto||!linha)return toast('Preencha campos obrigatórios','error');
+  await api.post('/api/bh-atrasos',{colaborador_id:+colaborador_id,data,ponto,linha,diff,motivo,obs});
+  toast('Atraso registrado!');await loadAll();
+}
+
+/* EVENTOS */
+function renderEv(){
+  const tb=document.getElementById('tb-ev');
+  if(!eventos.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2)">Nenhum evento</td></tr>';return}
+  tb.innerHTML=eventos.map(e=>`<tr><td><span class="badge badge-purple">${e.tipo||'-'}</span></td><td>${fmt(e.data)}</td><td>${e.hora||'-'}</td><td>${e.colab_nome||'Todos'}</td><td>${e.descricao||'-'}</td><td><button class="btn-sm btn-danger" onclick="delItem('bh-eventos',${e.id})">🗑</button></td></tr>`).join('');
+}
+async function salvarEvento(){
+  const tipo=document.getElementById('ev-tipo').value;
+  const abrangencia=document.getElementById('ev-abr').value;
+  const colaborador_id=document.getElementById('ev-colab').value||null;
+  const data=document.getElementById('ev-data').value;
+  const hora=document.getElementById('ev-hora').value;
+  const descricao=document.getElementById('ev-desc').value;
+  if(!data)return toast('Data obrigatória','error');
+  await api.post('/api/bh-eventos',{tipo,abrangencia,colaborador_id:colaborador_id?+colaborador_id:null,data,hora,descricao});
+  toast('Evento registrado!');await loadAll();
+}
+
+/* SALDO */
+function renderSaldo(){
+  const tb=document.getElementById('tb-saldo');
+  const map={};
+  colabs.forEach(c=>map[c.id]={nome:c.nome,turno:c.turno||'-',cred:0,deb:0});
+  lancamentos.forEach(l=>{if(!map[l.colaborador_id])return;if(l.tipo==='Crédito')map[l.colaborador_id].cred+=l.minutos;else map[l.colaborador_id].deb+=l.minutos});
+  const rows=Object.values(map).sort((a,b)=>a.nome.localeCompare(b.nome));
+  if(!rows.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text2)">Sem dados</td></tr>';return}
+  tb.innerHTML=rows.map(r=>{
+    const saldo=r.cred-r.deb;
+    const badge=saldo>0?'badge-green':saldo<0?'badge-red':'badge-blue';
+    return `<tr><td>${r.nome}</td><td>${r.turno}</td><td><span class="badge badge-green">${minToH(r.cred)}</span></td><td><span class="badge badge-red">${minToH(r.deb)}</span></td><td><span class="badge ${badge}">${minToH(saldo)}</span></td></tr>`;
+  }).join('');
+}
+
+/* DELETE GENERICO */
+async function delItem(resource,id){
+  if(!confirm('Excluir este registro?'))return;
+  await api.del('/api/'+resource+'/'+id);toast('Excluído!');await loadAll();
+}
+function fecharModal(){document.getElementById('modal-del').classList.remove('show')}
+
+async function loadUser(){try{const u=await api.get('/api/me');document.getElementById('user-display').textContent=u.nome||u.username}catch(e){}}
+async function init(){updateClock();await loadUser();await loadAll()}
+init();
+</script>
+</body>
+</html>
